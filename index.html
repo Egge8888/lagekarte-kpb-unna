@@ -408,7 +408,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 72px - max(10px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 85px - max(24px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
@@ -419,23 +419,27 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   #toolbar {
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
-    border-radius: 16px 16px 0 0; padding: 6px 6px max(10px, env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0; 
+    /* Massive Padding am iOS Home Bar für Wisch-Schutz */
+    padding: 8px 8px max(24px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  .tool-btn { width: 46px; height: 48px; font-size: 21px; flex-shrink: 0; }
-  .tool-divider { width: 1px; height: 28px; margin: auto 2px; flex-shrink: 0; }
+  /* Buttons größer, leichter zu tippen */
+  .tool-btn { width: 52px; height: 52px; font-size: 24px; flex-shrink: 0; }
+  .tool-label { font-size: 8.5px; }
+  .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto; bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));
+    left: 8px; top: auto; bottom: calc(75px + max(24px, env(safe-area-inset-bottom)));
     transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-  #draw-finish-btn { bottom: calc(72px + max(10px, env(safe-area-inset-bottom))); }
+  #draw-finish-btn { bottom: calc(85px + max(24px, env(safe-area-inset-bottom))); }
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #viewer-hint { bottom: calc(72px + max(10px, env(safe-area-inset-bottom))); }
+  #viewer-hint { bottom: calc(85px + max(24px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
@@ -527,13 +531,13 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div id="map" style="flex:1;"></div>
 
   <div id="toolbar">
-    <button class="tool-btn admin-only" data-tool="tatort"  onclick="Tools.toggle('tatort')"  title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
-    <button class="tool-btn admin-only" data-tool="gefahr"  onclick="Tools.toggle('gefahr')"  title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
-    <button class="tool-btn admin-only" data-tool="ksst"    onclick="Tools.toggle('ksst')"    title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
-    <button class="tool-btn admin-only" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
-    <button class="tool-btn admin-only" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
-    <button class="tool-btn admin-only" data-tool="pin"     onclick="Tools.toggle('pin')"     title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
-    <button class="tool-btn admin-only" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚗</span><span class="tool-label">Kräfte</span></button>
+    <button class="tool-btn admin-only" data-tool="tatort"     onclick="Tools.toggle('tatort')"     title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+    <button class="tool-btn admin-only" data-tool="ereignis"   onclick="Tools.toggle('ereignis')"   title="Ereignisort"><span>🟣</span><span class="tool-label">Ereignis</span></button>
+    <button class="tool-btn admin-only" data-tool="gefahr"     onclick="Tools.toggle('gefahr')"     title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+    <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
+    <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"       title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
+    <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"        title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
+    <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚗</span><span class="tool-label">Kräfte</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -576,14 +580,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <span style="font-size:14px; font-weight:800; color:var(--txt);">Fahrzeuge</span>
       <button id="pool-close-btn" onclick="Pool.close()">✕</button>
     </div>
-
     <div id="live-section" style="margin-bottom:14px; flex-shrink:0;">
       <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Einsatzmittel</div>
       <div id="live-list" style="display:flex; flex-direction:column; gap:4px;">
         <div style="font-size:12px; color:var(--txt2); padding-left:2px; font-style:italic;">Wartet auf GPS-Signale...</div>
       </div>
     </div>
-
     <div id="static-section">
       <div style="font-size:11px; font-weight:700; color:var(--txt2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">📌 Pool (Statisch)</div>
       <div id="pool-list"></div>
@@ -725,7 +727,7 @@ function initMap() {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
     doubleClickZoom: false
-    // editable: true wurde komplett entfernt!
+    // editable: true WURDE RESTLOS ENTFERNT! (Keine Geisterpunkte mehr)
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -776,32 +778,39 @@ function initMap() {
 /* ── ICONS ───────────────────────────────────────────────────────────── */
 const Icons = {
   _tacDefs: {
-    tatort: { emoji: '🔴', label: 'Tatort',  color: '#FF3B30' },
-    gefahr: { emoji: '⚠️',  label: 'Gefahr',  color: '#FF9500' },
-    el:     { emoji: '⭐', label: 'EL',      color: '#FFCC00' },
-    posten: { emoji: '🔵', label: 'Posten',  color: '#007AFF' },
-    pin:    { emoji: '📍', label: 'Stecknadel', color: '#8E8E93' },
+    tatort:     { emoji: '🔴', label: 'Tatort',        color: '#FF3B30' },
+    ereignis:   { emoji: '🟣', label: 'Ereignisort',   color: '#AF52DE' },
+    gefahr:     { emoji: '⚠️',  label: 'Gefahr',        color: '#FF9500' },
+    absperrung: { emoji: '🚧', label: 'Absperrung',    color: '#8E8E93' },
+    pin:        { emoji: '📍', label: 'Stecknadel',    color: '#8E8E93' },
   },
 
-  tac(type) {
-    if (type === 'ksst') return this.ksst();
-    const d = this._tacDefs[type];
+  // Update: Erlaubt jetzt eine kleine Beschriftung unter dem Taktik-Zeichen!
+  tac(type, desc = '') {
+    if (type === 'ksst') return this.ksst(desc);
+    const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
+    
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:100px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+
     return L.divIcon({
-      html: `<div class="tac-marker">
+      html: `<div class="tac-marker" style="display:flex;flex-direction:column;align-items:center;">
         <div class="tac-icon">${d.emoji}</div>
         <div class="tac-label" style="color:${d.color}">${d.label}</div>
+        ${descHtml}
       </div>`,
-      className: '', iconAnchor: [16, 30], iconSize: [32, 38],
+      className: '', iconAnchor: [16, 30], iconSize: [32, desc ? 65 : 38],
     });
   },
 
-  ksst() {
+  ksst(desc = '') {
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:100px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
     return L.divIcon({
-      html: `<div class="ksst-marker">
+      html: `<div class="ksst-marker" style="display:flex;flex-direction:column;align-items:center;">
         <div class="ksst-icon">🔶</div>
         <div class="ksst-badge">KSST</div>
+        ${descHtml}
       </div>`,
-      className: '', iconAnchor: [18, 38], iconSize: [36, 50],
+      className: '', iconAnchor: [18, 38], iconSize: [36, desc ? 70 : 50],
     });
   },
 
@@ -812,9 +821,7 @@ const Icons = {
     const emoji = detectVehicleIcon(ruf);
     const cls   = detectVehicleClass(ruf);
     const dgl   = isDGL(ruf);
-    const star  = dgl
-      ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>`
-      : '';
+    const star  = dgl ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>` : '';
       
     const liveBadge = isLive 
       ? `<div style="position:absolute;top:-4px;right:-8px;width:12px;height:12px;background:var(--green);border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);animation:pulse 1.5s infinite;z-index:10"></div>` 
@@ -831,9 +838,10 @@ const Icons = {
   },
 
   text(txt) {
+    // FIX: white-space:pre-wrap und width:max-content verhindert hässliche vertikale Stacking!
     return L.divIcon({
-      html: `<div style="font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:4px 9px;border-radius:8px;white-space:pre-line;font-family:-apple-system,sans-serif;line-height:1.4;max-width:220px;word-wrap:break-word;box-shadow:0 2px 8px rgba(0,0,0,.3);">${escHtml(txt)}</div>`,
-      className: '', iconAnchor: [0, 8],
+      html: `<div style="font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:4px 9px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:240px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
+      className: '', iconAnchor: [0, 10], // Etwas weiter oben geankert
     });
   },
 };
@@ -852,7 +860,7 @@ const Layers = {
     if (_drawn) _drawn.clearLayers();
     _history = [];
     
-    // Crash-Protection: Sicherheits-Check gegen manipulierte oder kaputte Daten
+    // Security: Absturzschutz gegen manipulierte Daten
     if (!state || !Array.isArray(state.layers)) return;
     
     state.layers.forEach(d => this.render(d));
@@ -866,8 +874,9 @@ const Layers = {
     const isAdmin = _mode === 'admin' || _mode === 'solo';
 
     switch (d.type) {
-      case 'tatort': case 'gefahr': case 'ksst': case 'el': case 'posten': case 'pin':
-        layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type), draggable: isAdmin });
+      case 'tatort': case 'ereignis': case 'gefahr': case 'absperrung': case 'ksst': case 'pin':
+        // Desc mit einfließen lassen
+        layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type, d.desc), draggable: isAdmin });
         break;
       case 'einheit':
         layer = L.marker([d.lat, d.lng], { icon: Icons.unit(d.ruf, _map.getZoom()), draggable: isAdmin });
@@ -891,7 +900,7 @@ const Layers = {
         layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.12, weight: 2.5 });
         break;
       case 'measure':
-        layer = L.polyline(d.points, { color: '#007AFF', weight: 2, dashArray: '6 4' });
+        layer = L.polyline(d.points, { color: '#007AFF', weight: 3, dashArray: '6 6' });
         layer.bindTooltip(d.label, { permanent: true, className: 'measure-tooltip', direction: 'center' });
         break;
     }
@@ -900,15 +909,18 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    if (isAdmin && ['tatort','gefahr','ksst','el','posten','pin','einheit','text'].includes(d.type)) {
-      layer.on('dragend', () => {
-        const ll = layer.getLatLng();
+    // Pfeil-Sonderbehandlung: Die BindPopup muss an die "Line" des Pfeils gehen, damit er löschbar ist
+    const targetPopupLayer = layer._line || layer;
+
+    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text'].includes(d.type)) {
+      targetPopupLayer.on('dragend', () => {
+        const ll = targetPopupLayer.getLatLng();
         d.lat = ll.lat; d.lng = ll.lng;
         Sync.push();
       });
     }
     
-    this._addPopup(layer, d, isAdmin);
+    this._addPopup(targetPopupLayer, d, isAdmin);
 
     if (d.type === 'arrow') {
       layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
@@ -920,35 +932,47 @@ const Layers = {
   },
 
   _makeArrow(d) {
-    if (d.points.length < 2) return L.polyline(d.points, { color: d.color, weight: 3 });
     const pts = d.points;
-    const a   = pts[pts.length - 2];
-    const b   = pts[pts.length - 1];
+    const line = L.polyline(pts, { color: d.color, weight: 4 });
+    if (pts.length < 2) {
+       const group = L.layerGroup([line]);
+       group._line = line;
+       return group;
+    }
     
-    // Neuer, präziser Vektor-Pfeil (Rotation in Grad aus Koordinaten berechnet)
+    const a = pts[pts.length - 2];
+    const b = pts[pts.length - 1];
+    
+    // Exakte Winkelberechnung für eine bündige Pfeilspitze
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * (180 / Math.PI);
-    const line  = L.polyline(pts, { color: d.color, weight: 4 });
     const esc   = d.color.replace(/"/g, '');
     
-    // Der Anchor liegt exakt auf der Pfeilspitze (12, 2)
-    const html  = `<div style="transform:rotate(${angle}deg); transform-origin:12px 2px; width:24px; height:24px; pointer-events:none;">
-                     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                       <polygon points="12,2 22,22 12,17 2,22" fill="${esc}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-                     </svg>
-                   </div>`;
-                   
-    const head  = L.marker(b, {
-      icon: L.divIcon({ html, className: '', iconSize: [24, 24], iconAnchor: [12, 2] }),
-      interactive: false // Damit die Spitze keine Klicks blockiert
+    // Pfeilspitze als echtes Vektor-Dreieck (exakt am Punkt verankert)
+    const headHtml = `<div style="transform:rotate(${angle}deg); transform-origin:12px 2px; width:24px; height:24px; pointer-events:none;">
+      <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="12,2 22,22 12,17 2,22" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </div>`;
+
+    const head = L.marker(b, {
+      icon: L.divIcon({ html: headHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 2] }),
+      interactive: false // Marker blockiert Klicks auf die Linie nicht
     });
     
-    return L.layerGroup([line, head]);
+    const group = L.layerGroup([line, head]);
+    group._line = line; // Referenz speichern für Popups
+    return group;
   },
 
   _addPopup(layer, d, isAdmin) {
     if (!layer) return;
-    const label = d.ruf || d.text
-      || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+    
+    // Zeige das mitgelieferte "desc" oder den Rufnamen an
+    let titleStr = d.ruf || d.text || d.desc;
+    if (!titleStr) {
+       titleStr = (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+    }
+    
     const radiusInfo = d.type === 'circle'
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
@@ -967,8 +991,9 @@ const Layers = {
       </div>
     ` : '';
 
+    // Route-Buttons für Einzelpunkte
     const isPoint = d.lat !== undefined && d.lng !== undefined;
-    const safeLabel = escHtml(label).replace(/'/g, "\\'");
+    const safeLabel = escHtml(titleStr).replace(/'/g, "\\'");
     const routeBtns = isPoint ? `
       <div style="display:flex; gap:8px; margin-bottom:${(editBtn||delBtn)?'10px':'0'}; width:100%;">
         <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${d.lat}, ${d.lng}, '${safeLabel}')">↗️ Ab hier</button>
@@ -978,14 +1003,12 @@ const Layers = {
 
     layer.bindPopup(`
       <div class="popup-body">
-        <div class="popup-title">${escHtml(label)}</div>
+        <div class="popup-title">${escHtml(titleStr)}</div>
         ${radiusInfo}
         ${routeBtns}
         ${actionsHTML}
       </div>`, { maxWidth: 260 });
   },
-
-  editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
     if (!_drawn) return;
@@ -1080,7 +1103,6 @@ const LiveGPS = {
           if (_channel) {
             _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           }
-          
           Pool.refreshLiveList();
         },
         err => {
@@ -1263,7 +1285,7 @@ const Tools = {
       toast('Klick = Mittelpunkt setzen, dann Radius eingeben');
     } else if (name === 'arrow') {
       toast('1. Klick = Start, 2. Klick = Ende');
-    } else if (['polygon', 'line'].includes(name)) {
+    } else if (['polygon', 'line', 'measure'].includes(name)) {
       toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
     }
     _map.getContainer().classList.add('tool-active');
@@ -1287,7 +1309,6 @@ const Tools = {
     _map.getContainer().classList.remove('tool-active');
     _map.getContainer().style.cursor = '';
     
-    // Verhindert doppelte Klick-Events
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
   },
@@ -1302,16 +1323,26 @@ const Tools = {
 
   finishDraw() {
     const tool = this._active;
-    if (!['polygon', 'line'].includes(tool)) return;
+    if (!['polygon', 'line', 'measure'].includes(tool)) return;
     if (this._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
+    
     if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
     const pts = [...this._drawPoints];
     let d;
+    
     if (tool === 'polygon') {
       d = { id: Layers.uid(), type: 'polygon', points: pts, color: this._color };
-    } else {
+    } else if (tool === 'line') {
       d = { id: Layers.uid(), type: 'polyline', points: pts, color: this._color };
+    } else if (tool === 'measure') {
+      let totalDist = 0;
+      for (let i = 1; i < pts.length; i++) {
+         totalDist += _map.distance(pts[i-1], pts[i]);
+      }
+      const label = totalDist < 1000 ? `${Math.round(totalDist)} m` : `${(totalDist / 1000).toFixed(2)} km`;
+      d = { id: Layers.uid(), type: 'measure', points: pts, label: label };
     }
+    
     Layers.render(d, true);
     Sync.push();
     this.deactivate();
@@ -1322,8 +1353,12 @@ const Tools = {
     const { lat, lng } = e.latlng;
     const tool = Tools._active;
 
-    if (['tatort', 'gefahr', 'ksst', 'el', 'posten', 'pin'].includes(tool)) {
-      const d = { id: Layers.uid(), type: tool, lat, lng };
+    if (['tatort', 'ereignis', 'gefahr', 'absperrung', 'ksst', 'pin'].includes(tool)) {
+      // Optionales Hinweisfeld am Taktik-Marker
+      const desc = prompt('Zusatzinfo / Beschriftung (optional):', '');
+      if (desc === null) return; // Abbrechen gedrückt
+      
+      const d = { id: Layers.uid(), type: tool, lat, lng, desc: desc.trim() };
       Layers.render(d, true);
       Sync.push();
       Tools.deactivate();
@@ -1368,22 +1403,6 @@ const Tools = {
       return;
     }
 
-    if (tool === 'measure') {
-      if (Tools._drawPoints.length === 0) {
-        Tools._drawPoints = [[lat, lng]];
-        toast('2. Klick = Endpunkt');
-      } else {
-        const start = Tools._drawPoints[0];
-        const dist  = _map.distance(start, [lat, lng]);
-        const label = dist < 1000 ? `${Math.round(dist)} m` : `${(dist / 1000).toFixed(2)} km`;
-        const d = { id: Layers.uid(), type: 'measure', points: [start, [lat, lng]], label };
-        Layers.render(d, true);
-        Sync.push();
-        Tools.deactivate();
-      }
-      return;
-    }
-
     if (tool === 'arrow') {
       if (Tools._drawPoints.length === 0) {
         Tools._drawPoints = [[lat, lng]];
@@ -1400,13 +1419,26 @@ const Tools = {
       return;
     }
 
-    if (['polygon', 'line'].includes(tool)) {
+    // Measure, Polygon, Line -> Multi-Click-System
+    if (['polygon', 'line', 'measure'].includes(tool)) {
       Tools._drawPoints.push([lat, lng]);
       if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
+      
       if (Tools._drawPoints.length > 1) {
-        Tools._drawLayer = L.polyline(Tools._drawPoints, {
-          color: Tools._color, weight: 2.5, dashArray: '6 4',
-        }).addTo(_map);
+        const lineStyle = tool === 'measure' 
+           ? { color: '#007AFF', weight: 3, dashArray: '6 6' }
+           : { color: Tools._color, weight: 2.5, dashArray: '6 4' };
+           
+        Tools._drawLayer = L.polyline(Tools._drawPoints, lineStyle).addTo(_map);
+        
+        if (tool === 'measure') {
+            let totalDist = 0;
+            for (let i = 1; i < Tools._drawPoints.length; i++) {
+               totalDist += _map.distance(Tools._drawPoints[i-1], Tools._drawPoints[i]);
+            }
+            const label = totalDist < 1000 ? `${Math.round(totalDist)} m` : `${(totalDist / 1000).toFixed(2)} km`;
+            Tools._drawLayer.bindTooltip(label, { permanent: true, className: 'measure-tooltip', direction: 'center' }).openTooltip();
+        }
       }
       if (Tools._drawPoints.length >= 2) {
         document.getElementById('draw-finish-btn').classList.remove('hidden');
@@ -1417,27 +1449,27 @@ const Tools = {
 
   _onMapDblClick(e) {
     const tool = Tools._active;
-    if (!['polygon', 'line'].includes(tool)) return;
+    if (!['polygon', 'line', 'measure'].includes(tool)) return;
     L.DomEvent.stopPropagation(e);
     Tools.finishDraw();
   },
 };
 
-/* ── EDITOR (Eigener Clean-Editor) ──────────────────────────────────── */
+/* ── EDITOR (Sauberer, Eigener Hand-Editor ohne Geisterpunkte) ──────── */
 const Editor = {
   _handles: [],
 
   _handleIcon(color) {
     return L.divIcon({
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color||'#007AFF'};border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:grab;"></div>`,
-      className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+      html: `<div style="width:16px;height:16px;border-radius:50%;background:${color||'#007AFF'};border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:grab;"></div>`,
+      className: '', iconSize: [16, 16], iconAnchor: [8, 8],
     });
   },
 
   _moveIcon() {
     return L.divIcon({
-      html: `<div style="width:18px;height:18px;border-radius:4px;background:rgba(0,122,255,.9);color:#fff;font-size:13px;line-height:18px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:move;">✥</div>`,
-      className: '', iconSize: [18, 18], iconAnchor: [9, 9],
+      html: `<div style="width:20px;height:20px;border-radius:4px;background:rgba(0,122,255,.9);color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:move;">✥</div>`,
+      className: '', iconSize: [20, 20], iconAnchor: [10, 10],
     });
   },
 
