@@ -200,13 +200,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   white-space:nowrap; margin-top:1px; font-family:var(--font);
 }
 .dark .unit-label { color:#60A0FF; text-shadow:0 1px 3px rgba(0,0,0,.9); }
-/* DGL – Führungskraft (ends in 21) */
 .unit-label.dgl { color:#996600 !important; }
 .dark .unit-label.dgl { color:#FFD700 !important; }
-/* Fremdkräfte (U-prefix) */
 .unit-label.fremd { color:#6B0AC9 !important; }
 .dark .unit-label.fremd { color:#BF5AF2 !important; }
-/* Kriminalwache (H9610–H9620) – zivil, dezent dunkelgrau */
 .unit-label.kripo { color:#3a3a3a !important; }
 .dark .unit-label.kripo { color:#aaaaaa !important; }
 
@@ -297,7 +294,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important;
 }
 
-/* ── TOOL-ACTIVE: Overlays click-through wenn Tool aktiv ─ */
+/* ── TOOL-ACTIVE ─────────────────────────────────────── */
 #map.tool-active .leaflet-overlay-pane { pointer-events: none !important; }
 #map.tool-active .leaflet-marker-pane  { pointer-events: none !important; }
 
@@ -398,14 +395,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 /* ══════════════════════════════════════════════════════════
-   MOBILE LAYOUT  ≤ 767 px  (iPhone / kleines Tablet)
+   MOBILE LAYOUT
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-
   #header {
     padding-top: max(10px, env(safe-area-inset-top));
-    height: auto; min-height: 52px;
-    gap: 5px; padding-left: 10px; padding-right: 10px;
+    height: auto; min-height: 52px; gap: 5px; padding-left: 10px; padding-right: 10px;
   }
   #room-code-display { font-size:14px; letter-spacing:2px; padding:4px 8px; }
   .header-btn { width:32px; height:32px; font-size:14px; }
@@ -413,56 +408,35 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px))
-                     - 72px - max(10px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 72px - max(10px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
-    top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    width: calc(100vw - 24px);
+    top: max(64px, calc(env(safe-area-inset-top) + 54px)); width: calc(100vw - 24px);
   }
   #search-results { max-height: 40vh; }
 
   #toolbar {
-    left: 0; right: 0; top: auto; bottom: 0;
-    transform: none;
-    flex-direction: row;
-    width: 100%; max-height: none;
-    overflow-x: auto; overflow-y: hidden;
-    border-radius: 16px 16px 0 0;
-    padding: 6px 6px max(10px, env(safe-area-inset-bottom));
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
+    left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
+    width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
+    border-radius: 16px 16px 0 0; padding: 6px 6px max(10px, env(safe-area-inset-bottom));
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
   .tool-btn { width: 46px; height: 48px; font-size: 21px; flex-shrink: 0; }
   .tool-divider { width: 1px; height: 28px; margin: auto 2px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto;
-    bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));
-    transform: none;
-    flex-direction: row; flex-wrap: wrap;
-    max-width: calc(100vw - 16px);
+    left: 8px; top: auto; bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));
+    transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-
-  #draw-finish-btn {
-    bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
-  }
-
+  #draw-finish-btn { bottom: calc(72px + max(10px, env(safe-area-inset-bottom))); }
   #toast {
-    top: max(62px, calc(env(safe-area-inset-top) + 58px));
-    bottom: auto;
-    transform: translateX(-50%) translateY(-16px);
+    top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-
-  #viewer-hint {
-    bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
-  }
-
+  #viewer-hint { bottom: calc(72px + max(10px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
-
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
   .landing-title { font-size: 22px; }
@@ -603,9 +577,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <button id="pool-close-btn" onclick="Pool.close()">✕</button>
     </div>
 
-    <div id="live-section" class="hidden" style="margin-bottom:14px; flex-shrink:0;">
+    <div id="live-section" style="margin-bottom:14px; flex-shrink:0;">
       <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Einsatzmittel</div>
-      <div id="live-list" style="display:flex; flex-direction:column; gap:4px;"></div>
+      <div id="live-list" style="display:flex; flex-direction:column; gap:4px;">
+        <div style="font-size:12px; color:var(--txt2); padding-left:2px; font-style:italic;">Wartet auf GPS-Signale...</div>
+      </div>
     </div>
 
     <div id="static-section">
@@ -686,7 +662,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.editable/1.2.0/Leaflet.Editable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 'use strict';
@@ -721,12 +696,12 @@ let _syncTimer    = null;
 function detectVehicleIcon(ruf) {
   if (!ruf) return '🚔';
   const r = ruf.trim().toUpperCase();
-  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '🚁';  // Hubschrauber
-  if (/\bFW\b/.test(r))               return '🚒';  // Feuerwehr
-  if (/^RTW/.test(r))                 return '🚑';  // Rettungswagen
-  if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  // Kriminalwache (zivil)
-  if (/^H/.test(r))                   return '🚔';  // Standard Polizei (H-Kennung)
-  return '🚓';                                       // Fremdkräfte
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '🚁';  
+  if (/\bFW\b/.test(r))               return '🚒';  
+  if (/^RTW/.test(r))                 return '🚑';  
+  if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  
+  if (/^H/.test(r))                   return '🚔';  
+  return '🚓';                                       
 }
 
 function detectVehicleClass(ruf) {
@@ -749,8 +724,8 @@ function initMap() {
   _map = L.map('map', {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
-    doubleClickZoom: false,
-    editable: true,
+    doubleClickZoom: false
+    // editable: true wurde komplett entfernt!
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -781,7 +756,7 @@ function initMap() {
   }, {}, { position: 'bottomright' }).addTo(_map);
 
   _drawn = L.featureGroup().addTo(_map);
-  _liveGpsLayer = L.featureGroup().addTo(_map); // Layer für alle geteilten Live-Standorte
+  _liveGpsLayer = L.featureGroup().addTo(_map); 
 
   _map.on('zoomend', () => {
     const z = _map.getZoom();
@@ -841,7 +816,6 @@ const Icons = {
       ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>`
       : '';
       
-    // Live Indicator (Pulsierender grüner Punkt)
     const liveBadge = isLive 
       ? `<div style="position:absolute;top:-4px;right:-8px;width:12px;height:12px;background:var(--green);border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);animation:pulse 1.5s infinite;z-index:10"></div>` 
       : '';
@@ -877,7 +851,10 @@ const Layers = {
   deserialize(state, ignoreView = false) {
     if (_drawn) _drawn.clearLayers();
     _history = [];
-    if (!state || !state.layers) return;
+    
+    // Crash-Protection: Sicherheits-Check gegen manipulierte oder kaputte Daten
+    if (!state || !Array.isArray(state.layers)) return;
+    
     state.layers.forEach(d => this.render(d));
     if (_map && state.mapView && !ignoreView) {
       _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
@@ -947,15 +924,24 @@ const Layers = {
     const pts = d.points;
     const a   = pts[pts.length - 2];
     const b   = pts[pts.length - 1];
-    const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    
+    // Neuer, präziser Vektor-Pfeil (Rotation in Grad aus Koordinaten berechnet)
+    const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * (180 / Math.PI);
     const line  = L.polyline(pts, { color: d.color, weight: 4 });
     const esc   = d.color.replace(/"/g, '');
+    
+    // Der Anchor liegt exakt auf der Pfeilspitze (12, 2)
+    const html  = `<div style="transform:rotate(${angle}deg); transform-origin:12px 2px; width:24px; height:24px; pointer-events:none;">
+                     <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                       <polygon points="12,2 22,22 12,17 2,22" fill="${esc}" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+                     </svg>
+                   </div>`;
+                   
     const head  = L.marker(b, {
-      icon: L.divIcon({
-        html: `<div style="transform:rotate(${angle}deg);transform-origin:50% 50%;width:22px;height:22px;"><svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg"><polygon points="11,1 21,20 1,20" fill="${esc}" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg></div>`,
-        className: '', iconSize: [22, 22], iconAnchor: [11, 11],
-      }),
+      icon: L.divIcon({ html, className: '', iconSize: [24, 24], iconAnchor: [12, 2] }),
+      interactive: false // Damit die Spitze keine Klicks blockiert
     });
+    
     return L.layerGroup([line, head]);
   },
 
@@ -1030,7 +1016,6 @@ const LiveGPS = {
     const btn = document.getElementById('gps-toggle-btn');
     
     if (this._watchId) {
-      // Ausschalten
       navigator.geolocation.clearWatch(this._watchId);
       this._watchId = null;
       if (this._marker) _map.removeLayer(this._marker);
@@ -1039,21 +1024,18 @@ const LiveGPS = {
       btn.classList.remove('active');
       
       _myRuf = null;
-      // Entferne Live-Standort aus dem Sync
       if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
-      Pool.updateLiveList({}); // Liste leeren (für uns selbst)
+      Pool.updateLiveList({}); 
       
       toast('🛰️ Live-Standort deaktiviert');
     } else {
-      // Einschalten - Namen abfragen
       let ruf = '';
       if (_mode !== 'solo') {
         ruf = prompt('Gib deinen Rufnamen ein (z. B. H1131), damit die Einsatzleitung dich live sehen kann:');
-        if (!ruf) return; // Abgebrochen
+        if (!ruf) return; 
       }
       ruf = ruf ? ruf.trim().toUpperCase() : 'Ich';
 
-      // Prüfen, ob der Name schon von jemand anderem Live genutzt wird
       let alreadyLive = false;
       if (_liveGpsLayer) {
         _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
@@ -1065,7 +1047,6 @@ const LiveGPS = {
       
       _myRuf = ruf;
 
-      // Wenn wir Admin sind und live gehen: den statischen Marker von UNS SELBST löschen!
       if (_mode === 'admin' || _mode === 'solo') {
         let duplicateId = null;
         if (_drawn) {
@@ -1085,7 +1066,6 @@ const LiveGPS = {
           const lng = pos.coords.longitude;
           const acc = pos.coords.accuracy;
 
-          // Eigene Darstellung (blauer Punkt)
           if (!this._marker) {
             this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1 }).addTo(_map);
             this._marker = L.circleMarker([lat, lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#007AFF', fillOpacity: 1 }).addTo(_map);
@@ -1097,12 +1077,10 @@ const LiveGPS = {
             this._circle.setRadius(acc);
           }
           
-          // Broadcast an andere via Supabase Presence!
           if (_channel) {
             _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           }
           
-          // Zwinge das Panel, sich selbst in die Live-Liste aufzunehmen
           Pool.refreshLiveList();
         },
         err => {
@@ -1119,7 +1097,7 @@ const LiveGPS = {
 const Pool = {
   _vehicles: [],
   _placingFromPool: false,
-  _currentLiveState: {}, // Speichert die aktuellen Live-Daten der Anderen
+  _currentLiveState: {}, 
 
   load() {
     try { this._vehicles = JSON.parse(localStorage.getItem('lagekarte_pool') || '[]'); } catch(e) { this._vehicles = []; }
@@ -1174,12 +1152,10 @@ const Pool = {
   },
 
   startPlace(ruf, poolId) {
-    // DOPPLUNGSSCHUTZ: Prüfen ob bereits live!
     let isLive = false;
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    // Oder ob man selbst es ist
     if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
 
     if (isLive) {
@@ -1231,18 +1207,15 @@ const Pool = {
     }).join('');
   },
 
-  // Wird von Sync aufgerufen, wenn neue Presence-Daten eintreffen
   updateLiveList(liveStateObj) {
     this._currentLiveState = liveStateObj;
     this.refreshLiveList();
   },
 
-  // Baut die grüne Liste im Panel neu auf
   refreshLiveList() {
     let html = '';
     let hasLive = false;
 
-    // 1. Zuerst uns selbst hinzufügen (falls wir live sind)
     if (LiveGPS._watchId && LiveGPS._marker) {
        hasLive = true;
        const lat = LiveGPS._marker.getLatLng().lat;
@@ -1253,7 +1226,6 @@ const Pool = {
        </div>`;
     }
 
-    // 2. Dann alle anderen aus dem liveStateObj
     for (const id in this._currentLiveState) {
       const p = this._currentLiveState[id];
       hasLive = true;
@@ -1263,15 +1235,11 @@ const Pool = {
       </div>`;
     }
 
-    const section = document.getElementById('live-section');
     const list = document.getElementById('live-list');
-    
     if (hasLive) {
       list.innerHTML = html;
-      section.classList.remove('hidden');
     } else {
-      section.classList.add('hidden');
-      list.innerHTML = '';
+      list.innerHTML = '<div style="font-size:12px; color:var(--txt2); font-style:italic; padding-left:2px;">Wartet auf GPS-Signale...</div>';
     }
   }
 };
@@ -1318,6 +1286,8 @@ const Tools = {
     finBtn.onclick = () => Tools.finishDraw();
     _map.getContainer().classList.remove('tool-active');
     _map.getContainer().style.cursor = '';
+    
+    // Verhindert doppelte Klick-Events
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
   },
@@ -1362,7 +1332,6 @@ const Tools = {
 
     if (tool === 'einheit' && Tools._pendingRuf) {
       const ruf = Tools._pendingRuf;
-      // Letzter Sicherheits-Check gegen Live-Dopplung beim Klicken
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
       if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
@@ -1454,7 +1423,7 @@ const Tools = {
   },
 };
 
-/* ── EDITOR (custom vertex / handle editing, no Leaflet.Editable) ───── */
+/* ── EDITOR (Eigener Clean-Editor) ──────────────────────────────────── */
 const Editor = {
   _handles: [],
 
@@ -1539,7 +1508,6 @@ const Editor = {
     let cx = pts.reduce((s,p) => s + p[0], 0) / pts.length;
     let cy = pts.reduce((s,p) => s + p[1], 0) / pts.length;
     let lastC = [cx, cy];
-    const vCount = pts.length;
     this._addHandle([cx, cy], this._moveIcon(), e => {
       const ll   = e.target.getLatLng();
       const dlat = ll.lat - lastC[0];
@@ -1670,7 +1638,7 @@ const Sync = {
         const state = _channel.presenceState();
         let count = 0;
         
-        const currentLive = {}; // Speichert alle fremden Live-Signale
+        const currentLive = {}; 
         let needsStaticCleanup = false;
 
         for (const id in state) {
@@ -1684,14 +1652,11 @@ const Sync = {
           }
         }
         
-        // --- 1. Live Marker sauber updaten (ohne Flackern) ---
         if (_liveGpsLayer) {
-          // Entferne alte, die nicht mehr senden
           _liveGpsLayer.eachLayer(l => {
              if (!currentLive[l._connId]) _liveGpsLayer.removeLayer(l);
           });
           
-          // Neue hinzufügen oder bestehende verschieben
           for (const id in currentLive) {
              const p = currentLive[id];
              let existing = null;
@@ -1699,7 +1664,6 @@ const Sync = {
              
              if (existing) {
                 existing.setLatLng([p.lat, p.lng]);
-                // Falls sich der Rufname geändert haben sollte
                 if (existing._ruf !== p.ruf) {
                     existing._ruf = p.ruf;
                     existing.setIcon(Icons.unit(p.ruf, _map.getZoom(), true));
@@ -1724,7 +1688,6 @@ const Sync = {
           }
         }
 
-        // --- 2. Statische Doppelgänger bei Admin automatisch löschen ---
         if (needsStaticCleanup && (_mode === 'admin' || _mode === 'solo')) {
           let pushNeeded = false;
           for (const id in currentLive) {
@@ -1738,14 +1701,13 @@ const Sync = {
                });
              }
              if (duplicateId) {
-               Layers.deleteById(duplicateId); // Sync.push wird darin aufgerufen
+               Layers.deleteById(duplicateId); 
                pushNeeded = true;
                toast(`♻️ Statischer Marker für ${p.ruf} wurde durch Live-Signal ersetzt.`);
              }
           }
         }
         
-        // Panel-Liste aktualisieren
         Pool.updateLiveList(currentLive);
 
         this._viewerCount = count;
