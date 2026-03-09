@@ -583,6 +583,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="tool-btn" data-tool="ksst"    onclick="Tools.toggle('ksst')"    title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
     <button class="tool-btn" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
     <button class="tool-btn" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
+    <button class="tool-btn" data-tool="pin"     onclick="Tools.toggle('pin')"     title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
     <button class="tool-btn" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeugpool"><span>🚗</span><span class="tool-label">Fahrzeuge</span></button>
     <div class="tool-divider"></div>
     <button class="tool-btn" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
@@ -663,15 +664,13 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="route-input-row">
       <span class="route-dot">🟢</span>
       <input class="route-input" id="route-from" type="text"
-             placeholder="Start (Adresse oder Ort)" autocomplete="off"
-             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
+             placeholder="Start (Adresse oder Ort)" autocomplete="off"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('from')" title="Mein Standort">📍</button>
     </div>
     <div class="route-input-row">
       <span class="route-dot">🔴</span>
       <input class="route-input" id="route-to" type="text"
-             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"
-             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
+             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('to')" title="Mein Standort">📍</button>
     </div>
     <div id="route-actions">
@@ -696,7 +695,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.editable/1.2.0/Leaflet.Editable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════
@@ -757,7 +755,7 @@ function initMap() {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
     doubleClickZoom: false,
-    editable: true // Sicherstellen, dass alles läuft wie zuvor
+    editable: true,        // Leaflet.Editable – enables .enableEdit() on layers
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -808,6 +806,7 @@ const Icons = {
     gefahr: { emoji: '⚠️',  label: 'Gefahr',  color: '#FF9500' },
     el:     { emoji: '⭐', label: 'EL',      color: '#FFCC00' },
     posten: { emoji: '🔵', label: 'Posten',  color: '#007AFF' },
+    pin:    { emoji: '📍', label: 'Stecknadel', color: '#8E8E93' },
   },
 
   tac(type) {
@@ -871,11 +870,9 @@ const Layers = {
   },
 
   deserialize(state, ignoreView = false) {
-    // Zusätzliche Sicherheit: Prüfen, ob _drawn bereits bereit ist
     if (_drawn) _drawn.clearLayers();
     _history = [];
     if (!state || !state.layers) return;
-    
     state.layers.forEach(d => this.render(d));
     if (_map && state.mapView && !ignoreView) {
       _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
@@ -887,7 +884,7 @@ const Layers = {
     const isAdmin = _mode === 'admin' || _mode === 'solo';
 
     switch (d.type) {
-      case 'tatort': case 'gefahr': case 'ksst': case 'el': case 'posten':
+      case 'tatort': case 'gefahr': case 'ksst': case 'el': case 'posten': case 'pin':
         layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type), draggable: isAdmin });
         break;
       case 'einheit':
@@ -921,14 +918,16 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    if (isAdmin && ['tatort','gefahr','ksst','el','posten','einheit','text'].includes(d.type)) {
+    if (isAdmin && ['tatort','gefahr','ksst','el','posten','pin','einheit','text'].includes(d.type)) {
       layer.on('dragend', () => {
         const ll = layer.getLatLng();
         d.lat = ll.lat; d.lng = ll.lng;
         Sync.push();
       });
     }
-    if (isAdmin) this._addPopup(layer, d);
+    
+    // Allen das Popup hinzufügen, egal ob Admin oder Zuschauer
+    this._addPopup(layer, d, isAdmin);
 
     if (d.type === 'arrow') {
       layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
@@ -944,7 +943,6 @@ const Layers = {
     const pts = d.points;
     const a   = pts[pts.length - 2];
     const b   = pts[pts.length - 1];
-    // angle: bearing from north (clockwise), correct for CSS rotate on upward-pointing triangle
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
     const line  = L.polyline(pts, { color: d.color, weight: 4 });
     const esc   = d.color.replace(/"/g, '');
@@ -957,26 +955,43 @@ const Layers = {
     return L.layerGroup([line, head]);
   },
 
-  _addPopup(layer, d) {
+  _addPopup(layer, d, isAdmin) {
     if (!layer) return;
     const label = d.ruf || d.text
       || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
     const radiusInfo = d.type === 'circle'
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
-    // Edit button for all reshapeable elements (custom Editor handles)
+    
     const canEdit = ['circle','polyline','polygon','arrow'].includes(d.type);
-    const editBtn = canEdit
+    const editBtn = (canEdit && isAdmin)
       ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
       : '';
+    const delBtn = isAdmin
+      ? `<button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>`
+      : '';
+    const actionsHTML = (editBtn || delBtn) ? `
+      <div class="popup-actions">
+        ${editBtn}
+        ${delBtn}
+      </div>
+    ` : '';
+
+    const isPoint = d.lat !== undefined && d.lng !== undefined;
+    const safeLabel = escHtml(label).replace(/'/g, "\\'");
+    const routeBtns = isPoint ? `
+      <div style="display:flex; gap:8px; margin-bottom:${(editBtn||delBtn)?'10px':'0'}; width:100%;">
+        <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${d.lat}, ${d.lng}, '${safeLabel}')">↗️ Ab hier</button>
+        <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${d.lat}, ${d.lng}, '${safeLabel}')">↘️ Hierhin</button>
+      </div>
+    ` : '';
+
     layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(label)}</div>
         ${radiusInfo}
-        <div class="popup-actions">
-          ${editBtn}
-          <button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>
-        </div>
+        ${routeBtns}
+        ${actionsHTML}
       </div>`, { maxWidth: 260 });
   },
 
@@ -1061,7 +1076,7 @@ const Pool = {
 
   startPlace(ruf, poolId) {
     this._placingFromPool = true;
-    this._placingPoolId   = poolId || null;  // which pool entry to remove after placing
+    this._placingPoolId   = poolId || null;
     this.close();
     Tools._active = 'einheit';
     Tools._pendingRuf = ruf;
@@ -1075,7 +1090,6 @@ const Pool = {
     if (this._placingFromPool) {
       this._placingFromPool = false;
       document.getElementById('pool-toggle-btn').classList.remove('active');
-      // Remove the pool entry (it's now on the map)
       if (this._placingPoolId) {
         this._vehicles = this._vehicles.filter(v => v.id !== this._placingPoolId);
         this.save();
@@ -1136,7 +1150,6 @@ const Tools = {
     if (this._active) {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
-    // Cancel any active shape editing (via custom Editor)
     if (typeof Editor !== 'undefined') Editor.finish(true);
     this._active = null;
     this._pendingRuf = null;
@@ -1184,7 +1197,7 @@ const Tools = {
     const tool = Tools._active;
 
     // ── Tactical single-click markers ──────────────────────────────────
-    if (['tatort', 'gefahr', 'ksst', 'el', 'posten'].includes(tool)) {
+    if (['tatort', 'gefahr', 'ksst', 'el', 'posten', 'pin'].includes(tool)) {
       const d = { id: Layers.uid(), type: tool, lat, lng };
       Layers.render(d, true);
       Sync.push();
@@ -1207,7 +1220,6 @@ const Tools = {
 
     // ── Text ───────────────────────────────────────────────────────────
     if (tool === 'text') {
-      // Show custom multi-line modal; TextInput.submit() handles placement
       TextInput.show(lat, lng);
       return;
     }
@@ -1215,7 +1227,7 @@ const Tools = {
     // ── Circle: click center → prompt for radius ───────────────────────
     if (tool === 'circle') {
       const rStr = prompt('Radius in Metern eingeben:', '200');
-      if (rStr === null) return;  // cancelled
+      if (rStr === null) return;
       const radius = Math.max(10, parseInt(rStr) || 200);
       const d = { id: Layers.uid(), type: 'circle', lat, lng, radius, color: Tools._color };
       Layers.render(d, true);
@@ -1246,7 +1258,6 @@ const Tools = {
     if (tool === 'arrow') {
       if (Tools._drawPoints.length === 0) {
         Tools._drawPoints = [[lat, lng]];
-        // preview dot
         if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
         Tools._drawLayer = L.circleMarker([lat, lng], { radius: 5, color: Tools._color, fillOpacity: 1 }).addTo(_map);
         toast('2. Klick = Pfeilspitze');
@@ -1269,7 +1280,6 @@ const Tools = {
           color: Tools._color, weight: 2.5, dashArray: '6 4',
         }).addTo(_map);
       }
-      // Show finish button after 2nd point
       if (Tools._drawPoints.length >= 2) {
         document.getElementById('draw-finish-btn').classList.remove('hidden');
       }
@@ -1277,7 +1287,6 @@ const Tools = {
     }
   },
 
-  // Legacy double-click support (desktop)
   _onMapDblClick(e) {
     const tool = Tools._active;
     if (!['polygon', 'line'].includes(tool)) return;
@@ -1318,7 +1327,6 @@ const Editor = {
     if (!_drawn) return;
     _drawn.eachLayer(l => {
       if (l._lid === id && l._ldata) { found = l; return; }
-      // LayerGroup (arrows): check sub-layers
       if (l instanceof L.LayerGroup) {
         l.eachLayer(sub => { if (sub._lid === id) found = l; });
       }
@@ -1342,15 +1350,12 @@ const Editor = {
   },
 
   _editCircle(layer, d) {
-    // Center move handle
     this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
       const ll = e.target.getLatLng();
       d.lat = ll.lat; d.lng = ll.lng;
       layer.setLatLng(ll);
-      // Reposition radius handle
       if (this._handles[1]) this._handles[1].setLatLng(this._radiusHandleLatLng(d));
     });
-    // Radius drag handle (east of center)
     this._addHandle(this._radiusHandleLatLng(d), this._handleIcon('#FF9500'), e => {
       const ll = e.target.getLatLng();
       d.radius = L.latLng(d.lat, d.lng).distanceTo(ll);
@@ -1365,7 +1370,6 @@ const Editor = {
 
   _editShape(layer, d) {
     const pts = d.points;
-    // One handle per vertex
     pts.forEach((pt, i) => {
       this._addHandle(pt, this._handleIcon(), e => {
         const ll = e.target.getLatLng();
@@ -1373,7 +1377,6 @@ const Editor = {
         layer.setLatLngs(pts);
       });
     });
-    // Centroid move handle
     let cx = pts.reduce((s,p) => s + p[0], 0) / pts.length;
     let cy = pts.reduce((s,p) => s + p[1], 0) / pts.length;
     let lastC = [cx, cy];
@@ -1393,14 +1396,12 @@ const Editor = {
 
   _editArrow(layerGroup, d) {
     const pts = d.points;
-    // Start (green) and end (red) handles
     pts.forEach((pt, i) => {
       const col = i === 0 ? '#34C759' : '#FF3B30';
       this._addHandle(pt, this._handleIcon(col), e => {
         const ll = e.target.getLatLng();
         pts[i] = [ll.lat, ll.lng];
         this._rebuildArrow(layerGroup, d);
-        // Update midpoint move handle
         const mIdx = pts.length;
         if (this._handles[mIdx]) {
           this._handles[mIdx].setLatLng([
@@ -1410,7 +1411,6 @@ const Editor = {
         }
       });
     });
-    // Midpoint move handle
     let lastMid = [(pts[0][0]+pts[pts.length-1][0])/2, (pts[0][1]+pts[pts.length-1][1])/2];
     this._addHandle(lastMid, this._moveIcon(), e => {
       const ll   = e.target.getLatLng();
@@ -1491,7 +1491,6 @@ const Sync = {
     const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
     if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
     
-    // First load: allow center view
     Layers.deserialize(data.state, false);
 
     _channel = _sb.channel('room:' + roomCode)
@@ -1499,13 +1498,11 @@ const Sync = {
         event: '*', schema: 'public',
         table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
       }, payload => {
-        // Handle deletion of room
         if (payload.eventType === 'DELETE') {
           toast('⚠️ Die Lage wurde von der Einsatzleitung beendet.');
           App.goHome();
           return;
         }
-        // Handle updates for viewers (pass true to ignore map view updates)
         if (payload.eventType === 'UPDATE' && _mode !== 'admin' && payload.new) {
           Layers.deserialize(payload.new.state, true);
         }
@@ -1597,7 +1594,6 @@ const App = {
     const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
     if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
     
-    // WICHTIG: Karte VOR Connect initialisieren
     this._openMap();
     await Sync.connect(_roomCode, true);
     
@@ -1619,7 +1615,6 @@ const App = {
     document.getElementById('modal-overlay').classList.remove('hidden');
     const inp = document.getElementById('join-code-input');
     inp.value = '';
-    // iOS keyboard pushes bottom-sheet off screen → center the modal when keyboard opens
     inp.onfocus = () => {
       document.getElementById('modal-overlay').style.alignItems = 'center';
     };
@@ -1636,7 +1631,6 @@ const App = {
     this.closeModal();
     _mode = 'viewer'; _roomCode = raw;
     
-    // WICHTIG: Karte VOR Connect initialisieren
     this._openMap();
     
     const ok = await Sync.connect(raw, false);
@@ -1727,7 +1721,6 @@ const App = {
   },
 
   _genCode() {
-    // 4-digit numeric code: 1000–9999
     return String(Math.floor(1000 + Math.random() * 9000));
   },
 };
@@ -1832,15 +1825,56 @@ const Search = {
         className: '', iconAnchor: [0, 8],
       }),
     }).addTo(_map);
+
+    const safeLabel = escHtml(label).replace(/'/g, "\\'");
+    this._marker.bindPopup(`
+      <div class="popup-body">
+        <div class="popup-title">${escHtml(label)}</div>
+        <div style="display:flex; gap:8px; width:100%;">
+          <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${lat}, ${lon}, '${safeLabel}')">↗️ Ab hier</button>
+          <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${lat}, ${lon}, '${safeLabel}')">↘️ Hierhin</button>
+        </div>
+      </div>
+    `, { maxWidth: 260 });
+
     _map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
     document.getElementById('search-results').classList.add('hidden');
     toast('📍 ' + label);
+    
+    // Popup nach dem automatischen Flug öffnen
+    setTimeout(() => { if (this._marker) this._marker.openPopup(); }, 1200);
   },
 };
 
 /* ── ROUTE PANEL (OSRM routing + Geolocation) ────────────────────────── */
 const RoutePanel = {
   _routeLayer: null,
+
+  open() {
+    document.getElementById('route-panel').classList.add('open');
+    const toggleBtn = document.getElementById('route-toggle-btn');
+    if (toggleBtn) toggleBtn.classList.add('active');
+  },
+
+  setupRoute(type, lat, lng, label) {
+    _map.closePopup();
+    this.open();
+    const targetId = type === 'from' ? 'route-from' : 'route-to';
+    const otherId  = type === 'from' ? 'route-to' : 'route-from';
+    
+    // Setze den geklickten Ort ein
+    const el = document.getElementById(targetId);
+    el.value = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    el.dataset.lat = lat;
+    el.dataset.lng = lng;
+
+    // Fokussiere das jeweils andere Feld, wenn es leer ist
+    const otherEl = document.getElementById(otherId);
+    if (!otherEl.value) {
+      otherEl.focus();
+      toast('📍 Bitte ' + (type === 'from' ? 'Ziel' : 'Start') + ' eingeben oder GPS nutzen');
+    }
+  },
 
   toggle() {
     const panel = document.getElementById('route-panel');
