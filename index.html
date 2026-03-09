@@ -61,9 +61,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   width:100%; max-width:460px;
 }
 #modal-overlay[style*="center"] .modal-sheet {
-  border-radius:24px;
-  margin: 16px;
-  width: calc(100% - 32px);
+  border-radius:24px; margin: 16px; width: calc(100% - 32px);
 }
 .modal-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 20px; }
 .modal-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:6px; }
@@ -1062,15 +1060,16 @@ const LiveGPS = {
   },
 
   start() {
-    if (_mode !== 'solo') {
-       this._isLive = confirm('Soll dein Standort LIVE für die Leitstelle sichtbar sein?\n\n[OK] = Ja, für alle sichtbar\n[Abbrechen] = Nein, nur privates Navi');
-    } else {
+    // SOLO Modus: Offline Navi
+    if (_mode === 'solo') {
        this._isLive = false;
-    }
-
-    if (this._isLive) {
-       let ruf = prompt('Dein Rufname (z. B. H1131):');
-       if (!ruf) return; // Cancel
+       toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
+    } else {
+       // LAGE Modus: Zwanghaftes Teilen!
+       this._isLive = true;
+       let ruf = prompt('Lage-Modus aktiv! Dein Live-Standort wird mit der Leitstelle geteilt.\n\nBitte Rufnamen eingeben (z. B. H1131):');
+       if (!ruf) return; // Cancel if no name is provided
+       
        ruf = ruf.trim().toUpperCase();
        
        let alreadyLive = false;
@@ -1081,7 +1080,8 @@ const LiveGPS = {
        }
        _myRuf = ruf;
 
-       if (_mode === 'admin' || _mode === 'solo') {
+       // Entferne eigenen statischen Marker (falls Admin sich selbst live schaltet)
+       if (_mode === 'admin') {
          let duplicateId = null;
          if (_drawn) {
             _drawn.eachLayer(l => {
@@ -1125,7 +1125,7 @@ const LiveGPS = {
           this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
           this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
           _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
-          toast(`✅ GPS aktiv. (${this._isLive ? 'Wird für alle gesendet' : 'Privates Navi'})`);
+          toast(`✅ GPS aktiv. (${this._isLive ? 'Wird an Leitstelle gesendet' : 'Privates Navi'})`);
         } else {
           this._marker.setLatLng([lat, lng]);
           this._marker.setIcon(myIcon);
