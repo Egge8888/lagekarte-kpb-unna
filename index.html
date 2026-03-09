@@ -145,12 +145,14 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* ── TOOLBAR ─────────────────────────────────────────── */
 #toolbar {
   position:fixed; left:12px; top:50%; transform:translateY(calc(-50% + 26px));
-  z-index:200; display:flex; flex-direction:column; gap:3px;
-  background:var(--glass); backdrop-filter:blur(20px);
+  z-index:1000; display:flex; flex-direction:column; gap:3px;
+  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
   border:1px solid var(--sep); border-radius:18px; padding:7px 6px;
-  box-shadow:var(--shadow);
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
   max-height:calc(100vh - 72px); overflow-y:auto; overflow-x:hidden;
 }
+.dark #toolbar { background:rgba(44,44,46,.97); }
+
 .tool-btn {
   width:40px; height:40px; border-radius:11px; border:none;
   background:transparent; cursor:pointer; font-size:18px;
@@ -166,11 +168,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 /* ── COLOR PICKER ────────────────────────────────────── */
 #color-picker {
-  position:fixed; left:64px; top:50%; transform:translateY(calc(-50% + 26px));
-  z-index:201; background:var(--glass); backdrop-filter:blur(20px);
+  position:fixed; left:66px; top:50%; transform:translateY(calc(-50% + 26px));
+  z-index:1001; background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
   border:1px solid var(--sep); border-radius:14px; padding:10px;
-  box-shadow:var(--shadow); display:flex; flex-direction:column; gap:6px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:6px;
 }
+.dark #color-picker { background:rgba(44,44,46,.97); }
 #color-picker.hidden { display:none; }
 .color-dot {
   width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent;
