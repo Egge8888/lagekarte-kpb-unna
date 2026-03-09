@@ -140,6 +140,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .dark #toolbar { background:rgba(44,44,46,.97); }
 
+/* Viewer Mode: Hide all admin tools */
+#toolbar.viewer-mode .admin-only { display: none !important; }
+
 .tool-btn {
   width:40px; height:40px; border-radius:11px; border:none;
   background:transparent; cursor:pointer; font-size:18px;
@@ -416,9 +419,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     height: auto; min-height: 52px;
     gap: 5px; padding-left: 10px; padding-right: 10px;
   }
-  /* Room-Code kleiner, damit er neben dem Badge passt */
   #room-code-display { font-size:14px; letter-spacing:2px; padding:4px 8px; }
-  /* Header-Buttons kompakter */
   .header-btn { width:32px; height:32px; font-size:14px; }
   #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
 
@@ -449,9 +450,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  /* Buttons in der horizontalen Toolbar etwas größer = leichter zu tippen */
   .tool-btn { width: 46px; height: 48px; font-size: 21px; flex-shrink: 0; }
-  /* Trennlinien werden vertikal */
   .tool-divider { width: 1px; height: 28px; margin: auto 2px; flex-shrink: 0; }
 
   /* ── Color Picker: links über der Toolbar ────────────── */
@@ -481,8 +480,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
   }
 
-  /* ── Route Panel: höhere z-index als Toolbar (1002>1000) */
-  /* → Öffnet sich vor der Toolbar, nicht dahinter ──────── */
   #route-panel { z-index: 1002; }
 
   /* ── Landing: etwas kompakter ───────────────────────── */
@@ -517,7 +514,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="landing-divider">── oder ──</div>
     <button class="btn btn-secondary" onclick="App.showPinModal()">🔴&nbsp; Lage starten &nbsp;<span style="font-size:11px;opacity:.7">(Leitstelle)</span></button>
     <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
-    <button class="btn btn-ghost" onclick="App.toggleDark()">🌙 Darkmode</button>
   </div>
 </div>
 
@@ -535,6 +531,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="modal-actions">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
       <button class="btn btn-primary" onclick="App.checkPin()">✓&nbsp; Bestätigen</button>
+    </div>
+    <div style="margin-top:24px; text-align:center;">
+      <button class="btn btn-ghost" style="color:var(--red); width:100%;" onclick="App.masterReset()">⚠️ Alle Lagen im System löschen</button>
     </div>
   </div>
   <div class="modal-sheet hidden" id="modal-join">
@@ -578,27 +577,36 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div id="map" style="flex:1;"></div>
 
   <div id="toolbar">
-    <button class="tool-btn" data-tool="tatort"  onclick="Tools.toggle('tatort')"  title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
-    <button class="tool-btn" data-tool="gefahr"  onclick="Tools.toggle('gefahr')"  title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
-    <button class="tool-btn" data-tool="ksst"    onclick="Tools.toggle('ksst')"    title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
-    <button class="tool-btn" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
-    <button class="tool-btn" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
-    <button class="tool-btn" data-tool="pin"     onclick="Tools.toggle('pin')"     title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
-    <button class="tool-btn" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeugpool"><span>🚗</span><span class="tool-label">Fahrzeuge</span></button>
-    <div class="tool-divider"></div>
-    <button class="tool-btn" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
-    <button class="tool-btn" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
-    <button class="tool-btn" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
-    <button class="tool-btn" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
-    <button class="tool-btn" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil (2 Punkte)"><span>➡️</span><span class="tool-label">Pfeil</span></button>
-    <div class="tool-divider"></div>
-    <button class="tool-btn" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
-    <button class="tool-btn"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
-    <div class="tool-divider"></div>
+    <button class="tool-btn admin-only" data-tool="tatort"  onclick="Tools.toggle('tatort')"  title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+    <button class="tool-btn admin-only" data-tool="gefahr"  onclick="Tools.toggle('gefahr')"  title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+    <button class="tool-btn admin-only" data-tool="ksst"    onclick="Tools.toggle('ksst')"    title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
+    <button class="tool-btn admin-only" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
+    <button class="tool-btn admin-only" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
+    <button class="tool-btn admin-only" data-tool="pin"     onclick="Tools.toggle('pin')"     title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
+    <button class="tool-btn admin-only" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeugpool"><span>🚗</span><span class="tool-label">Fahrzeuge</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
+    <button class="tool-btn admin-only" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
+    <button class="tool-btn admin-only" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
+    <button class="tool-btn admin-only" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+    <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil (2 Punkte)"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
+    <button class="tool-btn admin-only"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
     <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
     <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
-    <div class="tool-divider"></div>
-    <button class="tool-btn" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
+    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.toggle()" title="Live Standort"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
   </div>
 
   <div id="color-picker" class="hidden">
@@ -755,7 +763,7 @@ function initMap() {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
     doubleClickZoom: false,
-    editable: true,        // Leaflet.Editable – enables .enableEdit() on layers
+    editable: true,
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -778,7 +786,6 @@ function initMap() {
   });
 
   osm.addTo(_map);
-  // Layer control bottom-right to avoid conflict with pool panel
   L.control.layers({
     '🗺 OpenStreetMap (Standard)': osm,
     '🛩 Luftbild NRW (DOP)':       dop,
@@ -788,7 +795,6 @@ function initMap() {
 
   _drawn = L.featureGroup().addTo(_map);
 
-  // Rescale unit icons on zoom
   _map.on('zoomend', () => {
     const z = _map.getZoom();
     _drawn.eachLayer(l => {
@@ -822,7 +828,6 @@ const Icons = {
   },
 
   ksst() {
-    // Distinct orange badge for Kräftesammelstelle
     return L.divIcon({
       html: `<div class="ksst-marker">
         <div class="ksst-icon">🔶</div>
@@ -834,8 +839,8 @@ const Icons = {
 
   unit(ruf, zoom) {
     const z   = Math.max(12, Math.min(19, zoom ?? 15));
-    const px  = Math.round(10 + (z - 12) * 4.5);   // 10px@z12 → 45px@z19
-    const lx  = Math.min(Math.round(px * 0.48), 13); // cap label at 13px
+    const px  = Math.round(10 + (z - 12) * 4.5);   
+    const lx  = Math.min(Math.round(px * 0.48), 13); 
     const emoji = detectVehicleIcon(ruf);
     const cls   = detectVehicleClass(ruf);
     const dgl   = isDGL(ruf);
@@ -926,7 +931,6 @@ const Layers = {
       });
     }
     
-    // Allen das Popup hinzufügen, egal ob Admin oder Zuschauer
     this._addPopup(layer, d, isAdmin);
 
     if (d.type === 'arrow') {
@@ -995,7 +999,6 @@ const Layers = {
       </div>`, { maxWidth: 260 });
   },
 
-  // Delegate to custom Editor module
   editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
@@ -1017,6 +1020,56 @@ const Layers = {
   },
 };
 
+/* ── LIVE GPS TRACKING ───────────────────────────────────────────────── */
+const LiveGPS = {
+  _watchId: null,
+  _marker: null,
+  _circle: null,
+
+  toggle() {
+    if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
+    const btn = document.getElementById('gps-toggle-btn');
+    
+    if (this._watchId) {
+      // Ausschalten
+      navigator.geolocation.clearWatch(this._watchId);
+      this._watchId = null;
+      if (this._marker) _map.removeLayer(this._marker);
+      if (this._circle) _map.removeLayer(this._circle);
+      this._marker = null; this._circle = null;
+      btn.classList.remove('active');
+      toast('🛰️ Live-Standort deaktiviert');
+    } else {
+      // Einschalten
+      btn.classList.add('active');
+      toast('🛰️ Suche Live-Standort...');
+      this._watchId = navigator.geolocation.watchPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const acc = pos.coords.accuracy;
+
+          if (!this._marker) {
+            this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1 }).addTo(_map);
+            this._marker = L.circleMarker([lat, lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#007AFF', fillOpacity: 1 }).addTo(_map);
+            _map.setView([lat, lng], Math.max(_map.getZoom(), 15));
+            toast('✅ GPS-Signal gefunden');
+          } else {
+            this._marker.setLatLng([lat, lng]);
+            this._circle.setLatLng([lat, lng]);
+            this._circle.setRadius(acc);
+          }
+        },
+        err => {
+          console.warn(err);
+          toast('❌ GPS-Signal verloren oder verweigert');
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+      );
+    }
+  }
+};
+
 /* ── VEHICLE POOL ────────────────────────────────────────────────────── */
 const Pool = {
   _vehicles: [],
@@ -1033,7 +1086,6 @@ const Pool = {
 
   toggle() {
     if (_mode === 'viewer') return;
-    // Cancel pending placement
     if (this._placingFromPool) {
       this._placingFromPool = false;
       Tools._active = null;
@@ -1196,7 +1248,6 @@ const Tools = {
     const { lat, lng } = e.latlng;
     const tool = Tools._active;
 
-    // ── Tactical single-click markers ──────────────────────────────────
     if (['tatort', 'gefahr', 'ksst', 'el', 'posten', 'pin'].includes(tool)) {
       const d = { id: Layers.uid(), type: tool, lat, lng };
       Layers.render(d, true);
@@ -1205,7 +1256,6 @@ const Tools = {
       return;
     }
 
-    // ── Einheit (vehicle from pool) ────────────────────────────────────
     if (tool === 'einheit' && Tools._pendingRuf) {
       const ruf = Tools._pendingRuf;
       const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf };
@@ -1218,13 +1268,11 @@ const Tools = {
       return;
     }
 
-    // ── Text ───────────────────────────────────────────────────────────
     if (tool === 'text') {
       TextInput.show(lat, lng);
       return;
     }
 
-    // ── Circle: click center → prompt for radius ───────────────────────
     if (tool === 'circle') {
       const rStr = prompt('Radius in Metern eingeben:', '200');
       if (rStr === null) return;
@@ -1237,7 +1285,6 @@ const Tools = {
       return;
     }
 
-    // ── Measure ────────────────────────────────────────────────────────
     if (tool === 'measure') {
       if (Tools._drawPoints.length === 0) {
         Tools._drawPoints = [[lat, lng]];
@@ -1254,7 +1301,6 @@ const Tools = {
       return;
     }
 
-    // ── Arrow: exactly 2 clicks ────────────────────────────────────────
     if (tool === 'arrow') {
       if (Tools._drawPoints.length === 0) {
         Tools._drawPoints = [[lat, lng]];
@@ -1271,7 +1317,6 @@ const Tools = {
       return;
     }
 
-    // ── Polygon / Line: multi-click + finish button ────────────────────
     if (['polygon', 'line'].includes(tool)) {
       Tools._drawPoints.push([lat, lng]);
       if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
@@ -1551,13 +1596,15 @@ const App = {
     Pool.load();
     const saved = localStorage.getItem('lagekarte_solo');
     if (saved) { try { Layers.deserialize(JSON.parse(saved)); } catch(e) {} }
+    
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.remove('viewer-mode');
     document.getElementById('mode-badge').className = 'solo';
     document.getElementById('mode-badge').textContent = 'SOLO';
     document.getElementById('room-code-display').classList.add('hidden');
     document.getElementById('viewer-count').classList.add('hidden');
     document.getElementById('live-dot').classList.add('off');
     document.getElementById('end-btn').classList.add('hidden');
-    document.getElementById('toolbar').style.display = 'flex';
     document.getElementById('viewer-hint').classList.add('hidden');
   },
 
@@ -1598,14 +1645,34 @@ const App = {
     await Sync.connect(_roomCode, true);
     
     Pool.load();
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.remove('viewer-mode');
     document.getElementById('mode-badge').className = 'admin';
     document.getElementById('mode-badge').textContent = 'ADMIN';
     const rc = document.getElementById('room-code-display');
     rc.textContent = _roomCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.remove('hidden');
-    document.getElementById('toolbar').style.display = 'flex';
     document.getElementById('viewer-hint').classList.add('hidden');
     toast(`✅ Lage gestartet – Code: ${_roomCode}`, 6000);
+  },
+
+  async masterReset() {
+    const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
+    if (pin !== CFG.ADMIN_PIN) {
+      toast('❌ Falscher PIN für System-Reset');
+      ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p0').focus();
+      return;
+    }
+    if (!confirm('ACHTUNG: Möchtest du wirklich ALLE aktiven Lagen auf dem Server löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!')) return;
+
+    this.closeModal();
+    toast('🔄 Bereinige Datenbank...');
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    
+    const { error } = await _sb.from('lagekarte_sessions').delete().neq('room_code', '00000000');
+    if (error) { toast('❌ Fehler beim Bereinigen'); console.error(error); }
+    else { toast('✅ System wurde komplett bereinigt'); }
   },
 
   showJoinModal() {
@@ -1639,12 +1706,13 @@ const App = {
       return; 
     }
     
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.add('viewer-mode');
     document.getElementById('mode-badge').className = 'viewer';
     document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
     const rc = document.getElementById('room-code-display');
     rc.textContent = _roomCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.add('hidden');
-    document.getElementById('toolbar').style.display = 'none';
     document.getElementById('pool-panel').classList.add('hidden');
     document.getElementById('viewer-hint').classList.remove('hidden');
     toast(`👁 Lage ${_roomCode} beigetreten`);
@@ -1678,6 +1746,10 @@ const App = {
     Pool.close();
     Search.hide();
     RoutePanel.close();
+    
+    // GPS ausschalten, falls aktiv
+    if (LiveGPS._watchId) LiveGPS.toggle();
+    
     if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
     if (_drawn) _drawn.clearLayers();
@@ -1841,7 +1913,6 @@ const Search = {
     document.getElementById('search-results').classList.add('hidden');
     toast('📍 ' + label);
     
-    // Popup nach dem automatischen Flug öffnen
     setTimeout(() => { if (this._marker) this._marker.openPopup(); }, 1200);
   },
 };
@@ -1862,13 +1933,11 @@ const RoutePanel = {
     const targetId = type === 'from' ? 'route-from' : 'route-to';
     const otherId  = type === 'from' ? 'route-to' : 'route-from';
     
-    // Setze den geklickten Ort ein
     const el = document.getElementById(targetId);
     el.value = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     el.dataset.lat = lat;
     el.dataset.lng = lng;
 
-    // Fokussiere das jeweils andere Feld, wenn es leer ist
     const otherEl = document.getElementById(otherId);
     if (!otherEl.value) {
       otherEl.focus();
@@ -1914,14 +1983,12 @@ const RoutePanel = {
     const el   = document.getElementById(inputId);
     const text = el.value.trim();
     if (!text) return null;
-    // Stored geolocation coords
     if (el.dataset.lat && el.dataset.lng) {
       return { lat: parseFloat(el.dataset.lat), lng: parseFloat(el.dataset.lng) };
     }
-    // Plain "lat, lng" text
     const m = text.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
     if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-    // Nominatim geocoding
+    
     try {
       const url = 'https://nominatim.openstreetmap.org/search?format=json'
         + `&q=${encodeURIComponent(text)}&limit=1&countrycodes=de`;
@@ -1983,7 +2050,6 @@ const RoutePanel = {
     toast('Route gelöscht');
   },
 };
-
 
 /* ── BOOT ────────────────────────────────────────────────────────────── */
 (function boot() {
