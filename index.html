@@ -60,7 +60,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   padding:28px 24px max(40px, env(safe-area-inset-bottom));
   width:100%; max-width:460px;
 }
-/* When keyboard is open (modal centered via JS), use normal border-radius */
 #modal-overlay[style*="center"] .modal-sheet {
   border-radius:24px;
   margin: 16px;
@@ -413,7 +412,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
 
-  /* ── Header: Safe Area für Notch / Dynamic Island ─── */
   #header {
     padding-top: max(10px, env(safe-area-inset-top));
     height: auto; min-height: 52px;
@@ -423,21 +421,18 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .header-btn { width:32px; height:32px; font-size:14px; }
   #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
 
-  /* ── Pool-Panel: Top an Header anpassen ─────────────── */
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
     max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px))
                      - 72px - max(10px, env(safe-area-inset-bottom)));
   }
 
-  /* ── Search Bar: Top an Header anpassen ─────────────── */
   #search-bar {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
     width: calc(100vw - 24px);
   }
   #search-results { max-height: 40vh; }
 
-  /* ── Toolbar → horizontale Leiste unten ─────────────── */
   #toolbar {
     left: 0; right: 0; top: auto; bottom: 0;
     transform: none;
@@ -453,7 +448,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .tool-btn { width: 46px; height: 48px; font-size: 21px; flex-shrink: 0; }
   .tool-divider { width: 1px; height: 28px; margin: auto 2px; flex-shrink: 0; }
 
-  /* ── Color Picker: links über der Toolbar ────────────── */
   #color-picker {
     left: 8px; top: auto;
     bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));
@@ -462,12 +456,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     max-width: calc(100vw - 16px);
   }
 
-  /* ── Draw-Finish Button: über der Toolbar ────────────── */
   #draw-finish-btn {
     bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
   }
 
-  /* ── Toast: oben (unter Header) – kein Konflikt mit Toolbar */
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px));
     bottom: auto;
@@ -475,23 +467,17 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* ── Viewer Hint: über der Toolbar ──────────────────── */
   #viewer-hint {
     bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
   }
 
   #route-panel { z-index: 1002; }
 
-  /* ── Landing: etwas kompakter ───────────────────────── */
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
   .landing-title { font-size: 22px; }
 }
 
-/* ══════════════════════════════════════════════════════════
-   TABLET  768 – 1023 px  (iPad)
-   Toolbar bleibt links, aber etwas kompakter.
-   ══════════════════════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1023px) {
   .tool-btn { width: 38px; height: 38px; font-size: 17px; }
   #toolbar { gap: 2px; padding: 5px 4px; }
@@ -720,15 +706,17 @@ const CFG = {
 };
 
 /* ── GLOBAL STATE ────────────────────────────────────────────────────── */
-let _mode      = null;   // 'solo' | 'admin' | 'viewer'
-let _roomCode  = null;
-let _sb        = null;
-let _channel   = null;
-let _map       = null;
-let _drawn     = null;   // L.featureGroup for all tactical layers
-let _history   = [];
-let _isDark    = false;
-let _syncTimer = null;
+let _mode         = null;   // 'solo' | 'admin' | 'viewer'
+let _roomCode     = null;
+let _sb           = null;
+let _channel      = null;
+let _map          = null;
+let _drawn        = null;   // Layer for tactical markers
+let _liveGpsLayer = null;   // Layer for live broadcasted GPS markers
+let _myRuf        = null;   // User's own callsign for live GPS
+let _history      = [];
+let _isDark       = false;
+let _syncTimer    = null;
 
 /* ── VEHICLE TYPE HELPERS ────────────────────────────────────────────── */
 function detectVehicleIcon(ruf) {
@@ -739,17 +727,17 @@ function detectVehicleIcon(ruf) {
   if (/^RTW/.test(r))                 return '🚑';  // Rettungswagen
   if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  // Kriminalwache (zivil)
   if (/^H/.test(r))                   return '🚔';  // Standard Polizei (H-Kennung)
-  return '🚓';                                       // Fremdkräfte (alles ohne H) – Polizei, aber kein H
+  return '🚓';                                       // Fremdkräfte
 }
 
 function detectVehicleClass(ruf) {
   if (!ruf) return '';
   const r = ruf.trim().toUpperCase();
-  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '';           // Helikopter – kein Label
-  if (/\bFW\b/.test(r) || /^RTW/.test(r)) return '';      // FW/RTW – kein Label
-  if (/21$/.test(r))                  return 'dgl';        // Führungskraft (endet auf 21)
-  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';      // Kriminalwache
-  if (!/^H/.test(r))                  return 'fremd';      // Fremdkräfte: kein H am Anfang
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '';           
+  if (/\bFW\b/.test(r) || /^RTW/.test(r)) return '';      
+  if (/21$/.test(r))                  return 'dgl';        
+  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';      
+  if (!/^H/.test(r))                  return 'fremd';      
   return '';
 }
 
@@ -794,6 +782,7 @@ function initMap() {
   }, {}, { position: 'bottomright' }).addTo(_map);
 
   _drawn = L.featureGroup().addTo(_map);
+  _liveGpsLayer = L.featureGroup().addTo(_map); // Layer für alle geteilten Live-Standorte
 
   _map.on('zoomend', () => {
     const z = _map.getZoom();
@@ -802,6 +791,11 @@ function initMap() {
         l.setIcon(Icons.unit(l._ldata.ruf, z));
       }
     });
+    if (_liveGpsLayer) {
+      _liveGpsLayer.eachLayer(l => {
+        if (l._ruf) l.setIcon(Icons.unit(l._ruf, z, true));
+      });
+    }
   });
 }
 
@@ -837,7 +831,7 @@ const Icons = {
     });
   },
 
-  unit(ruf, zoom) {
+  unit(ruf, zoom, isLive = false) {
     const z   = Math.max(12, Math.min(19, zoom ?? 15));
     const px  = Math.round(10 + (z - 12) * 4.5);   
     const lx  = Math.min(Math.round(px * 0.48), 13); 
@@ -847,8 +841,15 @@ const Icons = {
     const star  = dgl
       ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>`
       : '';
+      
+    // Live Indicator (Pulsierender grüner Punkt)
+    const liveBadge = isLive 
+      ? `<div style="position:absolute;top:-4px;right:-8px;width:12px;height:12px;background:var(--green);border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);animation:pulse 1.5s infinite;z-index:10"></div>` 
+      : '';
+
     return L.divIcon({
-      html: `<div class="unit-marker-wrap">
+      html: `<div class="unit-marker-wrap" style="position:relative;">
+        ${liveBadge}
         <div class="unit-icon-img" style="font-size:${px}px">${emoji}</div>
         <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px">${star}${escHtml(ruf)}</div>
       </div>`,
@@ -1020,7 +1021,7 @@ const Layers = {
   },
 };
 
-/* ── LIVE GPS TRACKING ───────────────────────────────────────────────── */
+/* ── LIVE GPS TRACKING (BROADCAST VIA PRESENCE) ──────────────────────── */
 const LiveGPS = {
   _watchId: null,
   _marker: null,
@@ -1038,9 +1039,21 @@ const LiveGPS = {
       if (this._circle) _map.removeLayer(this._circle);
       this._marker = null; this._circle = null;
       btn.classList.remove('active');
+      
+      _myRuf = null;
+      // Entferne Live-Standort aus dem Sync (Presence Update ohne lat/lng)
+      if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+      
       toast('🛰️ Live-Standort deaktiviert');
     } else {
       // Einschalten
+      let ruf = '';
+      if (_mode !== 'solo') {
+        ruf = prompt('Gib deinen Rufnamen ein (z. B. H1131), damit die Leitstelle dich live sehen kann:');
+        if (!ruf) return; // Abgebrochen
+      }
+      _myRuf = ruf ? ruf.trim().toUpperCase() : 'Ich';
+
       btn.classList.add('active');
       toast('🛰️ Suche Live-Standort...');
       this._watchId = navigator.geolocation.watchPosition(
@@ -1049,15 +1062,21 @@ const LiveGPS = {
           const lng = pos.coords.longitude;
           const acc = pos.coords.accuracy;
 
+          // Eigene Darstellung (blauer Punkt)
           if (!this._marker) {
             this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1 }).addTo(_map);
             this._marker = L.circleMarker([lat, lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#007AFF', fillOpacity: 1 }).addTo(_map);
             _map.setView([lat, lng], Math.max(_map.getZoom(), 15));
-            toast('✅ GPS-Signal gefunden');
+            toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Live auf der Karte sichtbar' : 'Nur für dich sichtbar'})`);
           } else {
             this._marker.setLatLng([lat, lng]);
             this._circle.setLatLng([lat, lng]);
             this._circle.setRadius(acc);
+          }
+          
+          // Broadcast an andere via Supabase Presence!
+          if (_channel) {
+            _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           }
         },
         err => {
@@ -1554,7 +1573,24 @@ const Sync = {
       })
       .on('presence', { event: 'sync' }, () => {
         const state = _channel.presenceState();
-        const count = Object.keys(state).length;
+        let count = 0;
+        
+        // Live GPS Layer aktualisieren
+        if (_liveGpsLayer) _liveGpsLayer.clearLayers();
+
+        for (const id in state) {
+          const p = state[id][0];
+          if (p) {
+            count++;
+            // Nur wenn jemand lat/lng hat und nicht man selbst ist, rendern
+            if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
+              const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true); // true = isLive
+              const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
+              m._ruf = p.ruf; // Fürs Re-Skalieren beim Zoomen
+            }
+          }
+        }
+
         this._viewerCount = count;
         const vc = document.getElementById('viewer-count');
         if (asAdmin && count > 1) { vc.textContent = `👁 ${count - 1}`; vc.classList.remove('hidden'); }
@@ -1562,6 +1598,7 @@ const Sync = {
       })
       .subscribe(async status => {
         if (status === 'SUBSCRIBED') {
+          // Standard-Track, ohne GPS
           await _channel.track({ mode: _mode, ts: Date.now() });
           document.getElementById('live-dot').classList.remove('off');
         }
@@ -1585,6 +1622,7 @@ const Sync = {
   disconnect() {
     if (_channel) { _sb.removeChannel(_channel); _channel = null; }
     document.getElementById('live-dot').classList.add('off');
+    if (_liveGpsLayer) _liveGpsLayer.clearLayers();
   },
 };
 
@@ -1747,12 +1785,12 @@ const App = {
     Search.hide();
     RoutePanel.close();
     
-    // GPS ausschalten, falls aktiv
     if (LiveGPS._watchId) LiveGPS.toggle();
     
     if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
     if (_drawn) _drawn.clearLayers();
+    if (_liveGpsLayer) _liveGpsLayer.clearLayers();
     _history = [];
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('landing').classList.remove('hidden');
