@@ -171,7 +171,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 /* ── DRAW FINISH BUTTON ──────────────────────────────── */
 #draw-finish-btn {
-  position:fixed; bottom:36px; left:50%; transform:translateX(-50%);
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
   z-index:1100; background:var(--green); color:#fff; border:none;
   padding:14px 28px; border-radius:18px; font-size:16px; font-weight:700;
   cursor:pointer; font-family:var(--font);
@@ -303,6 +303,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important;
 }
 
+/* ── TOOL-ACTIVE: Overlays click-through wenn Tool aktiv ─ */
+/* Ermöglicht Platzierung von EM INNERHALB von Kreisen/Flächen */
+#map.tool-active .leaflet-overlay-pane { pointer-events: none !important; }
+#map.tool-active .leaflet-marker-pane  { pointer-events: none !important; }
+
 /* ── LEAFLET OVERRIDES ───────────────────────────────── */
 .leaflet-popup-content-wrapper { border-radius:14px !important; padding:0 !important; overflow:hidden; box-shadow:var(--shadow) !important; }
 .leaflet-popup-content { margin:0 !important; }
@@ -314,9 +319,189 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .popup-btn.del  { background:rgba(255,59,48,.12); color:var(--red); }
 .popup-btn.edit { background:rgba(0,122,255,.12); color:var(--blue); }
 
+/* ── SEARCH BAR ──────────────────────────────────────── */
+#search-bar {
+  position:fixed; top:64px; left:50%; transform:translateX(-50%);
+  z-index:1000; width:min(380px, calc(100vw - 80px));
+  background:rgba(255,255,255,.97); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.18); overflow:hidden;
+}
+.dark #search-bar { background:rgba(44,44,46,.97); }
+#search-input-row { display:flex; align-items:center; gap:0; }
+#search-input {
+  flex:1; padding:12px 14px; border:none; background:transparent;
+  font-size:15px; font-family:var(--font); color:var(--txt); outline:none;
+}
+#search-input::placeholder { color:var(--txt2); }
+#search-clear-btn, #search-go-btn {
+  background:none; border:none; padding:10px 12px; cursor:pointer;
+  font-size:16px; color:var(--txt2); -webkit-tap-highlight-color:transparent;
+}
+#search-results {
+  border-top:1px solid var(--sep); max-height:220px; overflow-y:auto;
+}
+.search-result-item {
+  padding:11px 14px; cursor:pointer; font-size:13px; color:var(--txt);
+  border-bottom:1px solid var(--sep); transition:background .1s;
+  -webkit-tap-highlight-color:transparent;
+}
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover, .search-result-item:active { background:var(--bg); }
+.search-result-name { font-weight:700; margin-bottom:2px; }
+.search-result-detail { font-size:11px; color:var(--txt2); }
+#search-empty { padding:14px; text-align:center; color:var(--txt2); font-size:13px; }
+
+/* ── ROUTE PANEL ─────────────────────────────────────── */
+#route-panel {
+  position:fixed; bottom:0; left:50%; z-index:999;
+  transform:translateX(-50%) translateY(100%);
+  width:min(520px,100vw);
+  background:var(--card); backdrop-filter:blur(20px);
+  border-top:1px solid var(--sep); border-radius:20px 20px 0 0;
+  padding:8px 16px max(20px, env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,.18);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+#route-panel.open { transform:translateX(-50%) translateY(0); }
+#route-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 12px; }
+#route-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+#route-title { font-size:15px; font-weight:700; }
+#route-close-btn { background:none; border:none; color:var(--txt2); font-size:18px; cursor:pointer; padding:0 4px; }
+.route-input-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.route-dot { font-size:14px; flex-shrink:0; }
+.route-input {
+  flex:1; padding:10px 12px; border-radius:10px; border:1.5px solid var(--sep);
+  font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt);
+  outline:none;
+}
+.route-input:focus { border-color:var(--blue); }
+.route-loc-btn {
+  width:36px; height:36px; border-radius:10px; background:var(--bg);
+  border:1.5px solid var(--sep); font-size:16px; cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+#route-actions { display:flex; gap:8px; margin-top:10px; }
+#route-calc-btn {
+  flex:1; padding:12px; border-radius:12px; background:var(--blue); color:#fff;
+  border:none; font-size:15px; font-weight:700; cursor:pointer; font-family:var(--font);
+}
+#route-clear-btn {
+  padding:12px 16px; border-radius:12px; background:var(--bg); color:var(--txt2);
+  border:1.5px solid var(--sep); font-size:13px; font-weight:600; cursor:pointer;
+  font-family:var(--font);
+}
+#route-info {
+  margin-top:10px; padding:10px 12px; border-radius:10px;
+  background:var(--bg); font-size:13px; color:var(--txt2);
+  display:flex; gap:16px; align-items:center;
+}
+#route-info.hidden { display:none; }
+.route-stat { display:flex; flex-direction:column; align-items:center; }
+.route-stat-val { font-size:18px; font-weight:800; color:var(--txt); }
+.route-stat-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE LAYOUT  ≤ 767 px  (iPhone / kleines Tablet)
+   Toolbar wird zur horizontalen Leiste am unteren Rand.
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── Header: Safe Area für Notch / Dynamic Island ─── */
+  #header {
+    padding-top: max(10px, env(safe-area-inset-top));
+    height: auto; min-height: 52px;
+    gap: 5px; padding-left: 10px; padding-right: 10px;
+  }
+  /* Room-Code kleiner, damit er neben dem Badge passt */
+  #room-code-display { font-size:14px; letter-spacing:2px; padding:4px 8px; }
+  /* Header-Buttons kompakter */
+  .header-btn { width:32px; height:32px; font-size:14px; }
+  #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
+
+  /* ── Pool-Panel: Top an Header anpassen ─────────────── */
+  #pool-panel {
+    top: max(64px, calc(env(safe-area-inset-top) + 54px));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px))
+                     - 72px - max(10px, env(safe-area-inset-bottom)));
+  }
+
+  /* ── Search Bar: Top an Header anpassen ─────────────── */
+  #search-bar {
+    top: max(64px, calc(env(safe-area-inset-top) + 54px));
+    width: calc(100vw - 24px);
+  }
+  #search-results { max-height: 40vh; }
+
+  /* ── Toolbar → horizontale Leiste unten ─────────────── */
+  #toolbar {
+    left: 0; right: 0; top: auto; bottom: 0;
+    transform: none;
+    flex-direction: row;
+    width: 100%; max-height: none;
+    overflow-x: auto; overflow-y: hidden;
+    border-radius: 16px 16px 0 0;
+    padding: 6px 6px max(10px, env(safe-area-inset-bottom));
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  #toolbar::-webkit-scrollbar { display: none; }
+  /* Buttons in der horizontalen Toolbar etwas größer = leichter zu tippen */
+  .tool-btn { width: 46px; height: 48px; font-size: 21px; flex-shrink: 0; }
+  /* Trennlinien werden vertikal */
+  .tool-divider { width: 1px; height: 28px; margin: auto 2px; flex-shrink: 0; }
+
+  /* ── Color Picker: links über der Toolbar ────────────── */
+  #color-picker {
+    left: 8px; top: auto;
+    bottom: calc(64px + max(10px, env(safe-area-inset-bottom)));
+    transform: none;
+    flex-direction: row; flex-wrap: wrap;
+    max-width: calc(100vw - 16px);
+  }
+
+  /* ── Draw-Finish Button: über der Toolbar ────────────── */
+  #draw-finish-btn {
+    bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
+  }
+
+  /* ── Toast: oben (unter Header) – kein Konflikt mit Toolbar */
+  #toast {
+    top: max(62px, calc(env(safe-area-inset-top) + 58px));
+    bottom: auto;
+    transform: translateX(-50%) translateY(-16px);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Viewer Hint: über der Toolbar ──────────────────── */
+  #viewer-hint {
+    bottom: calc(72px + max(10px, env(safe-area-inset-bottom)));
+  }
+
+  /* ── Route Panel: höhere z-index als Toolbar (1002>1000) */
+  /* → Öffnet sich vor der Toolbar, nicht dahinter ──────── */
+  #route-panel { z-index: 1002; }
+
+  /* ── Landing: etwas kompakter ───────────────────────── */
+  .landing-inner { padding: 24px 20px; gap: 10px; }
+  .landing-logo { font-size: 56px; margin-bottom: 4px; }
+  .landing-title { font-size: 22px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLET  768 – 1023 px  (iPad)
+   Toolbar bleibt links, aber etwas kompakter.
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tool-btn { width: 38px; height: 38px; font-size: 17px; }
+  #toolbar { gap: 2px; padding: 5px 4px; }
+}
+
 @media print {
-  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#draw-finish-btn { display:none !important; }
+  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#draw-finish-btn,#search-bar,#route-panel { display:none !important; }
   #map { position:fixed !important; inset:0 !important; }
 }
 </style>
@@ -417,6 +602,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="tool-divider"></div>
     <button class="tool-btn" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
     <button class="tool-btn"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
+    <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
   </div>
 
   <!-- Color Picker (for circle/polygon/line/arrow) -->
@@ -449,6 +639,70 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   <!-- Viewer hint -->
   <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
+
+  <!-- Search Bar (floating top-center) -->
+  <div id="search-bar" class="hidden">
+    <div id="search-input-row">
+      <input id="search-input" type="text" placeholder="Ort suchen …"
+             autocomplete="off" inputmode="search"
+             onkeydown="if(event.key==='Enter')Search.go()"
+             oninput="Search.onInput()"/>
+      <button id="search-clear-btn" onclick="Search.clear()" title="Löschen">✕</button>
+      <button id="search-go-btn"   onclick="Search.go()"    title="Suchen">↩</button>
+    </div>
+    <div id="search-results" class="hidden"></div>
+  </div>
+
+  <!-- Text Input Modal (multi-line) -->
+  <div id="text-modal" class="hidden" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;">
+    <div style="background:var(--card);border-radius:22px;width:100%;max-width:440px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;">📝 Text eingeben</div>
+      <textarea id="text-modal-area" rows="4"
+        style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--sep);font-size:15px;font-family:var(--font);background:var(--bg);color:var(--txt);outline:none;resize:vertical;line-height:1.5;box-sizing:border-box;"
+        placeholder="Text eingeben… (Enter = neue Zeile)"
+        onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();TextInput.submit();}"></textarea>
+      <div style="font-size:11px;color:var(--txt2);margin-top:6px;margin-bottom:16px;">Enter = neue Zeile &nbsp;·&nbsp; Ctrl+Enter = bestätigen</div>
+      <div style="display:flex;gap:12px;">
+        <button onclick="TextInput.hide()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--sep);background:var(--bg);color:var(--txt);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;">Abbrechen</button>
+        <button onclick="TextInput.submit()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;">✓ Platzieren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Route Panel (bottom sheet) -->
+  <div id="route-panel">
+    <div id="route-handle"></div>
+    <div id="route-header">
+      <span id="route-title">🛣 Routenplanung</span>
+      <button id="route-close-btn" onclick="RoutePanel.close()">✕</button>
+    </div>
+    <div class="route-input-row">
+      <span class="route-dot">🟢</span>
+      <input class="route-input" id="route-from" type="text"
+             placeholder="Start (Adresse oder Ort)" autocomplete="off"/>
+      <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('from')" title="Mein Standort">📍</button>
+    </div>
+    <div class="route-input-row">
+      <span class="route-dot">🔴</span>
+      <input class="route-input" id="route-to" type="text"
+             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"/>
+      <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('to')" title="Mein Standort">📍</button>
+    </div>
+    <div id="route-actions">
+      <button id="route-calc-btn"  onclick="RoutePanel.calc()">🗺 Route berechnen</button>
+      <button id="route-clear-btn" onclick="RoutePanel.clearRoute()">Löschen</button>
+    </div>
+    <div id="route-info" class="hidden">
+      <div class="route-stat">
+        <div class="route-stat-val" id="route-dist">–</div>
+        <div class="route-stat-lbl">Distanz</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-stat-val" id="route-time">–</div>
+        <div class="route-stat-lbl">Fahrzeit</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -489,21 +743,22 @@ let _syncTimer = null;
 function detectVehicleIcon(ruf) {
   if (!ruf) return '🚔';
   const r = ruf.trim().toUpperCase();
-  if (/^HUMMEL|^CHRISTOPH/i.test(r))  return '🚁';  // Hubschrauber
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '🚁';  // Hubschrauber
   if (/\bFW\b/.test(r))               return '🚒';  // Feuerwehr
   if (/^RTW/.test(r))                 return '🚑';  // Rettungswagen
   if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  // Kriminalwache (zivil)
-  if (/^U\d/.test(r))                 return '🚗';  // Fremdkräfte
-  return '🚔';                                       // Standard Polizei
+  if (/^H/.test(r))                   return '🚔';  // Standard Polizei (H-Kennung)
+  return '🚓';                                       // Fremdkräfte (alles ohne H) – Polizei, aber kein H
 }
 
 function detectVehicleClass(ruf) {
   if (!ruf) return '';
   const r = ruf.trim().toUpperCase();
-  if (/^HUMMEL|^CHRISTOPH/i.test(r))  return '';
-  if (/21$/.test(r))                  return 'dgl';
-  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';
-  if (/^U\d/.test(r))                 return 'fremd';
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '';           // Helikopter – kein Label
+  if (/\bFW\b/.test(r) || /^RTW/.test(r)) return '';      // FW/RTW – kein Label
+  if (/21$/.test(r))                  return 'dgl';        // Führungskraft (endet auf 21)
+  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';      // Kriminalwache
+  if (!/^H/.test(r))                  return 'fremd';      // Fremdkräfte: kein H am Anfang
   return '';
 }
 
@@ -596,7 +851,7 @@ const Icons = {
   unit(ruf, zoom) {
     const z   = Math.max(12, Math.min(19, zoom ?? 15));
     const px  = Math.round(10 + (z - 12) * 4.5);   // 10px@z12 → 45px@z19
-    const lx  = Math.round(px * 0.48);
+    const lx  = Math.min(Math.round(px * 0.48), 13); // cap label at 13px
     const emoji = detectVehicleIcon(ruf);
     const cls   = detectVehicleClass(ruf);
     const dgl   = isDGL(ruf);
@@ -614,7 +869,7 @@ const Icons = {
 
   text(txt) {
     return L.divIcon({
-      html: `<div style="font-size:13px;font-weight:700;color:#000;text-shadow:0 1px 3px rgba(255,255,255,.8);white-space:nowrap;font-family:-apple-system,sans-serif;">${escHtml(txt)}</div>`,
+      html: `<div style="font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:4px 9px;border-radius:8px;white-space:pre-line;font-family:-apple-system,sans-serif;line-height:1.4;max-width:220px;word-wrap:break-word;box-shadow:0 2px 8px rgba(0,0,0,.3);">${escHtml(txt)}</div>`,
       className: '', iconAnchor: [0, 8],
     });
   },
@@ -700,12 +955,14 @@ const Layers = {
     const pts = d.points;
     const a   = pts[pts.length - 2];
     const b   = pts[pts.length - 1];
+    // angle: bearing from north (clockwise), correct for CSS rotate on upward-pointing triangle
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
-    const line  = L.polyline(pts, { color: d.color, weight: 3.5 });
+    const line  = L.polyline(pts, { color: d.color, weight: 4 });
+    const esc   = d.color.replace(/"/g, '');
     const head  = L.marker(b, {
       icon: L.divIcon({
-        html: `<div style="transform:rotate(${angle - 90}deg);color:${d.color};font-size:24px;line-height:1;margin-left:-12px;margin-top:-12px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">▲</div>`,
-        className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+        html: `<div style="transform:rotate(${angle}deg);transform-origin:50% 50%;width:22px;height:22px;"><svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg"><polygon points="11,1 21,20 1,20" fill="${esc}" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg></div>`,
+        className: '', iconSize: [22, 22], iconAnchor: [11, 11],
       }),
     });
     return L.layerGroup([line, head]);
@@ -718,10 +975,10 @@ const Layers = {
     const radiusInfo = d.type === 'circle'
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
-    // Edit button only for resizable/reshapeable shapes
-    const canEdit = ['circle','polyline','polygon'].includes(d.type);
+    // Edit button for all reshapeable elements (custom Editor handles)
+    const canEdit = ['circle','polyline','polygon','arrow'].includes(d.type);
     const editBtn = canEdit
-      ? `<button class="popup-btn edit" onclick="Layers.editLayer('${d.id}')">✏️ Bearbeiten</button>`
+      ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
       : '';
     layer.bindPopup(`
       <div class="popup-body">
@@ -734,47 +991,8 @@ const Layers = {
       </div>`, { maxWidth: 260 });
   },
 
-  // Enable vertex/radius editing via Leaflet.Editable
-  editLayer(id) {
-    let found = null;
-    _drawn.eachLayer(l => { if (l._lid === id && l._ldata) found = l; });
-    if (!found) return;
-    _map.closePopup();
-    const d = found._ldata;
-    try { found.enableEdit(); } catch(e) { toast('⚠️ Bearbeitung nicht möglich'); return; }
-    toast('✏️ Punkte ziehen · dann „✓ Fertig" drücken');
-
-    const finBtn = document.getElementById('draw-finish-btn');
-    finBtn.textContent = '✓ Bearbeitung speichern';
-    finBtn.classList.remove('hidden');
-
-    // Temporarily override finishDraw
-    Tools._editingLayer = found;
-    finBtn.onclick = () => {
-      // Persist updated geometry into _ldata
-      try {
-        if (d.type === 'circle') {
-          const ll = found.getLatLng();
-          d.lat = ll.lat; d.lng = ll.lng;
-          d.radius = found.getRadius();
-        } else if (d.type === 'polygon') {
-          const lls = found.getLatLngs();
-          // Leaflet polygon: first ring = lls[0]
-          const ring = Array.isArray(lls[0]) ? lls[0] : lls;
-          d.points = ring.map(ll => [ll.lat, ll.lng]);
-        } else if (d.type === 'polyline') {
-          d.points = found.getLatLngs().map(ll => [ll.lat, ll.lng]);
-        }
-        found.disableEdit();
-      } catch(e) { console.warn('Edit finish error:', e); }
-      finBtn.classList.add('hidden');
-      finBtn.textContent = '✓ Zeichnung abschließen';
-      finBtn.onclick = () => Tools.finishDraw();
-      Tools._editingLayer = null;
-      Sync.push();
-      toast('✅ Bearbeitung gespeichert');
-    };
-  },
+  // Delegate to custom Editor module (Leaflet.Editable no longer used)
+  editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
     _drawn.eachLayer(l => {
@@ -858,6 +1076,7 @@ const Pool = {
     Tools._active = 'einheit';
     Tools._pendingRuf = ruf;
     document.getElementById('pool-toggle-btn').classList.add('active');
+    _map.getContainer().classList.add('tool-active');
     _map.getContainer().style.cursor = 'crosshair';
     toast(`📍 ${ruf} – auf Karte tippen`);
   },
@@ -919,6 +1138,7 @@ const Tools = {
     } else if (['polygon', 'line'].includes(name)) {
       toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
     }
+    _map.getContainer().classList.add('tool-active');
     _map.getContainer().style.cursor = 'crosshair';
   },
 
@@ -926,11 +1146,8 @@ const Tools = {
     if (this._active) {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
-    // Cancel any active shape editing
-    if (this._editingLayer) {
-      try { this._editingLayer.disableEdit(); } catch(e) {}
-      this._editingLayer = null;
-    }
+    // Cancel any active shape editing (via custom Editor)
+    if (typeof Editor !== 'undefined') Editor.finish(true);
     this._active = null;
     this._pendingRuf = null;
     this._drawPoints = [];
@@ -940,6 +1157,7 @@ const Tools = {
     finBtn.classList.add('hidden');
     finBtn.textContent = '✓ Zeichnung abschließen';
     finBtn.onclick = () => Tools.finishDraw();
+    _map.getContainer().classList.remove('tool-active');
     _map.getContainer().style.cursor = '';
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
@@ -999,12 +1217,8 @@ const Tools = {
 
     // ── Text ───────────────────────────────────────────────────────────
     if (tool === 'text') {
-      const txt = prompt('Text eingeben:');
-      if (!txt || !txt.trim()) return;
-      const d = { id: Layers.uid(), type: 'text', lat, lng, text: txt.trim() };
-      Layers.render(d, true);
-      Sync.push();
-      Tools.deactivate();
+      // Show custom multi-line modal; TextInput.submit() handles placement
+      TextInput.show(lat, lng);
       return;
     }
 
@@ -1079,6 +1293,201 @@ const Tools = {
     if (!['polygon', 'line'].includes(tool)) return;
     L.DomEvent.stopPropagation(e);
     Tools.finishDraw();
+  },
+};
+
+/* ── EDITOR (custom vertex / handle editing, no Leaflet.Editable) ───── */
+const Editor = {
+  _handles: [],
+
+  _handleIcon(color) {
+    return L.divIcon({
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color||'#007AFF'};border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:grab;"></div>`,
+      className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+    });
+  },
+
+  _moveIcon() {
+    return L.divIcon({
+      html: `<div style="width:18px;height:18px;border-radius:4px;background:rgba(0,122,255,.9);color:#fff;font-size:13px;line-height:18px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:move;">✥</div>`,
+      className: '', iconSize: [18, 18], iconAnchor: [9, 9],
+    });
+  },
+
+  _addHandle(latLng, icon, onDrag) {
+    const h = L.marker(latLng, { icon: icon || this._handleIcon(), draggable: true, zIndexOffset: 1000 });
+    if (onDrag) h.on('drag', onDrag);
+    h.addTo(_map);
+    this._handles.push(h);
+    return h;
+  },
+
+  start(id) {
+    this.finish(true);
+    let found = null;
+    _drawn.eachLayer(l => {
+      if (l._lid === id && l._ldata) { found = l; return; }
+      // LayerGroup (arrows): check sub-layers
+      if (l instanceof L.LayerGroup) {
+        l.eachLayer(sub => { if (sub._lid === id) found = l; });
+      }
+    });
+    if (!found) return;
+    _map.closePopup();
+    const d = found._ldata;
+    if (!d) return;
+
+    if      (d.type === 'circle')                   this._editCircle(found, d);
+    else if (d.type === 'polygon' || d.type === 'polyline') this._editShape(found, d);
+    else if (d.type === 'arrow')                    this._editArrow(found, d);
+    else { toast('Dieses Element kann nicht bearbeitet werden'); return; }
+
+    toast('✏️ Handles ziehen · dann „✓ Speichern" drücken');
+    const finBtn = document.getElementById('draw-finish-btn');
+    finBtn.textContent = '✓ Bearbeitung speichern';
+    finBtn.classList.remove('hidden');
+    Tools._editingLayer = found;
+    finBtn.onclick = () => this.finish();
+  },
+
+  _editCircle(layer, d) {
+    // Center move handle
+    this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
+      const ll = e.target.getLatLng();
+      d.lat = ll.lat; d.lng = ll.lng;
+      layer.setLatLng(ll);
+      // Reposition radius handle
+      if (this._handles[1]) this._handles[1].setLatLng(this._radiusHandleLatLng(d));
+    });
+    // Radius drag handle (east of center)
+    this._addHandle(this._radiusHandleLatLng(d), this._handleIcon('#FF9500'), e => {
+      const ll = e.target.getLatLng();
+      d.radius = L.latLng(d.lat, d.lng).distanceTo(ll);
+      layer.setRadius(d.radius);
+    });
+  },
+
+  _radiusHandleLatLng(d) {
+    const lngOffset = d.radius / (111320 * Math.cos(d.lat * Math.PI / 180));
+    return [d.lat, d.lng + lngOffset];
+  },
+
+  _editShape(layer, d) {
+    const pts = d.points;
+    // One handle per vertex
+    pts.forEach((pt, i) => {
+      this._addHandle(pt, this._handleIcon(), e => {
+        const ll = e.target.getLatLng();
+        pts[i] = [ll.lat, ll.lng];
+        layer.setLatLngs(pts);
+      });
+    });
+    // Centroid move handle
+    let cx = pts.reduce((s,p) => s + p[0], 0) / pts.length;
+    let cy = pts.reduce((s,p) => s + p[1], 0) / pts.length;
+    let lastC = [cx, cy];
+    const vCount = pts.length;
+    this._addHandle([cx, cy], this._moveIcon(), e => {
+      const ll   = e.target.getLatLng();
+      const dlat = ll.lat - lastC[0];
+      const dlng = ll.lng - lastC[1];
+      lastC = [ll.lat, ll.lng];
+      for (let i = 0; i < pts.length; i++) {
+        pts[i] = [pts[i][0] + dlat, pts[i][1] + dlng];
+        if (this._handles[i]) this._handles[i].setLatLng(pts[i]);
+      }
+      layer.setLatLngs(pts);
+    });
+  },
+
+  _editArrow(layerGroup, d) {
+    const pts = d.points;
+    // Start (green) and end (red) handles
+    pts.forEach((pt, i) => {
+      const col = i === 0 ? '#34C759' : '#FF3B30';
+      this._addHandle(pt, this._handleIcon(col), e => {
+        const ll = e.target.getLatLng();
+        pts[i] = [ll.lat, ll.lng];
+        this._rebuildArrow(layerGroup, d);
+        // Update midpoint move handle
+        const mIdx = pts.length;
+        if (this._handles[mIdx]) {
+          this._handles[mIdx].setLatLng([
+            (pts[0][0] + pts[pts.length-1][0]) / 2,
+            (pts[0][1] + pts[pts.length-1][1]) / 2,
+          ]);
+        }
+      });
+    });
+    // Midpoint move handle
+    let lastMid = [(pts[0][0]+pts[pts.length-1][0])/2, (pts[0][1]+pts[pts.length-1][1])/2];
+    this._addHandle(lastMid, this._moveIcon(), e => {
+      const ll   = e.target.getLatLng();
+      const dlat = ll.lat - lastMid[0];
+      const dlng = ll.lng - lastMid[1];
+      lastMid = [ll.lat, ll.lng];
+      for (let i = 0; i < pts.length; i++) {
+        pts[i] = [pts[i][0] + dlat, pts[i][1] + dlng];
+        if (this._handles[i]) this._handles[i].setLatLng(pts[i]);
+      }
+      this._rebuildArrow(layerGroup, d);
+    });
+  },
+
+  _rebuildArrow(layerGroup, d) {
+    layerGroup.clearLayers();
+    const newGroup = Layers._makeArrow(d);
+    newGroup.eachLayer(l => {
+      l._lid   = d.id;
+      l._ldata = d;
+      layerGroup.addLayer(l);
+    });
+  },
+
+  finish(silent) {
+    this._handles.forEach(h => { try { _map.removeLayer(h); } catch(e) {} });
+    this._handles = [];
+    const finBtn = document.getElementById('draw-finish-btn');
+    if (finBtn) {
+      finBtn.classList.add('hidden');
+      finBtn.textContent = '✓ Zeichnung abschließen';
+      finBtn.onclick = () => Tools.finishDraw();
+    }
+    Tools._editingLayer = null;
+    if (!silent) {
+      Sync.push();
+      toast('✅ Bearbeitung gespeichert');
+    }
+  },
+};
+
+/* ── TEXT INPUT (multi-line modal) ───────────────────────────────────── */
+const TextInput = {
+  _lat: null,
+  _lng: null,
+
+  show(lat, lng) {
+    this._lat = lat;
+    this._lng = lng;
+    document.getElementById('text-modal').classList.remove('hidden');
+    const area = document.getElementById('text-modal-area');
+    area.value = '';
+    setTimeout(() => area.focus(), 120);
+  },
+
+  submit() {
+    const raw = document.getElementById('text-modal-area').value.replace(/\r\n/g, '\n');
+    this.hide();
+    if (!raw || !raw.trim()) return;
+    const txt = raw.trim();
+    const d = { id: Layers.uid(), type: 'text', lat: this._lat, lng: this._lng, text: txt };
+    Layers.render(d, true);
+    Sync.push();
+    Tools.deactivate();
+  },
+
+  hide() {
+    document.getElementById('text-modal').classList.add('hidden');
   },
 };
 
@@ -1257,7 +1666,11 @@ const App = {
 
   goHome() {
     Sync.disconnect();
+    if (typeof Editor !== 'undefined') Editor.finish(true);
+    TextInput.hide();
     Pool.close();
+    Search.hide();
+    RoutePanel.close();
     if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
     if (_drawn) _drawn.clearLayers();
@@ -1265,6 +1678,15 @@ const App = {
     document.getElementById('map-screen').classList.add('hidden');
     document.getElementById('landing').classList.remove('hidden');
     Tools.deactivate();
+  },
+
+  confirmReset() {
+    if (!confirm('Alle Elemente auf der Karte löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden.')) return;
+    if (typeof Editor !== 'undefined') Editor.finish(true);
+    _drawn.clearLayers();
+    _history = [];
+    Sync.push();
+    toast('🗑 Karte zurückgesetzt');
   },
 
   copyCode() {
@@ -1317,6 +1739,203 @@ function toast(msg, dur = 3000) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
 }
+
+/* ── SEARCH (Nominatim OSM geocoding) ────────────────────────────────── */
+const Search = {
+  _marker:   null,
+  _debounce: null,
+
+  toggle() {
+    const bar = document.getElementById('search-bar');
+    if (bar.classList.contains('hidden')) {
+      bar.classList.remove('hidden');
+      document.getElementById('search-input').focus();
+      document.getElementById('search-toggle-btn').classList.add('active');
+    } else {
+      this.hide();
+    }
+  },
+
+  hide() {
+    document.getElementById('search-bar').classList.add('hidden');
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('search-toggle-btn').classList.remove('active');
+  },
+
+  clear() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('search-input').focus();
+    if (this._marker) { _map.removeLayer(this._marker); this._marker = null; }
+  },
+
+  onInput() {
+    clearTimeout(this._debounce);
+    const q = document.getElementById('search-input').value.trim();
+    if (q.length < 3) {
+      document.getElementById('search-results').classList.add('hidden');
+      return;
+    }
+    this._debounce = setTimeout(() => this.go(), 600);
+  },
+
+  async go() {
+    const q = document.getElementById('search-input').value.trim();
+    if (!q) return;
+    const res = document.getElementById('search-results');
+    res.innerHTML = '<div id="search-empty">🔍 Suche läuft …</div>';
+    res.classList.remove('hidden');
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search?format=json'
+        + `&q=${encodeURIComponent(q)}&limit=5&countrycodes=de&addressdetails=1`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+      const data = await resp.json();
+      if (!data.length) {
+        res.innerHTML = '<div id="search-empty">Keine Ergebnisse gefunden</div>';
+        return;
+      }
+      res.innerHTML = data.map(item => {
+        const name   = item.name || item.display_name.split(',')[0];
+        const detail = item.display_name.split(',').slice(1, 3).join(',').trim();
+        return `<div class="search-result-item"
+          onclick="Search.flyTo(${item.lat},${item.lon},'${escHtml(name).replace(/'/g,'&#39;')}')">
+          <div class="search-result-name">${escHtml(name)}</div>
+          <div class="search-result-detail">${escHtml(detail)}</div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      res.innerHTML = '<div id="search-empty">⚠️ Suche fehlgeschlagen</div>';
+    }
+  },
+
+  flyTo(lat, lon, label) {
+    if (this._marker) _map.removeLayer(this._marker);
+    this._marker = L.marker([lat, lon], {
+      icon: L.divIcon({
+        html: `<div style="background:var(--blue);color:#fff;padding:4px 10px;border-radius:12px;
+          font-size:12px;font-weight:700;white-space:nowrap;
+          box-shadow:0 2px 8px rgba(0,122,255,.5);">${escHtml(label)}</div>`,
+        className: '', iconAnchor: [0, 8],
+      }),
+    }).addTo(_map);
+    _map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
+    document.getElementById('search-results').classList.add('hidden');
+    toast('📍 ' + label);
+  },
+};
+
+/* ── ROUTE PANEL (OSRM routing + Geolocation) ────────────────────────── */
+const RoutePanel = {
+  _routeLayer: null,
+
+  toggle() {
+    const panel = document.getElementById('route-panel');
+    if (panel.classList.contains('open')) {
+      this.close();
+    } else {
+      panel.classList.add('open');
+      document.getElementById('route-toggle-btn').classList.add('active');
+      setTimeout(() => document.getElementById('route-from').focus(), 300);
+    }
+  },
+
+  close() {
+    document.getElementById('route-panel').classList.remove('open');
+    document.getElementById('route-toggle-btn').classList.remove('active');
+  },
+
+  useMyLocation(field) {
+    if (!navigator.geolocation) { toast('⚠️ GPS nicht verfügbar'); return; }
+    toast('📍 Standort wird ermittelt …');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const inputId = field === 'from' ? 'route-from' : 'route-to';
+        const el = document.getElementById(inputId);
+        el.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        el.dataset.lat = lat;
+        el.dataset.lng = lng;
+        toast('✅ Standort gesetzt');
+      },
+      err => { toast('❌ Standort nicht verfügbar'); console.warn(err); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  },
+
+  async _resolve(inputId) {
+    const el   = document.getElementById(inputId);
+    const text = el.value.trim();
+    if (!text) return null;
+    // Stored geolocation coords
+    if (el.dataset.lat && el.dataset.lng) {
+      return { lat: parseFloat(el.dataset.lat), lng: parseFloat(el.dataset.lng) };
+    }
+    // Plain "lat, lng" text
+    const m = text.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    // Nominatim geocoding
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search?format=json'
+        + `&q=${encodeURIComponent(text)}&limit=1&countrycodes=de`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+      const data = await resp.json();
+      if (!data.length) return null;
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    } catch(e) { return null; }
+  },
+
+  async calc() {
+    const fromText = document.getElementById('route-from').value.trim();
+    const toText   = document.getElementById('route-to').value.trim();
+    if (!fromText || !toText) { toast('Bitte Start und Ziel eingeben'); return; }
+    toast('🔄 Route wird berechnet …');
+
+    const fromCoord = await this._resolve('route-from');
+    if (!fromCoord) { toast('❌ Start-Adresse nicht gefunden'); return; }
+    const toCoord = await this._resolve('route-to');
+    if (!toCoord)   { toast('❌ Ziel-Adresse nicht gefunden'); return; }
+
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/`
+        + `${fromCoord.lng},${fromCoord.lat};${toCoord.lng},${toCoord.lat}`
+        + `?overview=full&geometries=geojson`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data.code !== 'Ok' || !data.routes.length) { toast('❌ Route nicht gefunden'); return; }
+
+      const route   = data.routes[0];
+      const distKm  = (route.distance / 1000).toFixed(1);
+      const durMin  = Math.round(route.duration / 60);
+      const durText = durMin >= 60 ? `${Math.floor(durMin/60)}h ${durMin%60}min` : `${durMin} min`;
+
+      if (this._routeLayer) _map.removeLayer(this._routeLayer);
+      const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+      this._routeLayer = L.polyline(coords, {
+        color: '#007AFF', weight: 5, opacity: 0.85,
+      }).addTo(_map);
+      _map.fitBounds(this._routeLayer.getBounds(), { padding: [40, 60] });
+
+      document.getElementById('route-dist').textContent = distKm + ' km';
+      document.getElementById('route-time').textContent = durText;
+      document.getElementById('route-info').classList.remove('hidden');
+      toast(`✅ ${distKm} km · ${durText}`);
+    } catch(e) {
+      toast('❌ Routing-Fehler'); console.error(e);
+    }
+  },
+
+  clearRoute() {
+    if (this._routeLayer) { _map.removeLayer(this._routeLayer); this._routeLayer = null; }
+    const fromEl = document.getElementById('route-from');
+    const toEl   = document.getElementById('route-to');
+    fromEl.value = ''; toEl.value = '';
+    delete fromEl.dataset.lat; delete fromEl.dataset.lng;
+    delete toEl.dataset.lat;   delete toEl.dataset.lng;
+    document.getElementById('route-info').classList.add('hidden');
+    toast('Route gelöscht');
+  },
+};
 
 /* ── BOOT ────────────────────────────────────────────────────────────── */
 (function boot() {
