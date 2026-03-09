@@ -152,6 +152,14 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .tool-btn:active { transform:scale(.9); }
 .tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
 .tool-btn.active .tool-label { color:#fff; }
+
+/* CSS für Navigation: Wenn Map verschoben wurde (Pausiert) */
+.tool-btn.tracking-paused { 
+  box-shadow: inset 0 0 0 2px var(--blue); 
+  background: rgba(0,122,255,0.1) !important;
+}
+.tool-btn.tracking-paused .tool-label { color: var(--blue); }
+
 .tool-label { font-size:7.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
 .tool-divider { width:28px; height:1px; background:var(--sep); margin:2px auto; }
 
@@ -408,7 +416,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 85px - max(24px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 95px - max(24px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
@@ -420,26 +428,26 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
     border-radius: 16px 16px 0 0; 
-    /* Massive Padding am iOS Home Bar für Wisch-Schutz */
-    padding: 8px 8px max(24px, env(safe-area-inset-bottom));
+    /* Massive Padding unten, um versehentliches iOS-Wischen zu verhindern */
+    padding: 8px 8px max(32px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  /* Buttons größer, leichter zu tippen */
+  /* Knöpfe größer für Wurstfinger-Sicherheit im Einsatz */
   .tool-btn { width: 52px; height: 52px; font-size: 24px; flex-shrink: 0; }
   .tool-label { font-size: 8.5px; }
   .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto; bottom: calc(75px + max(24px, env(safe-area-inset-bottom)));
+    left: 8px; top: auto; bottom: calc(85px + max(32px, env(safe-area-inset-bottom)));
     transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-  #draw-finish-btn { bottom: calc(85px + max(24px, env(safe-area-inset-bottom))); }
+  #draw-finish-btn { bottom: calc(95px + max(32px, env(safe-area-inset-bottom))); }
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #viewer-hint { bottom: calc(85px + max(24px, env(safe-area-inset-bottom))); }
+  #viewer-hint { bottom: calc(95px + max(32px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
@@ -545,7 +553,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="tool-btn admin-only" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
     <button class="tool-btn admin-only" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
     <button class="tool-btn admin-only" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
-    <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil (2 Punkte)"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -556,7 +564,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     
     <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
     <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
-    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.toggle()" title="Live Standort senden"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -687,9 +695,9 @@ let _roomCode     = null;
 let _sb           = null;
 let _channel      = null;
 let _map          = null;
-let _drawn        = null;   // Layer for tactical markers
-let _liveGpsLayer = null;   // Layer for live broadcasted GPS markers
-let _myRuf        = null;   // User's own callsign for live GPS
+let _drawn        = null;   
+let _liveGpsLayer = null;   
+let _myRuf        = null;   
 let _history      = [];
 let _isDark       = false;
 let _syncTimer    = null;
@@ -727,7 +735,6 @@ function initMap() {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
     doubleClickZoom: false
-    // editable: true WURDE RESTLOS ENTFERNT! (Keine Geisterpunkte mehr)
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -785,7 +792,6 @@ const Icons = {
     pin:        { emoji: '📍', label: 'Stecknadel',    color: '#8E8E93' },
   },
 
-  // Update: Erlaubt jetzt eine kleine Beschriftung unter dem Taktik-Zeichen!
   tac(type, desc = '') {
     if (type === 'ksst') return this.ksst(desc);
     const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
@@ -838,10 +844,9 @@ const Icons = {
   },
 
   text(txt) {
-    // FIX: white-space:pre-wrap und width:max-content verhindert hässliche vertikale Stacking!
     return L.divIcon({
       html: `<div style="font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:4px 9px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:240px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
-      className: '', iconAnchor: [0, 10], // Etwas weiter oben geankert
+      className: '', iconAnchor: [0, 10], 
     });
   },
 };
@@ -860,7 +865,7 @@ const Layers = {
     if (_drawn) _drawn.clearLayers();
     _history = [];
     
-    // Security: Absturzschutz gegen manipulierte Daten
+    // Security: Absturzschutz gegen fehlerhafte Daten
     if (!state || !Array.isArray(state.layers)) return;
     
     state.layers.forEach(d => this.render(d));
@@ -875,7 +880,6 @@ const Layers = {
 
     switch (d.type) {
       case 'tatort': case 'ereignis': case 'gefahr': case 'absperrung': case 'ksst': case 'pin':
-        // Desc mit einfließen lassen
         layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type, d.desc), draggable: isAdmin });
         break;
       case 'einheit':
@@ -909,7 +913,7 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    // Pfeil-Sonderbehandlung: Die BindPopup muss an die "Line" des Pfeils gehen, damit er löschbar ist
+    // Pfeil-Popup-Handling: An die Linie heften, damit es klickbar bleibt
     const targetPopupLayer = layer._line || layer;
 
     if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text'].includes(d.type)) {
@@ -943,11 +947,9 @@ const Layers = {
     const a = pts[pts.length - 2];
     const b = pts[pts.length - 1];
     
-    // Exakte Winkelberechnung für eine bündige Pfeilspitze
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * (180 / Math.PI);
     const esc   = d.color.replace(/"/g, '');
     
-    // Pfeilspitze als echtes Vektor-Dreieck (exakt am Punkt verankert)
     const headHtml = `<div style="transform:rotate(${angle}deg); transform-origin:12px 2px; width:24px; height:24px; pointer-events:none;">
       <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <polygon points="12,2 22,22 12,17 2,22" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
@@ -956,18 +958,17 @@ const Layers = {
 
     const head = L.marker(b, {
       icon: L.divIcon({ html: headHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 2] }),
-      interactive: false // Marker blockiert Klicks auf die Linie nicht
+      interactive: false 
     });
     
     const group = L.layerGroup([line, head]);
-    group._line = line; // Referenz speichern für Popups
+    group._line = line; 
     return group;
   },
 
   _addPopup(layer, d, isAdmin) {
     if (!layer) return;
     
-    // Zeige das mitgelieferte "desc" oder den Rufnamen an
     let titleStr = d.ruf || d.text || d.desc;
     if (!titleStr) {
        titleStr = (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
@@ -991,7 +992,6 @@ const Layers = {
       </div>
     ` : '';
 
-    // Route-Buttons für Einzelpunkte
     const isPoint = d.lat !== undefined && d.lng !== undefined;
     const safeLabel = escHtml(titleStr).replace(/'/g, "\\'");
     const routeBtns = isPoint ? `
@@ -1009,6 +1009,8 @@ const Layers = {
         ${actionsHTML}
       </div>`, { maxWidth: 260 });
   },
+
+  editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
     if (!_drawn) return;
@@ -1028,90 +1030,156 @@ const Layers = {
   },
 };
 
-/* ── LIVE GPS TRACKING (BROADCAST VIA PRESENCE) ──────────────────────── */
+/* ── LIVE GPS TRACKING (Navigation & Broadcast) ──────────────────────── */
 const LiveGPS = {
   _watchId: null,
   _marker: null,
   _circle: null,
+  _following: false,
+  _isLive: false,
 
-  toggle() {
+  handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
-    const btn = document.getElementById('gps-toggle-btn');
     
-    if (this._watchId) {
-      navigator.geolocation.clearWatch(this._watchId);
-      this._watchId = null;
-      if (this._marker) _map.removeLayer(this._marker);
-      if (this._circle) _map.removeLayer(this._circle);
-      this._marker = null; this._circle = null;
-      btn.classList.remove('active');
-      
-      _myRuf = null;
-      if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
-      Pool.updateLiveList({}); 
-      
-      toast('🛰️ Live-Standort deaktiviert');
+    if (!this._watchId) {
+      this.start();
     } else {
-      let ruf = '';
-      if (_mode !== 'solo') {
-        ruf = prompt('Gib deinen Rufnamen ein (z. B. H1131), damit die Einsatzleitung dich live sehen kann:');
-        if (!ruf) return; 
+      if (!this._following) {
+         // Wieder fangen / zentrieren
+         this._following = true;
+         if (this._marker) _map.panTo(this._marker.getLatLng(), { animate: true });
+         const btn = document.getElementById('gps-toggle-btn');
+         btn.classList.add('active');
+         btn.classList.remove('tracking-paused');
+         toast('📍 Kamera zentriert. (Mitlauf-Modus aktiv)');
+      } else {
+         // Ausschalten
+         if (confirm('Navigation / GPS beenden?')) {
+            this.stop();
+         }
       }
-      ruf = ruf ? ruf.trim().toUpperCase() : 'Ich';
-
-      let alreadyLive = false;
-      if (_liveGpsLayer) {
-        _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
-      }
-      if (alreadyLive) {
-         toast(`❌ ${ruf} ist bereits auf der Karte live!`);
-         return;
-      }
-      
-      _myRuf = ruf;
-
-      if (_mode === 'admin' || _mode === 'solo') {
-        let duplicateId = null;
-        if (_drawn) {
-           _drawn.eachLayer(l => {
-             if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
-           });
-        }
-        if (duplicateId) Layers.deleteById(duplicateId);
-      }
-
-      btn.classList.add('active');
-      toast('🛰️ Suche GPS-Signal...');
-      
-      this._watchId = navigator.geolocation.watchPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const acc = pos.coords.accuracy;
-
-          if (!this._marker) {
-            this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1 }).addTo(_map);
-            this._marker = L.circleMarker([lat, lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#007AFF', fillOpacity: 1 }).addTo(_map);
-            _map.setView([lat, lng], Math.max(_map.getZoom(), 15));
-            toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Wird für alle gesendet' : 'Nur für dich sichtbar'})`);
-          } else {
-            this._marker.setLatLng([lat, lng]);
-            this._circle.setLatLng([lat, lng]);
-            this._circle.setRadius(acc);
-          }
-          
-          if (_channel) {
-            _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
-          }
-          Pool.refreshLiveList();
-        },
-        err => {
-          console.warn(err);
-          toast('❌ GPS-Signal verloren oder verweigert');
-        },
-        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-      );
     }
+  },
+
+  start() {
+    if (_mode !== 'solo') {
+       this._isLive = confirm('Soll dein Standort LIVE für die Leitstelle sichtbar sein?\n\n[OK] = Ja, für alle sichtbar\n[Abbrechen] = Nein, nur privates Navi');
+    } else {
+       this._isLive = false;
+    }
+
+    if (this._isLive) {
+       let ruf = prompt('Dein Rufname (z. B. H1131):');
+       if (!ruf) return; // Cancel
+       ruf = ruf.trim().toUpperCase();
+       
+       let alreadyLive = false;
+       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
+       if (alreadyLive) {
+          toast(`❌ ${ruf} ist bereits live auf der Karte!`);
+          return;
+       }
+       _myRuf = ruf;
+
+       if (_mode === 'admin' || _mode === 'solo') {
+         let duplicateId = null;
+         if (_drawn) {
+            _drawn.eachLayer(l => {
+              if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
+            });
+         }
+         if (duplicateId) Layers.deleteById(duplicateId);
+       }
+    }
+
+    const btn = document.getElementById('gps-toggle-btn');
+    btn.classList.add('active');
+    btn.classList.remove('tracking-paused');
+    this._following = true;
+    toast('🛰️ Suche GPS-Signal...');
+    
+    // Deaktiviere Follow-Mode, wenn Nutzer Karte wischt
+    _map.on('dragstart', this._onMapDrag, this);
+    
+    this._watchId = navigator.geolocation.watchPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        const heading = pos.coords.heading; // Fahrtrichtung (null, wenn man steht oder Gerät das nicht liefert)
+        
+        let iconHtml = '';
+        if (heading !== null && !isNaN(heading)) {
+            // Echter Navi-Pfeil (dreht sich)
+            iconHtml = `<div style="transform:rotate(${heading}deg); transform-origin:center; width:24px; height:24px; background:rgba(0,122,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+                            <div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid #007AFF; margin-bottom:4px;"></div>
+                        </div>`;
+        } else {
+            // Normaler blauer Punkt
+            iconHtml = `<div style="width:16px;height:16px;background:#007AFF;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`;
+        }
+
+        const myIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [24,24], iconAnchor: [12,12] });
+
+        if (!this._marker) {
+          this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
+          this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
+          _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
+          toast(`✅ GPS aktiv. (${this._isLive ? 'Wird für alle gesendet' : 'Privates Navi'})`);
+        } else {
+          this._marker.setLatLng([lat, lng]);
+          this._marker.setIcon(myIcon);
+          this._circle.setLatLng([lat, lng]);
+          this._circle.setRadius(acc);
+        }
+        
+        if (this._following) {
+           _map.panTo([lat, lng], {animate: true});
+        }
+        
+        if (this._isLive && _channel) {
+          _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
+          Pool.refreshLiveList();
+        }
+      },
+      err => {
+        console.warn(err);
+        toast('❌ GPS-Signal verloren oder verweigert');
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+  },
+  
+  stop() {
+    if (this._watchId) navigator.geolocation.clearWatch(this._watchId);
+    this._watchId = null;
+    this._following = false;
+    if (this._marker) _map.removeLayer(this._marker);
+    if (this._circle) _map.removeLayer(this._circle);
+    this._marker = null; this._circle = null;
+    
+    _map.off('dragstart', this._onMapDrag, this);
+    
+    const btn = document.getElementById('gps-toggle-btn');
+    btn.classList.remove('active');
+    btn.classList.remove('tracking-paused');
+    
+    if (this._isLive) {
+        _myRuf = null;
+        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+        Pool.updateLiveList({}); 
+    }
+    this._isLive = false;
+    toast('🛰️ Navigation beendet');
+  },
+  
+  _onMapDrag() {
+     if (this._following) {
+         this._following = false;
+         const btn = document.getElementById('gps-toggle-btn');
+         btn.classList.remove('active');
+         btn.classList.add('tracking-paused'); 
+     }
   }
 };
 
@@ -1178,7 +1246,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1238,7 +1306,7 @@ const Pool = {
     let html = '';
     let hasLive = false;
 
-    if (LiveGPS._watchId && LiveGPS._marker) {
+    if (LiveGPS._watchId && LiveGPS._marker && LiveGPS._isLive) {
        hasLive = true;
        const lat = LiveGPS._marker.getLatLng().lat;
        const lng = LiveGPS._marker.getLatLng().lng;
@@ -1354,9 +1422,8 @@ const Tools = {
     const tool = Tools._active;
 
     if (['tatort', 'ereignis', 'gefahr', 'absperrung', 'ksst', 'pin'].includes(tool)) {
-      // Optionales Hinweisfeld am Taktik-Marker
       const desc = prompt('Zusatzinfo / Beschriftung (optional):', '');
-      if (desc === null) return; // Abbrechen gedrückt
+      if (desc === null) return; 
       
       const d = { id: Layers.uid(), type: tool, lat, lng, desc: desc.trim() };
       Layers.render(d, true);
@@ -1369,7 +1436,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -1419,7 +1486,6 @@ const Tools = {
       return;
     }
 
-    // Measure, Polygon, Line -> Multi-Click-System
     if (['polygon', 'line', 'measure'].includes(tool)) {
       Tools._drawPoints.push([lat, lng]);
       if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
@@ -1658,7 +1724,7 @@ const Sync = {
         table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
       }, payload => {
         if (payload.eventType === 'DELETE') {
-          toast('⚠️ Die Lage wurde von der Einsatzleitung beendet.');
+          toast('⚠️ Die Lage wurde von der Leitstelle beendet.');
           App.goHome();
           return;
         }
@@ -1935,7 +2001,7 @@ const App = {
     Search.hide();
     RoutePanel.close();
     
-    if (LiveGPS._watchId) LiveGPS.toggle();
+    if (LiveGPS._watchId) LiveGPS.stop();
     
     if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
