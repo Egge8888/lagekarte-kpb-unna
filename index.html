@@ -56,8 +56,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #modal-overlay.hidden { display:none; }
 .modal-sheet {
-  background:var(--card); border-radius:24px 24px 0 0; padding:28px 24px 40px;
+  background:var(--card); border-radius:24px 24px 0 0;
+  padding:28px 24px max(40px, env(safe-area-inset-bottom));
   width:100%; max-width:460px;
+}
+/* When keyboard is open (modal centered via JS), use normal border-radius */
+#modal-overlay[style*="center"] .modal-sheet {
+  border-radius:24px;
+  margin: 16px;
+  width: calc(100% - 32px);
 }
 .modal-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 20px; }
 .modal-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:6px; }
@@ -299,7 +306,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .popup-title { font-size:14px; font-weight:700; margin-bottom:10px; color:var(--txt); }
 .popup-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
-.popup-btn.del { background:rgba(255,59,48,.12); color:var(--red); }
+.popup-btn.del  { background:rgba(255,59,48,.12); color:var(--red); }
+.popup-btn.edit { background:rgba(0,122,255,.12); color:var(--blue); }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 @media print {
@@ -443,6 +451,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 <!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════ -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.editable/1.2.0/Leaflet.Editable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 'use strict';
@@ -475,9 +484,11 @@ let _syncTimer = null;
 function detectVehicleIcon(ruf) {
   if (!ruf) return '🚔';
   const r = ruf.trim().toUpperCase();
-  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '🚁';
-  if (/^U\d/.test(r)) return '🚗';
-  return '🚔';
+  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '🚁';  // Hubschrauber
+  if (/\bFW\b/.test(r))              return '🚒';  // Feuerwehr
+  if (/^RTW/.test(r))                return '🚑';  // Rettungswagen
+  if (/^U\d/.test(r))                return '🚗';  // Fremdkräfte
+  return '🚔';                                      // Standard Polizei
 }
 
 function detectVehicleClass(ruf) {
@@ -498,8 +509,8 @@ function initMap() {
   _map = L.map('map', {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
-    // Disable double-click zoom so our drawing tools can use double-click
     doubleClickZoom: false,
+    editable: true,        // Leaflet.Editable – enables .enableEdit() on layers
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -694,18 +705,68 @@ const Layers = {
   },
 
   _addPopup(layer, d) {
-    const target = (d.type === 'arrow' || d.type === 'polyline' || d.type === 'polygon' || d.type === 'circle' || d.type === 'measure') ? layer : layer;
-    if (!target) return;
-    const label = d.ruf || d.text || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
-    const radiusInfo = d.type === 'circle' ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>` : '';
-    target.bindPopup(`
+    if (!layer) return;
+    const label = d.ruf || d.text
+      || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+    const radiusInfo = d.type === 'circle'
+      ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
+      : '';
+    // Edit button only for resizable/reshapeable shapes
+    const canEdit = ['circle','polyline','polygon'].includes(d.type);
+    const editBtn = canEdit
+      ? `<button class="popup-btn edit" onclick="Layers.editLayer('${d.id}')">✏️ Bearbeiten</button>`
+      : '';
+    layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(label)}</div>
         ${radiusInfo}
         <div class="popup-actions">
+          ${editBtn}
           <button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>
         </div>
-      </div>`, { maxWidth: 240 });
+      </div>`, { maxWidth: 260 });
+  },
+
+  // Enable vertex/radius editing via Leaflet.Editable
+  editLayer(id) {
+    let found = null;
+    _drawn.eachLayer(l => { if (l._lid === id && l._ldata) found = l; });
+    if (!found) return;
+    _map.closePopup();
+    const d = found._ldata;
+    try { found.enableEdit(); } catch(e) { toast('⚠️ Bearbeitung nicht möglich'); return; }
+    toast('✏️ Punkte ziehen · dann „✓ Fertig" drücken');
+
+    const finBtn = document.getElementById('draw-finish-btn');
+    finBtn.textContent = '✓ Bearbeitung speichern';
+    finBtn.classList.remove('hidden');
+
+    // Temporarily override finishDraw
+    Tools._editingLayer = found;
+    finBtn.onclick = () => {
+      // Persist updated geometry into _ldata
+      try {
+        if (d.type === 'circle') {
+          const ll = found.getLatLng();
+          d.lat = ll.lat; d.lng = ll.lng;
+          d.radius = found.getRadius();
+        } else if (d.type === 'polygon') {
+          const lls = found.getLatLngs();
+          // Leaflet polygon: first ring = lls[0]
+          const ring = Array.isArray(lls[0]) ? lls[0] : lls;
+          d.points = ring.map(ll => [ll.lat, ll.lng]);
+        } else if (d.type === 'polyline') {
+          d.points = found.getLatLngs().map(ll => [ll.lat, ll.lng]);
+        }
+        found.disableEdit();
+      } catch(e) { console.warn('Edit finish error:', e); }
+      finBtn.classList.add('hidden');
+      finBtn.textContent = '✓ Zeichnung abschließen';
+      finBtn.onclick = () => Tools.finishDraw();
+      Tools._editingLayer = null;
+      Sync.push();
+      toast('✅ Bearbeitung gespeichert');
+    };
   },
 
   deleteById(id) {
@@ -783,8 +844,9 @@ const Pool = {
     this.render();
   },
 
-  startPlace(ruf) {
+  startPlace(ruf, poolId) {
     this._placingFromPool = true;
+    this._placingPoolId   = poolId || null;  // which pool entry to remove after placing
     this.close();
     Tools._active = 'einheit';
     Tools._pendingRuf = ruf;
@@ -797,6 +859,12 @@ const Pool = {
     if (this._placingFromPool) {
       this._placingFromPool = false;
       document.getElementById('pool-toggle-btn').classList.remove('active');
+      // Remove the pool entry (it's now on the map)
+      if (this._placingPoolId) {
+        this._vehicles = this._vehicles.filter(v => v.id !== this._placingPoolId);
+        this.save();
+        this._placingPoolId = null;
+      }
       setTimeout(() => this.open(), 250);
     }
   },
@@ -809,11 +877,11 @@ const Pool = {
       return;
     }
     list.innerHTML = this._vehicles.map(v => {
-      const emoji = detectVehicleIcon(v.ruf);
-      const cls   = detectVehicleClass(v.ruf);
-      const star  = isDGL(v.ruf) ? '★ ' : '';
+      const emoji   = detectVehicleIcon(v.ruf);
+      const cls     = detectVehicleClass(v.ruf);
+      const star    = isDGL(v.ruf) ? '★ ' : '';
       const safeRuf = escHtml(v.ruf).replace(/'/g, '&#39;');
-      return `<div class="pool-item" onclick="Pool.startPlace('${safeRuf}')">
+      return `<div class="pool-item" onclick="Pool.startPlace('${safeRuf}','${v.id}')">
         <span class="pool-emoji">${emoji}</span>
         <span class="pool-ruf${cls ? ' ' + cls : ''}">${star}${escHtml(v.ruf)}</span>
         <button class="pool-del-btn" onclick="event.stopPropagation();Pool.remove('${v.id}')" title="Entfernen">✕</button>
@@ -851,12 +919,20 @@ const Tools = {
     if (this._active) {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
+    // Cancel any active shape editing
+    if (this._editingLayer) {
+      try { this._editingLayer.disableEdit(); } catch(e) {}
+      this._editingLayer = null;
+    }
     this._active = null;
     this._pendingRuf = null;
     this._drawPoints = [];
     if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
     document.getElementById('color-picker').classList.add('hidden');
-    document.getElementById('draw-finish-btn').classList.add('hidden');
+    const finBtn = document.getElementById('draw-finish-btn');
+    finBtn.classList.add('hidden');
+    finBtn.textContent = '✓ Zeichnung abschließen';
+    finBtn.onclick = () => Tools.finishDraw();
     _map.getContainer().style.cursor = '';
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
@@ -1119,9 +1195,17 @@ const App = {
     document.getElementById('modal-join').classList.remove('hidden');
     document.getElementById('modal-delete').classList.add('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
-    document.getElementById('join-code-input').value = '';
-    setTimeout(() => document.getElementById('join-code-input').focus(), 100);
-    document.getElementById('join-code-input').onkeydown = e => { if (e.key === 'Enter') this.joinRoom(); };
+    const inp = document.getElementById('join-code-input');
+    inp.value = '';
+    // iOS keyboard pushes bottom-sheet off screen → center the modal when keyboard opens
+    inp.onfocus = () => {
+      document.getElementById('modal-overlay').style.alignItems = 'center';
+    };
+    inp.onblur = () => {
+      document.getElementById('modal-overlay').style.alignItems = '';
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') this.joinRoom(); };
+    setTimeout(() => inp.focus(), 150);
   },
 
   async joinRoom() {
