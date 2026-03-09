@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Lagekarte – KPB Unna</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ════════════════════════════════════════════════════════
+   DESIGN SYSTEM – iOS inspired
+   ════════════════════════════════════════════════════════ */
+:root {
+  --blue:#007AFF; --red:#FF3B30; --green:#34C759; --orange:#FF9500;
+  --yellow:#FFCC00; --purple:#AF52DE; --teal:#30B0C7; --gray:#8E8E93;
+  --bg:#F2F2F7; --card:#FFFFFF; --txt:#000000; --txt2:#3C3C43;
+  --sep:rgba(60,60,67,.18); --glass:rgba(255,255,255,.85);
+  --shadow:0 4px 24px rgba(0,0,0,.10);
+  --r:16px; --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+.dark {
+  --bg:#1C1C1E; --card:#2C2C2E; --txt:#FFFFFF; --txt2:rgba(235,235,245,.6);
+  --sep:rgba(84,84,88,.55); --glass:rgba(44,44,46,.92);
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; font-family:var(--font); background:var(--bg); color:var(--txt); overflow:hidden; }
+
+/* ── SCREENS ──────────────────────────────────────────── */
+.screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:100; }
+.screen.hidden { display:none; }
+
+/* ── LANDING ─────────────────────────────────────────── */
+#landing {
+  background: linear-gradient(160deg, #1a2a4a 0%, #0d1b2e 60%, #162640 100%);
+  flex-direction:column; gap:0;
+}
+.landing-inner { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:380px; padding:32px 24px; }
+.landing-logo { font-size:72px; filter:drop-shadow(0 4px 12px rgba(0,120,255,.4)); margin-bottom:8px; }
+.landing-title { font-size:28px; font-weight:700; color:#fff; letter-spacing:-.5px; }
+.landing-sub { font-size:14px; color:rgba(255,255,255,.5); margin-bottom:20px; }
+.btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:16px; border-radius:14px; border:none; font-family:var(--font); font-size:16px; font-weight:600; cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-secondary { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.2); }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-ghost { background:transparent; color:rgba(255,255,255,.6); font-size:14px; padding:10px; }
+.landing-divider { width:100%; text-align:center; font-size:12px; color:rgba(255,255,255,.3); margin:4px 0; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+#modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500;
+  display:flex; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#modal-overlay.hidden { display:none; }
+.modal-sheet {
+  background:var(--card); border-radius:24px 24px 0 0; padding:28px 24px 40px;
+  width:100%; max-width:460px;
+}
+.modal-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 20px; }
+.modal-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:6px; }
+.modal-sub { font-size:14px; color:var(--txt2); text-align:center; margin-bottom:24px; }
+.pin-row { display:flex; gap:12px; justify-content:center; margin-bottom:24px; }
+.pin-digit {
+  width:56px; height:64px; border-radius:12px; border:2px solid var(--sep);
+  font-size:28px; font-weight:700; text-align:center; background:var(--bg);
+  color:var(--txt); font-family:var(--font); outline:none; caret-color:var(--blue);
+  -webkit-appearance:none; appearance:none;
+}
+.pin-digit:focus { border-color:var(--blue); }
+.modal-input {
+  width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid var(--sep);
+  font-size:17px; font-family:var(--font); background:var(--bg); color:var(--txt);
+  outline:none; text-align:center; text-transform:uppercase; letter-spacing:3px;
+  font-weight:600; margin-bottom:20px;
+}
+.modal-input:focus { border-color:var(--blue); }
+.modal-input::placeholder { letter-spacing:1px; font-weight:400; color:var(--txt2); text-transform:none; }
+.modal-actions { display:flex; gap:12px; }
+.modal-actions .btn { flex:1; }
+
+/* ── RUFNAME INPUT ───────────────────────────────────── */
+#rufname-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:400;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border-top:1px solid var(--sep); padding:16px 20px 32px;
+  display:flex; gap:12px; align-items:center;
+  transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+#rufname-bar.visible { transform:translateY(0); }
+#rufname-bar label { font-size:14px; font-weight:600; color:var(--txt2); white-space:nowrap; }
+#rufname-input {
+  flex:1; padding:10px 14px; border-radius:10px; border:1.5px solid var(--sep);
+  font-size:16px; font-family:var(--font); background:var(--bg); color:var(--txt);
+  outline:none; text-transform:uppercase; letter-spacing:1px; font-weight:600;
+}
+#rufname-input:focus { border-color:var(--blue); }
+#rufname-ok { flex-shrink:0; padding:10px 20px; border-radius:10px; background:var(--blue); color:#fff; border:none; font-size:15px; font-weight:600; cursor:pointer; font-family:var(--font); }
+#rufname-cancel { flex-shrink:0; padding:10px 16px; border-radius:10px; background:transparent; color:var(--txt2); border:1.5px solid var(--sep); font-size:15px; cursor:pointer; font-family:var(--font); }
+
+/* ── MAP SCREEN ──────────────────────────────────────── */
+#map-screen { display:flex; flex-direction:column; background:var(--bg); }
+#map-screen.hidden { display:none; }
+#map { flex:1; }
+
+/* ── HEADER ──────────────────────────────────────────── */
+#header {
+  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--sep); z-index:200;
+  flex-shrink:0; height:52px;
+}
+#mode-badge {
+  font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;
+  text-transform:uppercase; letter-spacing:.5px; flex-shrink:0;
+}
+#mode-badge.admin { background:rgba(255,59,48,.15); color:var(--red); }
+#mode-badge.viewer { background:rgba(52,199,89,.15); color:var(--green); }
+#mode-badge.solo { background:rgba(0,122,255,.15); color:var(--blue); }
+#room-code-display {
+  font-size:15px; font-weight:700; letter-spacing:2px; color:var(--txt);
+  background:var(--card); padding:4px 12px; border-radius:20px;
+  border:1px solid var(--sep); cursor:pointer; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+#room-code-display:active { opacity:.7; }
+#live-dot {
+  width:8px; height:8px; border-radius:50%; background:var(--green);
+  flex-shrink:0; animation:pulse 2s infinite;
+}
+#live-dot.off { background:var(--gray); animation:none; }
+#viewer-count { font-size:12px; color:var(--txt2); font-weight:600; }
+.header-spacer { flex:1; }
+.header-btn {
+  width:36px; height:36px; border-radius:10px; border:none;
+  background:var(--card); color:var(--txt); font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent;
+}
+.header-btn:active { transform:scale(.93); }
+#end-btn { background:rgba(255,59,48,.1); color:var(--red); border-color:rgba(255,59,48,.3); font-size:12px; font-weight:700; width:auto; padding:0 12px; letter-spacing:.3px; }
+
+/* ── TOOLBAR ─────────────────────────────────────────── */
+#toolbar {
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  z-index:200; display:flex; flex-direction:column; gap:6px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:10px 8px;
+  box-shadow:var(--shadow);
+}
+.tool-btn {
+  width:44px; height:44px; border-radius:12px; border:none;
+  background:transparent; cursor:pointer; font-size:20px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; transition:all .12s; -webkit-tap-highlight-color:transparent;
+  flex-direction:column; gap:1px;
+}
+.tool-btn:active { transform:scale(.9); }
+.tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
+.tool-btn.active .tool-label { color:#fff; }
+.tool-label { font-size:8px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tool-divider { width:28px; height:1px; background:var(--sep); margin:2px auto; }
+
+/* ── COLOR PICKER ────────────────────────────────────── */
+#color-picker {
+  position:absolute; left:76px; top:50%; transform:translateY(-50%);
+  z-index:201; background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:14px; padding:10px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; gap:6px;
+}
+#color-picker.hidden { display:none; }
+.color-dot {
+  width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent;
+  transition:all .12s; -webkit-tap-highlight-color:transparent;
+}
+.color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
+.color-dot:active { transform:scale(.9); }
+
+/* ── TOAST ───────────────────────────────────────────── */
+#toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  z-index:600; padding:12px 20px; border-radius:20px; font-size:14px; font-weight:600;
+  color:#fff; pointer-events:none; opacity:0; transition:all .3s; white-space:nowrap;
+  backdrop-filter:blur(10px); box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── UNIT MARKERS ────────────────────────────────────── */
+.unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.unit-icon-img { line-height:1; }
+.unit-label { font-weight:800; color:#003580; text-shadow:0 1px 3px rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7); white-space:nowrap; margin-top:1px; font-family:var(--font); }
+.dark .unit-label { color:#60A0FF; text-shadow:0 1px 3px rgba(0,0,0,.9); }
+
+/* ── TACTIC MARKERS ──────────────────────────────────── */
+.tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+.tac-icon { font-size:28px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.tac-label { font-size:10px; font-weight:800; white-space:nowrap; text-shadow:0 1px 2px rgba(255,255,255,.8); font-family:var(--font); color:#000; }
+.dark .tac-label { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8); }
+
+/* ── VIEWER BANNER ───────────────────────────────────── */
+#viewer-hint {
+  position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+  z-index:300; background:rgba(0,0,0,.6); color:#fff; padding:8px 16px;
+  border-radius:20px; font-size:12px; font-weight:600; pointer-events:none;
+  backdrop-filter:blur(10px); white-space:nowrap;
+}
+#viewer-hint.hidden { display:none; }
+
+/* ── MEASURE POPUP ───────────────────────────────────── */
+.measure-tooltip {
+  background:rgba(0,0,0,.75) !important; color:#fff !important;
+  border:none !important; border-radius:8px !important;
+  font-weight:700 !important; font-size:13px !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important;
+}
+
+/* ── LEAFLET OVERRIDES ───────────────────────────────── */
+.leaflet-popup-content-wrapper { border-radius:14px !important; padding:0 !important; overflow:hidden; box-shadow:var(--shadow) !important; }
+.leaflet-popup-content { margin:0 !important; }
+.leaflet-popup-tip-container { filter:drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
+.popup-body { padding:12px 16px; background:var(--card); min-width:160px; }
+.popup-title { font-size:14px; font-weight:700; margin-bottom:10px; color:var(--txt); }
+.popup-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+.popup-btn.del { background:rgba(255,59,48,.12); color:var(--red); }
+.popup-btn.move { background:rgba(0,122,255,.12); color:var(--blue); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@media print { #header,#toolbar,#color-picker,#toast,#viewer-hint,#rufname-bar { display:none !important; } #map { position:fixed !important; inset:0 !important; } }
+</style>
+</head>
+<body>
+
+<!-- ═══ LANDING ══════════════════════════════════════════════════════════ -->
+<div id="landing" class="screen">
+  <div class="landing-inner">
+    <div class="landing-logo">🗺️</div>
+    <div class="landing-title">Taktische Lagekarte</div>
+    <div class="landing-sub">KPB Unna · Leitstelle</div>
+    <button class="btn btn-primary" onclick="App.startSolo()">🧭&nbsp; Solo nutzen</button>
+    <div class="landing-divider">── oder ──</div>
+    <button class="btn btn-secondary" onclick="App.showPinModal()">🔴&nbsp; Lage starten &nbsp;<span style="font-size:11px;opacity:.7">(Leitstelle)</span></button>
+    <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
+    <button class="btn btn-ghost" id="dark-toggle-landing" onclick="App.toggleDark()">🌙 Darkmode</button>
+  </div>
+</div>
+
+<!-- ═══ MODAL OVERLAY ════════════════════════════════════════════════════ -->
+<div id="modal-overlay" class="hidden">
+  <!-- PIN Modal -->
+  <div class="modal-sheet" id="modal-pin">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔐 Admin-PIN</div>
+    <div class="modal-sub">Nur für Leitstellen-Personal</div>
+    <div class="pin-row">
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p0"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p1"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p2"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p3"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="App.checkPin()">✓&nbsp; Bestätigen</button>
+    </div>
+  </div>
+  <!-- JOIN Modal -->
+  <div class="modal-sheet hidden" id="modal-join">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👁 Lage beitreten</div>
+    <div class="modal-sub">Raumcode von der Leitstelle eingeben</div>
+    <input class="modal-input" id="join-code-input" placeholder="z. B.  LAGE-7483" maxlength="9" autocomplete="off" spellcheck="false"/>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="App.joinRoom()">Beitreten →</button>
+    </div>
+  </div>
+  <!-- DELETE Modal -->
+  <div class="modal-sheet hidden" id="modal-delete">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚠️ Lage beenden</div>
+    <div class="modal-sub">Alle Daten dieser Lage werden gelöscht.<br>Zuschauer werden getrennt.</div>
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" onclick="App.deleteRoom()">Lage löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAP SCREEN ═══════════════════════════════════════════════════════ -->
+<div id="map-screen" class="hidden" style="position:fixed;inset:0;display:flex;flex-direction:column;">
+
+  <!-- Header -->
+  <div id="header">
+    <span id="mode-badge" class="solo">SOLO</span>
+    <span id="room-code-display" onclick="App.copyCode()" title="Raumcode kopieren" class="hidden"></span>
+    <span id="live-dot" class="off"></span>
+    <span id="viewer-count" class="hidden"></span>
+    <div class="header-spacer"></div>
+    <button class="header-btn" onclick="App.toggleDark()" title="Darkmode">🌙</button>
+    <button id="end-btn" class="header-btn hidden" onclick="App.confirmDelete()">⏹ Lage beenden</button>
+    <button class="header-btn" onclick="App.goHome()" title="Zurück">✕</button>
+  </div>
+
+  <!-- Map -->
+  <div id="map" style="flex:1;"></div>
+
+  <!-- Toolbar (admin + solo only) -->
+  <div id="toolbar">
+    <button class="tool-btn" data-tool="tatort"   onclick="Tools.toggle('tatort')"   title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+    <button class="tool-btn" data-tool="gefahr"   onclick="Tools.toggle('gefahr')"   title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+    <button class="tool-btn" data-tool="ksst"     onclick="Tools.toggle('ksst')"     title="Kontrollstelle / KSST"><span>🏴</span><span class="tool-label">KSST</span></button>
+    <button class="tool-btn" data-tool="el"       onclick="Tools.toggle('el')"       title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
+    <button class="tool-btn" data-tool="posten"   onclick="Tools.toggle('posten')"   title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
+    <button class="tool-btn" data-tool="einheit"  onclick="Tools.toggle('einheit')"  title="Einsatzmittel"><span>🚔</span><span class="tool-label">Einheit</span></button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="text"     onclick="Tools.toggle('text')"     title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
+    <button class="tool-btn" data-tool="circle"   onclick="Tools.toggle('circle')"   title="Kreis / Gefahrenzone"><span>⭕</span><span class="tool-label">Kreis</span></button>
+    <button class="tool-btn" data-tool="polygon"  onclick="Tools.toggle('polygon')"  title="Polygon / Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
+    <button class="tool-btn" data-tool="line"     onclick="Tools.toggle('line')"     title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+    <button class="tool-btn" data-tool="arrow"    onclick="Tools.toggle('arrow')"    title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    <div class="tool-divider"></div>
+    <button class="tool-btn" data-tool="measure"  onclick="Tools.toggle('measure')"  title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
+    <button class="tool-btn"                       onclick="Tools.undo()"             title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+  </div>
+
+  <!-- Color Picker (for circle/polygon/line/arrow) -->
+  <div id="color-picker" class="hidden">
+    <div class="color-dot selected" style="background:#FF3B30" data-color="#FF3B30" onclick="Tools.setColor('#FF3B30',this)"></div>
+    <div class="color-dot" style="background:#FF9500" data-color="#FF9500" onclick="Tools.setColor('#FF9500',this)"></div>
+    <div class="color-dot" style="background:#FFCC00" data-color="#FFCC00" onclick="Tools.setColor('#FFCC00',this)"></div>
+    <div class="color-dot" style="background:#34C759" data-color="#34C759" onclick="Tools.setColor('#34C759',this)"></div>
+    <div class="color-dot" style="background:#007AFF" data-color="#007AFF" onclick="Tools.setColor('#007AFF',this)"></div>
+    <div class="color-dot" style="background:#AF52DE" data-color="#AF52DE" onclick="Tools.setColor('#AF52DE',this)"></div>
+    <div class="color-dot" style="background:#1C1C1E" data-color="#1C1C1E" onclick="Tools.setColor('#1C1C1E',this)"></div>
+  </div>
+
+  <!-- Rufname input bar (for Einheit tool) -->
+  <div id="rufname-bar">
+    <label>Rufname:</label>
+    <input id="rufname-input" type="text" placeholder="z. B. 1-1-21-1" autocomplete="off"/>
+    <button id="rufname-cancel" onclick="Tools.cancelEinheit()">✕</button>
+    <button id="rufname-ok" onclick="Tools.confirmEinheit()">→ Platzieren</button>
+  </div>
+
+  <!-- Viewer hint -->
+  <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════════════
+   TAKTISCHE LAGEKARTE v1.0 – KPB Unna
+   © 2026 – Hosted on Vercel + Supabase
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── CONFIG ──────────────────────────────────────────────────────────── */
+const CFG = {
+  SUPABASE_URL: 'https://xfplgmvpxrigyfotlesn.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmcGxnbXZweHJpZ3lmb3RsZXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzY2NDUsImV4cCI6MjA4NjgxMjY0NX0.-FZbqkeJE4O1A9CuNPnOusisRMGP1rRti_1_43dma6M',
+  ADMIN_PIN:    '0906',
+  MAP_CENTER:   [51.5344, 7.6889],
+  MAP_ZOOM:     15,
+};
+
+/* ── GLOBAL STATE ────────────────────────────────────────────────────── */
+let _mode      = null;   // 'solo' | 'admin' | 'viewer'
+let _roomCode  = null;
+let _sb        = null;   // Supabase client
+let _channel   = null;   // Realtime channel
+let _map       = null;
+let _drawn     = null;   // L.featureGroup for all tactical layers
+let _history   = [];     // undo stack
+let _isDark    = false;
+let _syncTimer = null;
+
+/* ── LEAFLET MAP INIT ────────────────────────────────────────────────── */
+function initMap() {
+  _map = L.map('map', {
+    center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
+    zoomControl: false, attributionControl: true,
+  });
+  L.control.zoom({ position: 'bottomright' }).addTo(_map);
+  L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
+
+  // OSM (primary – full detail)
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  });
+  // NRW Luftbild (optional – needs wms.nrw.de)
+  const dop = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dop', {
+    layers: 'nw_dop_rgb', format: 'image/jpeg', transparent: false,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+  // NRW Amtl. Basiskarte (optional)
+  const abk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_abk', {
+    layers: 'WMS_NW_ABK', format: 'image/png', transparent: true,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+  // NRW Topo S/W (taktisch)
+  const dtk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dtk', {
+    layers: 'nw_dtk_sw', format: 'image/png', transparent: true,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+
+  osm.addTo(_map);
+  L.control.layers({
+    '🗺 OpenStreetMap (Standard)': osm,
+    '🛩 Luftbild NRW (DOP)':       dop,
+    '📋 Amtliche Basiskarte NRW':  abk,
+    '⬛ Topograph. Karte S/W':     dtk,
+  }, {}, { position: 'topright' }).addTo(_map);
+
+  _drawn = L.featureGroup().addTo(_map);
+
+  // Update unit icon sizes on zoom
+  _map.on('zoomend', () => {
+    const z = _map.getZoom();
+    _drawn.eachLayer(l => {
+      if (l._ldata && l._ldata.type === 'einheit') {
+        l.setIcon(Icons.unit(l._ldata.ruf, z));
+      }
+    });
+  });
+}
+
+/* ── ICONS ───────────────────────────────────────────────────────────── */
+const Icons = {
+  _tacDefs: {
+    tatort:  { emoji: '🔴', label: 'Tatort',    color: '#FF3B30' },
+    gefahr:  { emoji: '⚠️',  label: 'Gefahr',    color: '#FF9500' },
+    ksst:    { emoji: '🏴', label: 'KSST',      color: '#007AFF' },
+    el:      { emoji: '⭐', label: 'EL',        color: '#FFCC00' },
+    posten:  { emoji: '🔵', label: 'Posten',    color: '#007AFF' },
+  },
+  tac(type) {
+    const d = this._tacDefs[type];
+    return L.divIcon({
+      html: `<div class="tac-marker"><div class="tac-icon">${d.emoji}</div><div class="tac-label" style="color:${d.color}">${d.label}</div></div>`,
+      className: '', iconAnchor: [16, 30], iconSize: [32, 38],
+    });
+  },
+  unit(ruf, zoom) {
+    const z = Math.max(12, Math.min(19, zoom ?? 15));
+    const px = Math.round(10 + (z - 12) * 4.5);   // 10px@z12 → 45px@z19
+    const lx = Math.round(px * 0.48);
+    return L.divIcon({
+      html: `<div class="unit-marker-wrap"><div class="unit-icon-img" style="font-size:${px}px">🚔</div><div class="unit-label" style="font-size:${lx}px">${escHtml(ruf)}</div></div>`,
+      className: '', iconAnchor: [px / 2, px / 2], iconSize: [px * 2, px + lx + 6],
+    });
+  },
+  text(txt) {
+    return L.divIcon({
+      html: `<div style="font-size:13px;font-weight:700;color:#000;text-shadow:0 1px 3px rgba(255,255,255,.8);white-space:nowrap;font-family:-apple-system,sans-serif;">${escHtml(txt)}</div>`,
+      className: '', iconAnchor: [0, 8],
+    });
+  },
+};
+
+/* ── LAYER SERIALISER / DESERIALISER ─────────────────────────────────── */
+const Layers = {
+  uid() { return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); },
+
+  serialize() {
+    const layers = [];
+    _drawn.eachLayer(l => { if (l._ldata) layers.push(l._ldata); });
+    return { layers, mapView: { center: [_map.getCenter().lat, _map.getCenter().lng], zoom: _map.getZoom() } };
+  },
+
+  deserialize(state) {
+    _drawn.clearLayers();
+    _history = [];
+    if (!state || !state.layers) return;
+    state.layers.forEach(d => this.render(d));
+    if (state.mapView) _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
+  },
+
+  render(d, pushHistory) {
+    let layer;
+    const isAdmin = _mode === 'admin' || _mode === 'solo';
+    const drag = isAdmin && d.type === 'einheit';
+
+    switch (d.type) {
+      case 'tatort': case 'gefahr': case 'ksst': case 'el': case 'posten':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type), draggable: isAdmin });
+        break;
+      case 'einheit':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.unit(d.ruf, _map.getZoom()), draggable: isAdmin });
+        break;
+      case 'text':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text), draggable: isAdmin });
+        break;
+      case 'circle':
+        layer = L.circle([d.lat, d.lng], { radius: d.radius, color: d.color, fillColor: d.color, fillOpacity: 0.15, weight: 2.5 });
+        break;
+      case 'polyline':
+        layer = L.polyline(d.points, { color: d.color, weight: 3 });
+        break;
+      case 'arrow':
+        layer = this._makeArrow(d);
+        break;
+      case 'polygon':
+        layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.15, weight: 2.5 });
+        break;
+      case 'measure':
+        layer = L.polyline(d.points, { color: '#007AFF', weight: 2, dashArray: '6 4' });
+        layer.bindTooltip(d.label, { permanent: true, className: 'measure-tooltip', direction: 'center' });
+        break;
+    }
+
+    if (!layer) return;
+    layer._lid   = d.id;
+    layer._ldata = d;
+
+    if (isAdmin && d.type !== 'circle' && d.type !== 'polyline' && d.type !== 'polygon' && d.type !== 'arrow' && d.type !== 'measure') {
+      layer.on('dragend', () => {
+        const ll = layer.getLatLng();
+        d.lat = ll.lat; d.lng = ll.lng;
+        Sync.push();
+      });
+    }
+    if (isAdmin) this._addPopup(layer, d);
+
+    if (d.type === 'arrow') {
+      // Arrow is a layerGroup – add all sublayers
+      layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
+    }
+
+    _drawn.addLayer(layer);
+    if (pushHistory) _history.push(d.id);
+    return layer;
+  },
+
+  _makeArrow(d) {
+    if (d.points.length < 2) return L.polyline(d.points, { color: d.color, weight: 3 });
+    const a = d.points[d.points.length - 2];
+    const b = d.points[d.points.length - 1];
+    const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    const line  = L.polyline(d.points, { color: d.color, weight: 3 });
+    const head  = L.marker(b, {
+      icon: L.divIcon({
+        html: `<div style="transform:rotate(${angle - 90}deg);color:${d.color};font-size:22px;line-height:1;margin-left:-11px;margin-top:-11px;">▲</div>`,
+        className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+      }),
+    });
+    return L.layerGroup([line, head]);
+  },
+
+  _addPopup(layer, d) {
+    const target = d.type === 'arrow' ? null : layer;
+    if (!target) return;
+    const label = d.ruf || d.text || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type);
+    target.bindPopup(`
+      <div class="popup-body">
+        <div class="popup-title">${escHtml(label)}</div>
+        <div class="popup-actions">
+          <button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>
+        </div>
+      </div>`, { maxWidth: 220 });
+  },
+
+  deleteById(id) {
+    _drawn.eachLayer(l => {
+      if (l._lid === id) { _drawn.removeLayer(l); }
+      // layerGroup (arrow)
+      if (l._ldata && l._ldata.id === id && l instanceof L.LayerGroup) { _drawn.removeLayer(l); }
+    });
+    _map.closePopup();
+    Sync.push();
+    toast('Gelöscht');
+  },
+
+  undo() {
+    if (!_history.length) { toast('Nichts zum Rückgängigmachen'); return; }
+    const id = _history.pop();
+    this.deleteById(id);
+    toast('Rückgängig gemacht');
+  },
+};
+
+/* ── TOOLS ───────────────────────────────────────────────────────────── */
+const Tools = {
+  _active: null,
+  _color:  '#FF3B30',
+  _drawPoints: [],
+  _drawLayer:  null,
+  _measureStart: null,
+  _pendingRuf: null,
+
+  toggle(name) {
+    if (this._active === name) { this.deactivate(); return; }
+    this.deactivate();
+    this._active = name;
+    document.querySelector(`[data-tool="${name}"]`)?.classList.add('active');
+    const needsColor = ['circle','polygon','line','arrow'].includes(name);
+    document.getElementById('color-picker').classList.toggle('hidden', !needsColor);
+    if (name === 'einheit') { this._showRufBar(); return; }
+    _map.getContainer().style.cursor = 'crosshair';
+  },
+
+  deactivate() {
+    if (this._active) {
+      document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
+    }
+    this._active = null;
+    this._drawPoints = [];
+    if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
+    document.getElementById('color-picker').classList.add('hidden');
+    document.getElementById('rufname-bar').classList.remove('visible');
+    _map.getContainer().style.cursor = '';
+    _map.off('click', this._onMapClick, this);
+    _map.on('click', this._onMapClick, this);
+  },
+
+  setColor(c, el) {
+    this._color = c;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  },
+
+  undo() { Layers.undo(); },
+
+  _showRufBar() {
+    const bar = document.getElementById('rufname-bar');
+    bar.classList.add('visible');
+    document.getElementById('rufname-input').value = '';
+    setTimeout(() => document.getElementById('rufname-input').focus(), 350);
+  },
+
+  confirmEinheit() {
+    const ruf = document.getElementById('rufname-input').value.trim();
+    if (!ruf) { toast('Rufname eingeben'); return; }
+    this._pendingRuf = ruf;
+    document.getElementById('rufname-bar').classList.remove('visible');
+    _map.getContainer().style.cursor = 'crosshair';
+    toast('Auf Karte tippen zum Platzieren');
+  },
+
+  cancelEinheit() {
+    this._pendingRuf = null;
+    this.deactivate();
+  },
+
+  _onMapClick(e) {
+    if (!Tools._active) return;
+    const { lat, lng } = e.latlng;
+    const tool = Tools._active;
+
+    // Single-click tools
+    if (['tatort','gefahr','ksst','el','posten'].includes(tool)) {
+      const d = { id: Layers.uid(), type: tool, lat, lng };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      return;
+    }
+
+    if (tool === 'einheit' && Tools._pendingRuf) {
+      const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf: Tools._pendingRuf };
+      Layers.render(d, true);
+      Sync.push();
+      Tools._pendingRuf = null;
+      Tools.deactivate();
+      return;
+    }
+
+    if (tool === 'text') {
+      const txt = prompt('Text eingeben:');
+      if (!txt) return;
+      const d = { id: Layers.uid(), type: 'text', lat, lng, text: txt };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      return;
+    }
+
+    if (tool === 'circle') {
+      if (Tools._drawPoints.length === 0) {
+        Tools._drawPoints = [[lat, lng]];
+        toast('2. Klick = Radius festlegen');
+      } else {
+        const center = Tools._drawPoints[0];
+        const radius = _map.distance(center, [lat, lng]);
+        const d = { id: Layers.uid(), type: 'circle', lat: center[0], lng: center[1], radius, color: Tools._color };
+        Layers.render(d, true);
+        Sync.push();
+        Tools.deactivate();
+      }
+      return;
+    }
+
+    if (tool === 'measure') {
+      if (Tools._drawPoints.length === 0) {
+        Tools._drawPoints = [[lat, lng]];
+        toast('2. Klick = Endpunkt');
+      } else {
+        const start = Tools._drawPoints[0];
+        const dist  = _map.distance(start, [lat, lng]);
+        const label = dist < 1000 ? `${Math.round(dist)} m` : `${(dist / 1000).toFixed(2)} km`;
+        const d = { id: Layers.uid(), type: 'measure', points: [start, [lat, lng]], label };
+        Layers.render(d, true);
+        Sync.push();
+        Tools.deactivate();
+      }
+      return;
+    }
+
+    // Multi-click tools: polygon, line, arrow
+    if (['polygon','line','arrow'].includes(tool)) {
+      Tools._drawPoints.push([lat, lng]);
+      // Preview layer
+      if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
+      if (Tools._drawPoints.length > 1) {
+        Tools._drawLayer = L.polyline(Tools._drawPoints, { color: Tools._color, weight: 2, dashArray: '5 5' }).addTo(_map);
+      }
+      toast(`${Tools._drawPoints.length} Punkt(e) – Doppelklick zum Abschluss`);
+    }
+  },
+
+  _onMapDblClick(e) {
+    const tool = Tools._active;
+    if (!['polygon','line','arrow'].includes(tool)) return;
+    if (Tools._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
+    L.DomEvent.stopPropagation(e);
+
+    if (Tools._drawLayer) { _map.removeLayer(Tools._drawLayer); Tools._drawLayer = null; }
+    const pts = [...Tools._drawPoints];
+    let d;
+    if (tool === 'polygon') {
+      d = { id: Layers.uid(), type: 'polygon', points: pts, color: Tools._color };
+    } else if (tool === 'line') {
+      d = { id: Layers.uid(), type: 'polyline', points: pts, color: Tools._color };
+    } else {
+      d = { id: Layers.uid(), type: 'arrow', points: pts, color: Tools._color };
+    }
+    Layers.render(d, true);
+    Sync.push();
+    Tools.deactivate();
+  },
+};
+
+/* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
+const Sync = {
+  _viewerCount: 0,
+
+  async connect(roomCode, asAdmin) {
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+
+    // Load existing state
+    const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
+    if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
+    Layers.deserialize(data.state);
+
+    // Subscribe
+    _channel = _sb.channel('room:' + roomCode)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}` }, payload => {
+        if (_mode !== 'admin') Layers.deserialize(payload.new.state);
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = _channel.presenceState();
+        const count = Object.keys(state).length;
+        this._viewerCount = count;
+        const vc = document.getElementById('viewer-count');
+        if (asAdmin && count > 1) { vc.textContent = `👁 ${count - 1}`; vc.classList.remove('hidden'); }
+        else vc.classList.add('hidden');
+      })
+      .subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
+          await _channel.track({ mode: _mode, ts: Date.now() });
+          document.getElementById('live-dot').classList.remove('off');
+        }
+      });
+    return true;
+  },
+
+  push() {
+    if (_mode === 'viewer') return;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(async () => {
+      const state = Layers.serialize();
+      if (_roomCode && _sb) {
+        await _sb.from('lagekarte_sessions').update({ state, updated_at: new Date().toISOString() }).eq('room_code', _roomCode);
+      } else {
+        // Solo: localStorage
+        localStorage.setItem('lagekarte_solo', JSON.stringify(state));
+      }
+    }, 800);
+  },
+
+  disconnect() {
+    if (_channel) { _sb.removeChannel(_channel); _channel = null; }
+    document.getElementById('live-dot').classList.add('off');
+  },
+};
+
+/* ── APP CONTROLLER ──────────────────────────────────────────────────── */
+const App = {
+  async startSolo() {
+    _mode = 'solo';
+    this._openMap();
+    // Load solo state from localStorage
+    const saved = localStorage.getItem('lagekarte_solo');
+    if (saved) { try { Layers.deserialize(JSON.parse(saved)); } catch(e){} }
+    document.getElementById('mode-badge').className = 'solo'; document.getElementById('mode-badge').textContent = 'SOLO';
+    document.getElementById('room-code-display').classList.add('hidden');
+    document.getElementById('viewer-count').classList.add('hidden');
+    document.getElementById('live-dot').classList.add('off');
+    document.getElementById('end-btn').classList.add('hidden');
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('viewer-hint').classList.add('hidden');
+  },
+
+  showPinModal() {
+    document.getElementById('modal-pin').classList.remove('hidden');
+    document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+    setTimeout(() => document.getElementById('p0').focus(), 100);
+    // Auto-advance pin digits
+    ['p0','p1','p2','p3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.oninput = () => { if (el.value && i < 3) document.getElementById(`p${i+1}`).focus(); };
+      el.onkeydown = e => { if (e.key === 'Enter') this.checkPin(); if (e.key === 'Backspace' && !el.value && i > 0) document.getElementById(`p${i-1}`).focus(); };
+    });
+  },
+
+  async checkPin() {
+    const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
+    if (pin !== CFG.ADMIN_PIN) { toast('❌ Falscher PIN'); ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value=''); document.getElementById('p0').focus(); return; }
+    this.closeModal();
+    _mode = 'admin';
+    _roomCode = this._genCode();
+    // Create room in Supabase
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
+    if (error) { toast('❌ Fehler beim Erstellen der Lage'); return; }
+    await Sync.connect(_roomCode, true);
+    this._openMap();
+    document.getElementById('mode-badge').className = 'admin'; document.getElementById('mode-badge').textContent = 'ADMIN';
+    const rc = document.getElementById('room-code-display');
+    rc.textContent = _roomCode; rc.classList.remove('hidden');
+    document.getElementById('end-btn').classList.remove('hidden');
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('viewer-hint').classList.add('hidden');
+    toast(`✅ Lage gestartet: ${_roomCode}`, 4000);
+  },
+
+  showJoinModal() {
+    document.getElementById('modal-pin').classList.add('hidden');
+    document.getElementById('modal-join').classList.remove('hidden');
+    document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    document.getElementById('join-code-input').value = '';
+    setTimeout(() => document.getElementById('join-code-input').focus(), 100);
+    document.getElementById('join-code-input').onkeydown = e => { if (e.key==='Enter') this.joinRoom(); };
+  },
+
+  async joinRoom() {
+    const raw  = document.getElementById('join-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
+    if (raw.length < 4) { toast('Raumcode eingeben'); return; }
+    this.closeModal();
+    _mode = 'viewer'; _roomCode = raw;
+    const ok = await Sync.connect(raw, false);
+    if (!ok) { _mode = null; _roomCode = null; return; }
+    this._openMap();
+    document.getElementById('mode-badge').className = 'viewer'; document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
+    const rc = document.getElementById('room-code-display');
+    rc.textContent = _roomCode; rc.classList.remove('hidden');
+    document.getElementById('end-btn').classList.add('hidden');
+    document.getElementById('toolbar').style.display = 'none';
+    document.getElementById('viewer-hint').classList.remove('hidden');
+    toast(`👁 Lage ${_roomCode} beigetreten`);
+  },
+
+  closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+  },
+
+  confirmDelete() {
+    document.getElementById('modal-pin').classList.add('hidden');
+    document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-delete').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  },
+
+  async deleteRoom() {
+    this.closeModal();
+    if (_sb && _roomCode) {
+      await _sb.from('lagekarte_sessions').delete().eq('room_code', _roomCode);
+    }
+    Sync.disconnect();
+    toast('Lage beendet');
+    this.goHome();
+  },
+
+  goHome() {
+    Sync.disconnect();
+    if (_mode === 'solo' && _drawn) {
+      Sync.push(); // save solo state before leaving
+    }
+    _mode = null; _roomCode = null;
+    if (_drawn) _drawn.clearLayers();
+    _history = [];
+    document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('landing').classList.remove('hidden');
+    Tools.deactivate();
+  },
+
+  copyCode() {
+    if (!_roomCode) return;
+    navigator.clipboard?.writeText(_roomCode).then(() => toast('Raumcode kopiert: ' + _roomCode)).catch(() => toast(_roomCode));
+  },
+
+  toggleDark() {
+    _isDark = !_isDark;
+    document.documentElement.classList.toggle('dark', _isDark);
+    localStorage.setItem('lagekarte_dark', _isDark ? '1' : '0');
+  },
+
+  _openMap() {
+    document.getElementById('landing').classList.add('hidden');
+    const ms = document.getElementById('map-screen');
+    ms.classList.remove('hidden');
+    ms.style.display = 'flex';
+    if (!_map) initMap();
+    setTimeout(() => _map.invalidateSize(), 100);
+    // Attach map events
+    _map.on('click', Tools._onMapClick.bind(Tools));
+    _map.on('dblclick', Tools._onMapDblClick.bind(Tools));
+  },
+
+  _genCode() {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const nums    = '0123456789';
+    const L = () => letters[Math.floor(Math.random() * letters.length)];
+    const N = () => nums[Math.floor(Math.random() * nums.length)];
+    return `LAGE-${L()}${L()}${N()}${N()}`;
+  },
+};
+
+/* ── HELPERS ─────────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let _toastTimer;
+function toast(msg, dur = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = msg.startsWith('❌') ? 'rgba(255,59,48,.9)' : msg.startsWith('✅') ? 'rgba(52,199,89,.9)' : 'rgba(0,0,0,.75)';
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+/* ── BOOT ────────────────────────────────────────────────────────────── */
+(function boot() {
+  // Restore dark mode
+  if (localStorage.getItem('lagekarte_dark') === '1') {
+    _isDark = true; document.documentElement.classList.add('dark');
+  }
+  // Make Layers.deleteById globally accessible for popup onclick
+  window._delLayer = (id) => Layers.deleteById(id);
+})();
+</script>
+</body>
+</html>
