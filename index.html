@@ -204,6 +204,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* Fremdkräfte (U-prefix) */
 .unit-label.fremd { color:#6B0AC9 !important; }
 .dark .unit-label.fremd { color:#BF5AF2 !important; }
+/* Kriminalwache (H9610–H9620) – zivil, dezent dunkelgrau */
+.unit-label.kripo { color:#3a3a3a !important; }
+.dark .unit-label.kripo { color:#aaaaaa !important; }
 
 /* ── TACTIC MARKERS ──────────────────────────────────── */
 .tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
@@ -260,6 +263,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .dark .pool-ruf.dgl { color:#FFD700; }
 .pool-ruf.fremd { color:#6B0AC9; }
 .dark .pool-ruf.fremd { color:#BF5AF2; }
+.pool-ruf.kripo { color:#3a3a3a; }
+.dark .pool-ruf.kripo { color:#aaaaaa; }
 .pool-del-btn {
   background:none; border:none; color:var(--txt2); font-size:13px;
   cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0;
@@ -484,19 +489,21 @@ let _syncTimer = null;
 function detectVehicleIcon(ruf) {
   if (!ruf) return '🚔';
   const r = ruf.trim().toUpperCase();
-  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '🚁';  // Hubschrauber
-  if (/\bFW\b/.test(r))              return '🚒';  // Feuerwehr
-  if (/^RTW/.test(r))                return '🚑';  // Rettungswagen
-  if (/^U\d/.test(r))                return '🚗';  // Fremdkräfte
-  return '🚔';                                      // Standard Polizei
+  if (/^HUMMEL|^CHRISTOPH/i.test(r))  return '🚁';  // Hubschrauber
+  if (/\bFW\b/.test(r))               return '🚒';  // Feuerwehr
+  if (/^RTW/.test(r))                 return '🚑';  // Rettungswagen
+  if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  // Kriminalwache (zivil)
+  if (/^U\d/.test(r))                 return '🚗';  // Fremdkräfte
+  return '🚔';                                       // Standard Polizei
 }
 
 function detectVehicleClass(ruf) {
   if (!ruf) return '';
   const r = ruf.trim().toUpperCase();
-  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '';
-  if (/21$/.test(r)) return 'dgl';
-  if (/^U\d/.test(r)) return 'fremd';
+  if (/^HUMMEL|^CHRISTOPH/i.test(r))  return '';
+  if (/21$/.test(r))                  return 'dgl';
+  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';
+  if (/^U\d/.test(r))                 return 'fremd';
   return '';
 }
 
