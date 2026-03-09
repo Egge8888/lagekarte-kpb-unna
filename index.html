@@ -73,32 +73,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .modal-input {
   width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid var(--sep);
   font-size:17px; font-family:var(--font); background:var(--bg); color:var(--txt);
-  outline:none; text-align:center; text-transform:uppercase; letter-spacing:3px;
-  font-weight:600; margin-bottom:20px;
+  outline:none; text-align:center; font-weight:600; margin-bottom:20px;
 }
 .modal-input:focus { border-color:var(--blue); }
-.modal-input::placeholder { letter-spacing:1px; font-weight:400; color:var(--txt2); text-transform:none; }
+.modal-input::placeholder { font-weight:400; color:var(--txt2); }
 .modal-actions { display:flex; gap:12px; }
 .modal-actions .btn { flex:1; }
-
-/* ── RUFNAME INPUT ───────────────────────────────────── */
-#rufname-bar {
-  position:fixed; bottom:0; left:0; right:0; z-index:400;
-  background:var(--glass); backdrop-filter:blur(20px);
-  border-top:1px solid var(--sep); padding:16px 20px 32px;
-  display:flex; gap:12px; align-items:center;
-  transform:translateY(100%); transition:transform .3s cubic-bezier(.4,0,.2,1);
-}
-#rufname-bar.visible { transform:translateY(0); }
-#rufname-bar label { font-size:14px; font-weight:600; color:var(--txt2); white-space:nowrap; }
-#rufname-input {
-  flex:1; padding:10px 14px; border-radius:10px; border:1.5px solid var(--sep);
-  font-size:16px; font-family:var(--font); background:var(--bg); color:var(--txt);
-  outline:none; text-transform:uppercase; letter-spacing:1px; font-weight:600;
-}
-#rufname-input:focus { border-color:var(--blue); }
-#rufname-ok { flex-shrink:0; padding:10px 20px; border-radius:10px; background:var(--blue); color:#fff; border:none; font-size:15px; font-weight:600; cursor:pointer; font-family:var(--font); }
-#rufname-cancel { flex-shrink:0; padding:10px 16px; border-radius:10px; background:transparent; color:var(--txt2); border:1.5px solid var(--sep); font-size:15px; cursor:pointer; font-family:var(--font); }
 
 /* ── MAP SCREEN ──────────────────────────────────────── */
 #map-screen { display:flex; flex-direction:column; background:var(--bg); }
@@ -120,8 +100,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 #mode-badge.viewer { background:rgba(52,199,89,.15); color:var(--green); }
 #mode-badge.solo { background:rgba(0,122,255,.15); color:var(--blue); }
 #room-code-display {
-  font-size:15px; font-weight:700; letter-spacing:2px; color:var(--txt);
-  background:var(--card); padding:4px 12px; border-radius:20px;
+  font-size:18px; font-weight:800; letter-spacing:4px; color:var(--txt);
+  background:var(--card); padding:4px 14px; border-radius:20px;
   border:1px solid var(--sep); cursor:pointer; flex-shrink:0;
   -webkit-tap-highlight-color:transparent;
 }
@@ -149,7 +129,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
   border:1px solid var(--sep); border-radius:18px; padding:7px 6px;
   box-shadow:0 4px 24px rgba(0,0,0,.2);
-  max-height:calc(100vh - 72px); overflow-y:auto; overflow-x:hidden;
+  max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
 }
 .dark #toolbar { background:rgba(44,44,46,.97); }
 
@@ -163,7 +143,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .tool-btn:active { transform:scale(.9); }
 .tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
 .tool-btn.active .tool-label { color:#fff; }
-.tool-label { font-size:8px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tool-label { font-size:7.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
 .tool-divider { width:28px; height:1px; background:var(--sep); margin:2px auto; }
 
 /* ── COLOR PICKER ────────────────────────────────────── */
@@ -182,6 +162,17 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
 .color-dot:active { transform:scale(.9); }
 
+/* ── DRAW FINISH BUTTON ──────────────────────────────── */
+#draw-finish-btn {
+  position:fixed; bottom:36px; left:50%; transform:translateX(-50%);
+  z-index:1100; background:var(--green); color:#fff; border:none;
+  padding:14px 28px; border-radius:18px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:var(--font);
+  box-shadow:0 4px 20px rgba(52,199,89,.55);
+  -webkit-tap-highlight-color:transparent;
+}
+#draw-finish-btn:active { transform:translateX(-50%) scale(.96); }
+
 /* ── TOAST ───────────────────────────────────────────── */
 #toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
@@ -194,14 +185,94 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* ── UNIT MARKERS ────────────────────────────────────── */
 .unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 .unit-icon-img { line-height:1; }
-.unit-label { font-weight:800; color:#003580; text-shadow:0 1px 3px rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7); white-space:nowrap; margin-top:1px; font-family:var(--font); }
+.unit-label {
+  font-weight:800; color:#003580;
+  text-shadow:0 1px 3px rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7);
+  white-space:nowrap; margin-top:1px; font-family:var(--font);
+}
 .dark .unit-label { color:#60A0FF; text-shadow:0 1px 3px rgba(0,0,0,.9); }
+/* DGL – Führungskraft (ends in 21) */
+.unit-label.dgl { color:#996600 !important; }
+.dark .unit-label.dgl { color:#FFD700 !important; }
+/* Fremdkräfte (U-prefix) */
+.unit-label.fremd { color:#6B0AC9 !important; }
+.dark .unit-label.fremd { color:#BF5AF2 !important; }
 
 /* ── TACTIC MARKERS ──────────────────────────────────── */
 .tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
 .tac-icon { font-size:28px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
-.tac-label { font-size:10px; font-weight:800; white-space:nowrap; text-shadow:0 1px 2px rgba(255,255,255,.8); font-family:var(--font); color:#000; }
+.tac-label { font-size:10px; font-weight:800; white-space:nowrap; font-family:var(--font); color:#000;
+  text-shadow:0 1px 2px rgba(255,255,255,.9); }
 .dark .tac-label { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8); }
+
+/* ── KSST special marker ─────────────────────────────── */
+.ksst-marker {
+  display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer;
+}
+.ksst-badge {
+  background:#FF9500; color:#fff; font-size:10px; font-weight:900;
+  padding:3px 7px; border-radius:8px; letter-spacing:.5px;
+  box-shadow:0 2px 8px rgba(255,149,0,.5); border:1.5px solid rgba(255,255,255,.6);
+  white-space:nowrap;
+}
+.ksst-icon { font-size:26px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+
+/* ── VEHICLE POOL PANEL ───────────────────────────────── */
+#pool-panel {
+  position:fixed; right:12px; top:64px;
+  z-index:1000; width:min(234px, calc(100vw - 70px));
+  max-height:calc(100vh - 80px);
+  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:10px 10px 12px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  display:flex; flex-direction:column; gap:8px; overflow-y:auto;
+}
+.dark #pool-panel { background:rgba(44,44,46,.97); }
+#pool-header {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; font-weight:700; color:var(--txt2);
+  padding-bottom:7px; border-bottom:1px solid var(--sep); flex-shrink:0;
+}
+#pool-close-btn {
+  background:none; border:none; color:var(--txt2); font-size:18px;
+  cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent;
+}
+#pool-list { display:flex; flex-direction:column; gap:4px; }
+.pool-empty { text-align:center; color:var(--txt2); font-size:12px; padding:10px 0; line-height:1.5; }
+.pool-item {
+  display:flex; align-items:center; gap:7px; padding:8px 9px;
+  background:var(--bg); border-radius:10px; cursor:pointer;
+  transition:all .12s; -webkit-tap-highlight-color:transparent;
+  border:1.5px solid transparent; user-select:none;
+}
+.pool-item:hover { border-color:var(--blue); }
+.pool-item:active { transform:scale(.97); }
+.pool-emoji { font-size:18px; flex-shrink:0; line-height:1; }
+.pool-ruf { flex:1; font-size:13px; font-weight:700; color:var(--txt); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pool-ruf.dgl { color:#996600; }
+.dark .pool-ruf.dgl { color:#FFD700; }
+.pool-ruf.fremd { color:#6B0AC9; }
+.dark .pool-ruf.fremd { color:#BF5AF2; }
+.pool-del-btn {
+  background:none; border:none; color:var(--txt2); font-size:13px;
+  cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.pool-del-btn:hover { background:rgba(255,59,48,.12); color:var(--red); }
+#pool-add-row { display:flex; gap:6px; flex-shrink:0; }
+#pool-input {
+  flex:1; min-width:0; padding:9px 10px; border-radius:8px;
+  border:1.5px solid var(--sep); font-size:14px; font-family:var(--font);
+  background:var(--bg); color:var(--txt); outline:none;
+  text-transform:uppercase; letter-spacing:1px; font-weight:600;
+}
+#pool-input:focus { border-color:var(--blue); }
+#pool-add-btn {
+  width:38px; height:38px; border-radius:8px; background:var(--blue); color:#fff;
+  border:none; font-size:22px; font-weight:300; cursor:pointer;
+  font-family:var(--font); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
 
 /* ── VIEWER BANNER ───────────────────────────────────── */
 #viewer-hint {
@@ -229,10 +300,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .popup-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
 .popup-btn.del { background:rgba(255,59,48,.12); color:var(--red); }
-.popup-btn.move { background:rgba(0,122,255,.12); color:var(--blue); }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-@media print { #header,#toolbar,#color-picker,#toast,#viewer-hint,#rufname-bar { display:none !important; } #map { position:fixed !important; inset:0 !important; } }
+@media print {
+  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#draw-finish-btn { display:none !important; }
+  #map { position:fixed !important; inset:0 !important; }
+}
 </style>
 </head>
 <body>
@@ -247,7 +320,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="landing-divider">── oder ──</div>
     <button class="btn btn-secondary" onclick="App.showPinModal()">🔴&nbsp; Lage starten &nbsp;<span style="font-size:11px;opacity:.7">(Leitstelle)</span></button>
     <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
-    <button class="btn btn-ghost" id="dark-toggle-landing" onclick="App.toggleDark()">🌙 Darkmode</button>
+    <button class="btn btn-ghost" onclick="App.toggleDark()">🌙 Darkmode</button>
   </div>
 </div>
 
@@ -273,8 +346,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div class="modal-sheet hidden" id="modal-join">
     <div class="modal-handle"></div>
     <div class="modal-title">👁 Lage beitreten</div>
-    <div class="modal-sub">Raumcode von der Leitstelle eingeben</div>
-    <input class="modal-input" id="join-code-input" placeholder="z. B.  LAGE-7483" maxlength="9" autocomplete="off" spellcheck="false"/>
+    <div class="modal-sub">4-stelligen Raumcode von der Leitstelle eingeben</div>
+    <input class="modal-input" id="join-code-input"
+           inputmode="numeric" pattern="[0-9]*"
+           placeholder="z. B.  7 4 8 3" maxlength="4"
+           autocomplete="off" spellcheck="false"
+           style="letter-spacing:10px;font-size:30px;font-weight:800;"/>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
       <button class="btn btn-primary" onclick="App.joinRoom()">Beitreten →</button>
@@ -312,21 +389,21 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   <!-- Toolbar (admin + solo only) -->
   <div id="toolbar">
-    <button class="tool-btn" data-tool="tatort"   onclick="Tools.toggle('tatort')"   title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
-    <button class="tool-btn" data-tool="gefahr"   onclick="Tools.toggle('gefahr')"   title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
-    <button class="tool-btn" data-tool="ksst"     onclick="Tools.toggle('ksst')"     title="Kontrollstelle / KSST"><span>🏴</span><span class="tool-label">KSST</span></button>
-    <button class="tool-btn" data-tool="el"       onclick="Tools.toggle('el')"       title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
-    <button class="tool-btn" data-tool="posten"   onclick="Tools.toggle('posten')"   title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
-    <button class="tool-btn" data-tool="einheit"  onclick="Tools.toggle('einheit')"  title="Einsatzmittel"><span>🚔</span><span class="tool-label">Einheit</span></button>
+    <button class="tool-btn" data-tool="tatort"  onclick="Tools.toggle('tatort')"  title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+    <button class="tool-btn" data-tool="gefahr"  onclick="Tools.toggle('gefahr')"  title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+    <button class="tool-btn" data-tool="ksst"    onclick="Tools.toggle('ksst')"    title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
+    <button class="tool-btn" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
+    <button class="tool-btn" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
+    <button class="tool-btn" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeugpool"><span>🚗</span><span class="tool-label">Fahrzeuge</span></button>
     <div class="tool-divider"></div>
-    <button class="tool-btn" data-tool="text"     onclick="Tools.toggle('text')"     title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
-    <button class="tool-btn" data-tool="circle"   onclick="Tools.toggle('circle')"   title="Kreis / Gefahrenzone"><span>⭕</span><span class="tool-label">Kreis</span></button>
-    <button class="tool-btn" data-tool="polygon"  onclick="Tools.toggle('polygon')"  title="Polygon / Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
-    <button class="tool-btn" data-tool="line"     onclick="Tools.toggle('line')"     title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
-    <button class="tool-btn" data-tool="arrow"    onclick="Tools.toggle('arrow')"    title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    <button class="tool-btn" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
+    <button class="tool-btn" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
+    <button class="tool-btn" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
+    <button class="tool-btn" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+    <button class="tool-btn" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil (2 Punkte)"><span>➡️</span><span class="tool-label">Pfeil</span></button>
     <div class="tool-divider"></div>
-    <button class="tool-btn" data-tool="measure"  onclick="Tools.toggle('measure')"  title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
-    <button class="tool-btn"                       onclick="Tools.undo()"             title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+    <button class="tool-btn" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
+    <button class="tool-btn"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
   </div>
 
   <!-- Color Picker (for circle/polygon/line/arrow) -->
@@ -340,12 +417,21 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="color-dot" style="background:#1C1C1E" data-color="#1C1C1E" onclick="Tools.setColor('#1C1C1E',this)"></div>
   </div>
 
-  <!-- Rufname input bar (for Einheit tool) -->
-  <div id="rufname-bar">
-    <label>Rufname:</label>
-    <input id="rufname-input" type="text" placeholder="z. B. 1-1-21-1" autocomplete="off"/>
-    <button id="rufname-cancel" onclick="Tools.cancelEinheit()">✕</button>
-    <button id="rufname-ok" onclick="Tools.confirmEinheit()">→ Platzieren</button>
+  <!-- Draw-finish button (polygon + line) -->
+  <button id="draw-finish-btn" class="hidden" onclick="Tools.finishDraw()">✓ Zeichnung abschließen</button>
+
+  <!-- Vehicle Pool Panel -->
+  <div id="pool-panel" class="hidden">
+    <div id="pool-header">
+      <span>🚗 Fahrzeugpool</span>
+      <button id="pool-close-btn" onclick="Pool.close()">✕</button>
+    </div>
+    <div id="pool-list"><div class="pool-empty">Noch keine Fahrzeuge.<br>Rufname eingeben und + drücken.</div></div>
+    <div id="pool-add-row">
+      <input id="pool-input" type="text" placeholder="z. B. H1121"
+             autocomplete="off" onkeydown="if(event.key==='Enter')Pool.add()"/>
+      <button id="pool-add-btn" onclick="Pool.add()" title="Fahrzeug hinzufügen">+</button>
+    </div>
   </div>
 
   <!-- Viewer hint -->
@@ -361,7 +447,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════
-   TAKTISCHE LAGEKARTE v1.0 – KPB Unna
+   TAKTISCHE LAGEKARTE v2.0 – KPB Unna
    © 2026 – Hosted on Vercel + Supabase
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -377,55 +463,76 @@ const CFG = {
 /* ── GLOBAL STATE ────────────────────────────────────────────────────── */
 let _mode      = null;   // 'solo' | 'admin' | 'viewer'
 let _roomCode  = null;
-let _sb        = null;   // Supabase client
-let _channel   = null;   // Realtime channel
+let _sb        = null;
+let _channel   = null;
 let _map       = null;
 let _drawn     = null;   // L.featureGroup for all tactical layers
-let _history   = [];     // undo stack
+let _history   = [];
 let _isDark    = false;
 let _syncTimer = null;
+
+/* ── VEHICLE TYPE HELPERS ────────────────────────────────────────────── */
+function detectVehicleIcon(ruf) {
+  if (!ruf) return '🚔';
+  const r = ruf.trim().toUpperCase();
+  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '🚁';
+  if (/^U\d/.test(r)) return '🚗';
+  return '🚔';
+}
+
+function detectVehicleClass(ruf) {
+  if (!ruf) return '';
+  const r = ruf.trim().toUpperCase();
+  if (/^HUMMEL|^CHRISTOPH/i.test(r)) return '';
+  if (/21$/.test(r)) return 'dgl';
+  if (/^U\d/.test(r)) return 'fremd';
+  return '';
+}
+
+function isDGL(ruf) {
+  return /21$/.test((ruf || '').trim().toUpperCase());
+}
 
 /* ── LEAFLET MAP INIT ────────────────────────────────────────────────── */
 function initMap() {
   _map = L.map('map', {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
+    // Disable double-click zoom so our drawing tools can use double-click
+    doubleClickZoom: false,
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
 
-  // OSM (primary – full detail)
   const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
   });
-  // NRW Luftbild (optional – needs wms.nrw.de)
   const dop = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dop', {
     layers: 'nw_dop_rgb', format: 'image/jpeg', transparent: false,
     maxZoom: 22, attribution: '© Geobasis NRW 2024',
   });
-  // NRW Amtl. Basiskarte (optional)
   const abk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_abk', {
     layers: 'WMS_NW_ABK', format: 'image/png', transparent: true,
     maxZoom: 22, attribution: '© Geobasis NRW 2024',
   });
-  // NRW Topo S/W (taktisch)
   const dtk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dtk', {
     layers: 'nw_dtk_sw', format: 'image/png', transparent: true,
     maxZoom: 22, attribution: '© Geobasis NRW 2024',
   });
 
   osm.addTo(_map);
+  // Layer control bottom-right to avoid conflict with pool panel
   L.control.layers({
     '🗺 OpenStreetMap (Standard)': osm,
     '🛩 Luftbild NRW (DOP)':       dop,
-    '📋 Amtliche Basiskarte NRW':  abk,
+    '📋 Amtl. Basiskarte NRW':     abk,
     '⬛ Topograph. Karte S/W':     dtk,
-  }, {}, { position: 'topright' }).addTo(_map);
+  }, {}, { position: 'bottomright' }).addTo(_map);
 
   _drawn = L.featureGroup().addTo(_map);
 
-  // Update unit icon sizes on zoom
+  // Rescale unit icons on zoom
   _map.on('zoomend', () => {
     const z = _map.getZoom();
     _drawn.eachLayer(l => {
@@ -439,28 +546,54 @@ function initMap() {
 /* ── ICONS ───────────────────────────────────────────────────────────── */
 const Icons = {
   _tacDefs: {
-    tatort:  { emoji: '🔴', label: 'Tatort',    color: '#FF3B30' },
-    gefahr:  { emoji: '⚠️',  label: 'Gefahr',    color: '#FF9500' },
-    ksst:    { emoji: '🏴', label: 'KSST',      color: '#007AFF' },
-    el:      { emoji: '⭐', label: 'EL',        color: '#FFCC00' },
-    posten:  { emoji: '🔵', label: 'Posten',    color: '#007AFF' },
+    tatort: { emoji: '🔴', label: 'Tatort',  color: '#FF3B30' },
+    gefahr: { emoji: '⚠️',  label: 'Gefahr',  color: '#FF9500' },
+    el:     { emoji: '⭐', label: 'EL',      color: '#FFCC00' },
+    posten: { emoji: '🔵', label: 'Posten',  color: '#007AFF' },
   },
+
   tac(type) {
+    if (type === 'ksst') return this.ksst();
     const d = this._tacDefs[type];
     return L.divIcon({
-      html: `<div class="tac-marker"><div class="tac-icon">${d.emoji}</div><div class="tac-label" style="color:${d.color}">${d.label}</div></div>`,
+      html: `<div class="tac-marker">
+        <div class="tac-icon">${d.emoji}</div>
+        <div class="tac-label" style="color:${d.color}">${d.label}</div>
+      </div>`,
       className: '', iconAnchor: [16, 30], iconSize: [32, 38],
     });
   },
-  unit(ruf, zoom) {
-    const z = Math.max(12, Math.min(19, zoom ?? 15));
-    const px = Math.round(10 + (z - 12) * 4.5);   // 10px@z12 → 45px@z19
-    const lx = Math.round(px * 0.48);
+
+  ksst() {
+    // Distinct orange badge for Kräftesammelstelle
     return L.divIcon({
-      html: `<div class="unit-marker-wrap"><div class="unit-icon-img" style="font-size:${px}px">🚔</div><div class="unit-label" style="font-size:${lx}px">${escHtml(ruf)}</div></div>`,
+      html: `<div class="ksst-marker">
+        <div class="ksst-icon">🔶</div>
+        <div class="ksst-badge">KSST</div>
+      </div>`,
+      className: '', iconAnchor: [18, 38], iconSize: [36, 50],
+    });
+  },
+
+  unit(ruf, zoom) {
+    const z   = Math.max(12, Math.min(19, zoom ?? 15));
+    const px  = Math.round(10 + (z - 12) * 4.5);   // 10px@z12 → 45px@z19
+    const lx  = Math.round(px * 0.48);
+    const emoji = detectVehicleIcon(ruf);
+    const cls   = detectVehicleClass(ruf);
+    const dgl   = isDGL(ruf);
+    const star  = dgl
+      ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>`
+      : '';
+    return L.divIcon({
+      html: `<div class="unit-marker-wrap">
+        <div class="unit-icon-img" style="font-size:${px}px">${emoji}</div>
+        <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px">${star}${escHtml(ruf)}</div>
+      </div>`,
       className: '', iconAnchor: [px / 2, px / 2], iconSize: [px * 2, px + lx + 6],
     });
   },
+
   text(txt) {
     return L.divIcon({
       html: `<div style="font-size:13px;font-weight:700;color:#000;text-shadow:0 1px 3px rgba(255,255,255,.8);white-space:nowrap;font-family:-apple-system,sans-serif;">${escHtml(txt)}</div>`,
@@ -471,7 +604,7 @@ const Icons = {
 
 /* ── LAYER SERIALISER / DESERIALISER ─────────────────────────────────── */
 const Layers = {
-  uid() { return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); },
+  uid() { return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); },
 
   serialize() {
     const layers = [];
@@ -490,7 +623,6 @@ const Layers = {
   render(d, pushHistory) {
     let layer;
     const isAdmin = _mode === 'admin' || _mode === 'solo';
-    const drag = isAdmin && d.type === 'einheit';
 
     switch (d.type) {
       case 'tatort': case 'gefahr': case 'ksst': case 'el': case 'posten':
@@ -503,16 +635,19 @@ const Layers = {
         layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text), draggable: isAdmin });
         break;
       case 'circle':
-        layer = L.circle([d.lat, d.lng], { radius: d.radius, color: d.color, fillColor: d.color, fillOpacity: 0.15, weight: 2.5 });
+        layer = L.circle([d.lat, d.lng], {
+          radius: d.radius, color: d.color, fillColor: d.color,
+          fillOpacity: 0.12, weight: 2.5,
+        });
         break;
       case 'polyline':
-        layer = L.polyline(d.points, { color: d.color, weight: 3 });
+        layer = L.polyline(d.points, { color: d.color, weight: 3.5 });
         break;
       case 'arrow':
         layer = this._makeArrow(d);
         break;
       case 'polygon':
-        layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.15, weight: 2.5 });
+        layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.12, weight: 2.5 });
         break;
       case 'measure':
         layer = L.polyline(d.points, { color: '#007AFF', weight: 2, dashArray: '6 4' });
@@ -524,7 +659,7 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    if (isAdmin && d.type !== 'circle' && d.type !== 'polyline' && d.type !== 'polygon' && d.type !== 'arrow' && d.type !== 'measure') {
+    if (isAdmin && ['tatort','gefahr','ksst','el','posten','einheit','text'].includes(d.type)) {
       layer.on('dragend', () => {
         const ll = layer.getLatLng();
         d.lat = ll.lat; d.lng = ll.lng;
@@ -534,7 +669,6 @@ const Layers = {
     if (isAdmin) this._addPopup(layer, d);
 
     if (d.type === 'arrow') {
-      // Arrow is a layerGroup – add all sublayers
       layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
     }
 
@@ -545,36 +679,38 @@ const Layers = {
 
   _makeArrow(d) {
     if (d.points.length < 2) return L.polyline(d.points, { color: d.color, weight: 3 });
-    const a = d.points[d.points.length - 2];
-    const b = d.points[d.points.length - 1];
+    const pts = d.points;
+    const a   = pts[pts.length - 2];
+    const b   = pts[pts.length - 1];
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
-    const line  = L.polyline(d.points, { color: d.color, weight: 3 });
+    const line  = L.polyline(pts, { color: d.color, weight: 3.5 });
     const head  = L.marker(b, {
       icon: L.divIcon({
-        html: `<div style="transform:rotate(${angle - 90}deg);color:${d.color};font-size:22px;line-height:1;margin-left:-11px;margin-top:-11px;">▲</div>`,
-        className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+        html: `<div style="transform:rotate(${angle - 90}deg);color:${d.color};font-size:24px;line-height:1;margin-left:-12px;margin-top:-12px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">▲</div>`,
+        className: '', iconSize: [24, 24], iconAnchor: [12, 12],
       }),
     });
     return L.layerGroup([line, head]);
   },
 
   _addPopup(layer, d) {
-    const target = d.type === 'arrow' ? null : layer;
+    const target = (d.type === 'arrow' || d.type === 'polyline' || d.type === 'polygon' || d.type === 'circle' || d.type === 'measure') ? layer : layer;
     if (!target) return;
-    const label = d.ruf || d.text || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type);
+    const label = d.ruf || d.text || (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+    const radiusInfo = d.type === 'circle' ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>` : '';
     target.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(label)}</div>
+        ${radiusInfo}
         <div class="popup-actions">
           <button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>
         </div>
-      </div>`, { maxWidth: 220 });
+      </div>`, { maxWidth: 240 });
   },
 
   deleteById(id) {
     _drawn.eachLayer(l => {
       if (l._lid === id) { _drawn.removeLayer(l); }
-      // layerGroup (arrow)
       if (l._ldata && l._ldata.id === id && l instanceof L.LayerGroup) { _drawn.removeLayer(l); }
     });
     _map.closePopup();
@@ -590,13 +726,108 @@ const Layers = {
   },
 };
 
+/* ── VEHICLE POOL ────────────────────────────────────────────────────── */
+const Pool = {
+  _vehicles: [],
+  _placingFromPool: false,
+
+  load() {
+    try { this._vehicles = JSON.parse(localStorage.getItem('lagekarte_pool') || '[]'); } catch(e) { this._vehicles = []; }
+    this.render();
+  },
+
+  save() {
+    localStorage.setItem('lagekarte_pool', JSON.stringify(this._vehicles));
+  },
+
+  toggle() {
+    if (_mode === 'viewer') return;
+    // Cancel pending placement
+    if (this._placingFromPool) {
+      this._placingFromPool = false;
+      Tools._active = null;
+      Tools._pendingRuf = null;
+      _map.getContainer().style.cursor = '';
+    }
+    const panel = document.getElementById('pool-panel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      setTimeout(() => document.getElementById('pool-input').focus(), 150);
+    }
+  },
+
+  open() {
+    if (_mode === 'viewer') return;
+    document.getElementById('pool-panel').classList.remove('hidden');
+  },
+
+  close() {
+    document.getElementById('pool-panel').classList.add('hidden');
+  },
+
+  add() {
+    const input = document.getElementById('pool-input');
+    const ruf = input.value.trim().toUpperCase();
+    if (!ruf) { toast('Rufname eingeben'); input.focus(); return; }
+    this._vehicles.push({ id: Layers.uid(), ruf });
+    this.save();
+    this.render();
+    input.value = '';
+    input.focus();
+    toast(`✅ ${ruf} im Pool`);
+  },
+
+  remove(id) {
+    this._vehicles = this._vehicles.filter(v => v.id !== id);
+    this.save();
+    this.render();
+  },
+
+  startPlace(ruf) {
+    this._placingFromPool = true;
+    this.close();
+    Tools._active = 'einheit';
+    Tools._pendingRuf = ruf;
+    document.getElementById('pool-toggle-btn').classList.add('active');
+    _map.getContainer().style.cursor = 'crosshair';
+    toast(`📍 ${ruf} – auf Karte tippen`);
+  },
+
+  onPlaced() {
+    if (this._placingFromPool) {
+      this._placingFromPool = false;
+      document.getElementById('pool-toggle-btn').classList.remove('active');
+      setTimeout(() => this.open(), 250);
+    }
+  },
+
+  render() {
+    const list = document.getElementById('pool-list');
+    if (!list) return;
+    if (!this._vehicles.length) {
+      list.innerHTML = '<div class="pool-empty">Noch keine Fahrzeuge.<br>Rufname eingeben und + drücken.</div>';
+      return;
+    }
+    list.innerHTML = this._vehicles.map(v => {
+      const emoji = detectVehicleIcon(v.ruf);
+      const cls   = detectVehicleClass(v.ruf);
+      const star  = isDGL(v.ruf) ? '★ ' : '';
+      const safeRuf = escHtml(v.ruf).replace(/'/g, '&#39;');
+      return `<div class="pool-item" onclick="Pool.startPlace('${safeRuf}')">
+        <span class="pool-emoji">${emoji}</span>
+        <span class="pool-ruf${cls ? ' ' + cls : ''}">${star}${escHtml(v.ruf)}</span>
+        <button class="pool-del-btn" onclick="event.stopPropagation();Pool.remove('${v.id}')" title="Entfernen">✕</button>
+      </div>`;
+    }).join('');
+  },
+};
+
 /* ── TOOLS ───────────────────────────────────────────────────────────── */
 const Tools = {
   _active: null,
   _color:  '#FF3B30',
   _drawPoints: [],
   _drawLayer:  null,
-  _measureStart: null,
   _pendingRuf: null,
 
   toggle(name) {
@@ -604,9 +835,15 @@ const Tools = {
     this.deactivate();
     this._active = name;
     document.querySelector(`[data-tool="${name}"]`)?.classList.add('active');
-    const needsColor = ['circle','polygon','line','arrow'].includes(name);
+    const needsColor = ['circle', 'polygon', 'line', 'arrow'].includes(name);
     document.getElementById('color-picker').classList.toggle('hidden', !needsColor);
-    if (name === 'einheit') { this._showRufBar(); return; }
+    if (name === 'circle') {
+      toast('Klick = Mittelpunkt setzen, dann Radius eingeben');
+    } else if (name === 'arrow') {
+      toast('1. Klick = Start, 2. Klick = Ende');
+    } else if (['polygon', 'line'].includes(name)) {
+      toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
+    }
     _map.getContainer().style.cursor = 'crosshair';
   },
 
@@ -615,10 +852,11 @@ const Tools = {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
     this._active = null;
+    this._pendingRuf = null;
     this._drawPoints = [];
     if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
     document.getElementById('color-picker').classList.add('hidden');
-    document.getElementById('rufname-bar').classList.remove('visible');
+    document.getElementById('draw-finish-btn').classList.add('hidden');
     _map.getContainer().style.cursor = '';
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
@@ -632,24 +870,20 @@ const Tools = {
 
   undo() { Layers.undo(); },
 
-  _showRufBar() {
-    const bar = document.getElementById('rufname-bar');
-    bar.classList.add('visible');
-    document.getElementById('rufname-input').value = '';
-    setTimeout(() => document.getElementById('rufname-input').focus(), 350);
-  },
-
-  confirmEinheit() {
-    const ruf = document.getElementById('rufname-input').value.trim();
-    if (!ruf) { toast('Rufname eingeben'); return; }
-    this._pendingRuf = ruf;
-    document.getElementById('rufname-bar').classList.remove('visible');
-    _map.getContainer().style.cursor = 'crosshair';
-    toast('Auf Karte tippen zum Platzieren');
-  },
-
-  cancelEinheit() {
-    this._pendingRuf = null;
+  finishDraw() {
+    const tool = this._active;
+    if (!['polygon', 'line'].includes(tool)) return;
+    if (this._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
+    if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
+    const pts = [...this._drawPoints];
+    let d;
+    if (tool === 'polygon') {
+      d = { id: Layers.uid(), type: 'polygon', points: pts, color: this._color };
+    } else {
+      d = { id: Layers.uid(), type: 'polyline', points: pts, color: this._color };
+    }
+    Layers.render(d, true);
+    Sync.push();
     this.deactivate();
   },
 
@@ -658,8 +892,8 @@ const Tools = {
     const { lat, lng } = e.latlng;
     const tool = Tools._active;
 
-    // Single-click tools
-    if (['tatort','gefahr','ksst','el','posten'].includes(tool)) {
+    // ── Tactical single-click markers ──────────────────────────────────
+    if (['tatort', 'gefahr', 'ksst', 'el', 'posten'].includes(tool)) {
       const d = { id: Layers.uid(), type: tool, lat, lng };
       Layers.render(d, true);
       Sync.push();
@@ -667,40 +901,44 @@ const Tools = {
       return;
     }
 
+    // ── Einheit (vehicle from pool) ────────────────────────────────────
     if (tool === 'einheit' && Tools._pendingRuf) {
-      const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf: Tools._pendingRuf };
+      const ruf = Tools._pendingRuf;
+      const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf };
       Layers.render(d, true);
       Sync.push();
       Tools._pendingRuf = null;
       Tools.deactivate();
+      Pool.onPlaced();
+      toast(`✅ ${ruf} platziert`);
       return;
     }
 
+    // ── Text ───────────────────────────────────────────────────────────
     if (tool === 'text') {
       const txt = prompt('Text eingeben:');
-      if (!txt) return;
-      const d = { id: Layers.uid(), type: 'text', lat, lng, text: txt };
+      if (!txt || !txt.trim()) return;
+      const d = { id: Layers.uid(), type: 'text', lat, lng, text: txt.trim() };
       Layers.render(d, true);
       Sync.push();
       Tools.deactivate();
       return;
     }
 
+    // ── Circle: click center → prompt for radius ───────────────────────
     if (tool === 'circle') {
-      if (Tools._drawPoints.length === 0) {
-        Tools._drawPoints = [[lat, lng]];
-        toast('2. Klick = Radius festlegen');
-      } else {
-        const center = Tools._drawPoints[0];
-        const radius = _map.distance(center, [lat, lng]);
-        const d = { id: Layers.uid(), type: 'circle', lat: center[0], lng: center[1], radius, color: Tools._color };
-        Layers.render(d, true);
-        Sync.push();
-        Tools.deactivate();
-      }
+      const rStr = prompt('Radius in Metern eingeben:', '200');
+      if (rStr === null) return;  // cancelled
+      const radius = Math.max(10, parseInt(rStr) || 200);
+      const d = { id: Layers.uid(), type: 'circle', lat, lng, radius, color: Tools._color };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      toast(`Kreis: ⌀ ${radius >= 1000 ? (radius/1000).toFixed(1)+'km' : radius+'m'}`);
       return;
     }
 
+    // ── Measure ────────────────────────────────────────────────────────
     if (tool === 'measure') {
       if (Tools._drawPoints.length === 0) {
         Tools._drawPoints = [[lat, lng]];
@@ -717,37 +955,47 @@ const Tools = {
       return;
     }
 
-    // Multi-click tools: polygon, line, arrow
-    if (['polygon','line','arrow'].includes(tool)) {
+    // ── Arrow: exactly 2 clicks ────────────────────────────────────────
+    if (tool === 'arrow') {
+      if (Tools._drawPoints.length === 0) {
+        Tools._drawPoints = [[lat, lng]];
+        // preview dot
+        if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
+        Tools._drawLayer = L.circleMarker([lat, lng], { radius: 5, color: Tools._color, fillOpacity: 1 }).addTo(_map);
+        toast('2. Klick = Pfeilspitze');
+      } else {
+        Tools._drawPoints.push([lat, lng]);
+        const d = { id: Layers.uid(), type: 'arrow', points: [...Tools._drawPoints], color: Tools._color };
+        Layers.render(d, true);
+        Sync.push();
+        Tools.deactivate();
+      }
+      return;
+    }
+
+    // ── Polygon / Line: multi-click + finish button ────────────────────
+    if (['polygon', 'line'].includes(tool)) {
       Tools._drawPoints.push([lat, lng]);
-      // Preview layer
       if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
       if (Tools._drawPoints.length > 1) {
-        Tools._drawLayer = L.polyline(Tools._drawPoints, { color: Tools._color, weight: 2, dashArray: '5 5' }).addTo(_map);
+        Tools._drawLayer = L.polyline(Tools._drawPoints, {
+          color: Tools._color, weight: 2.5, dashArray: '6 4',
+        }).addTo(_map);
       }
-      toast(`${Tools._drawPoints.length} Punkt(e) – Doppelklick zum Abschluss`);
+      // Show finish button after 2nd point
+      if (Tools._drawPoints.length >= 2) {
+        document.getElementById('draw-finish-btn').classList.remove('hidden');
+      }
+      toast(`${Tools._drawPoints.length} Punkt(e) – „✓ Fertig" drücken`);
     }
   },
 
+  // Legacy double-click support (desktop)
   _onMapDblClick(e) {
     const tool = Tools._active;
-    if (!['polygon','line','arrow'].includes(tool)) return;
-    if (Tools._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
+    if (!['polygon', 'line'].includes(tool)) return;
     L.DomEvent.stopPropagation(e);
-
-    if (Tools._drawLayer) { _map.removeLayer(Tools._drawLayer); Tools._drawLayer = null; }
-    const pts = [...Tools._drawPoints];
-    let d;
-    if (tool === 'polygon') {
-      d = { id: Layers.uid(), type: 'polygon', points: pts, color: Tools._color };
-    } else if (tool === 'line') {
-      d = { id: Layers.uid(), type: 'polyline', points: pts, color: Tools._color };
-    } else {
-      d = { id: Layers.uid(), type: 'arrow', points: pts, color: Tools._color };
-    }
-    Layers.render(d, true);
-    Sync.push();
-    Tools.deactivate();
+    Tools.finishDraw();
   },
 };
 
@@ -757,15 +1005,15 @@ const Sync = {
 
   async connect(roomCode, asAdmin) {
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-
-    // Load existing state
     const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
     if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
     Layers.deserialize(data.state);
 
-    // Subscribe
     _channel = _sb.channel('room:' + roomCode)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}` }, payload => {
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public',
+        table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
+      }, payload => {
         if (_mode !== 'admin') Layers.deserialize(payload.new.state);
       })
       .on('presence', { event: 'sync' }, () => {
@@ -793,7 +1041,6 @@ const Sync = {
       if (_roomCode && _sb) {
         await _sb.from('lagekarte_sessions').update({ state, updated_at: new Date().toISOString() }).eq('room_code', _roomCode);
       } else {
-        // Solo: localStorage
         localStorage.setItem('lagekarte_solo', JSON.stringify(state));
       }
     }, 800);
@@ -810,10 +1057,11 @@ const App = {
   async startSolo() {
     _mode = 'solo';
     this._openMap();
-    // Load solo state from localStorage
+    Pool.load();
     const saved = localStorage.getItem('lagekarte_solo');
-    if (saved) { try { Layers.deserialize(JSON.parse(saved)); } catch(e){} }
-    document.getElementById('mode-badge').className = 'solo'; document.getElementById('mode-badge').textContent = 'SOLO';
+    if (saved) { try { Layers.deserialize(JSON.parse(saved)); } catch(e) {} }
+    document.getElementById('mode-badge').className = 'solo';
+    document.getElementById('mode-badge').textContent = 'SOLO';
     document.getElementById('room-code-display').classList.add('hidden');
     document.getElementById('viewer-count').classList.add('hidden');
     document.getElementById('live-dot').classList.add('off');
@@ -829,33 +1077,41 @@ const App = {
     document.getElementById('modal-overlay').classList.remove('hidden');
     ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
     setTimeout(() => document.getElementById('p0').focus(), 100);
-    // Auto-advance pin digits
     ['p0','p1','p2','p3'].forEach((id, i) => {
       const el = document.getElementById(id);
       el.oninput = () => { if (el.value && i < 3) document.getElementById(`p${i+1}`).focus(); };
-      el.onkeydown = e => { if (e.key === 'Enter') this.checkPin(); if (e.key === 'Backspace' && !el.value && i > 0) document.getElementById(`p${i-1}`).focus(); };
+      el.onkeydown = e => {
+        if (e.key === 'Enter') this.checkPin();
+        if (e.key === 'Backspace' && !el.value && i > 0) document.getElementById(`p${i-1}`).focus();
+      };
     });
   },
 
   async checkPin() {
     const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
-    if (pin !== CFG.ADMIN_PIN) { toast('❌ Falscher PIN'); ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value=''); document.getElementById('p0').focus(); return; }
+    if (pin !== CFG.ADMIN_PIN) {
+      toast('❌ Falscher PIN');
+      ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p0').focus();
+      return;
+    }
     this.closeModal();
     _mode = 'admin';
     _roomCode = this._genCode();
-    // Create room in Supabase
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
     const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
-    if (error) { toast('❌ Fehler beim Erstellen der Lage'); return; }
+    if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
     await Sync.connect(_roomCode, true);
     this._openMap();
-    document.getElementById('mode-badge').className = 'admin'; document.getElementById('mode-badge').textContent = 'ADMIN';
+    Pool.load();
+    document.getElementById('mode-badge').className = 'admin';
+    document.getElementById('mode-badge').textContent = 'ADMIN';
     const rc = document.getElementById('room-code-display');
     rc.textContent = _roomCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.remove('hidden');
     document.getElementById('toolbar').style.display = 'flex';
     document.getElementById('viewer-hint').classList.add('hidden');
-    toast(`✅ Lage gestartet: ${_roomCode}`, 4000);
+    toast(`✅ Lage gestartet – Code: ${_roomCode}`, 6000);
   },
 
   showJoinModal() {
@@ -865,22 +1121,24 @@ const App = {
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.getElementById('join-code-input').value = '';
     setTimeout(() => document.getElementById('join-code-input').focus(), 100);
-    document.getElementById('join-code-input').onkeydown = e => { if (e.key==='Enter') this.joinRoom(); };
+    document.getElementById('join-code-input').onkeydown = e => { if (e.key === 'Enter') this.joinRoom(); };
   },
 
   async joinRoom() {
-    const raw  = document.getElementById('join-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'');
-    if (raw.length < 4) { toast('Raumcode eingeben'); return; }
+    const raw = document.getElementById('join-code-input').value.trim().replace(/[^0-9]/g, '');
+    if (raw.length !== 4) { toast('Bitte 4-stelligen Code eingeben'); return; }
     this.closeModal();
     _mode = 'viewer'; _roomCode = raw;
     const ok = await Sync.connect(raw, false);
     if (!ok) { _mode = null; _roomCode = null; return; }
     this._openMap();
-    document.getElementById('mode-badge').className = 'viewer'; document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
+    document.getElementById('mode-badge').className = 'viewer';
+    document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
     const rc = document.getElementById('room-code-display');
     rc.textContent = _roomCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.add('hidden');
     document.getElementById('toolbar').style.display = 'none';
+    document.getElementById('pool-panel').classList.add('hidden');
     document.getElementById('viewer-hint').classList.remove('hidden');
     toast(`👁 Lage ${_roomCode} beigetreten`);
   },
@@ -908,9 +1166,8 @@ const App = {
 
   goHome() {
     Sync.disconnect();
-    if (_mode === 'solo' && _drawn) {
-      Sync.push(); // save solo state before leaving
-    }
+    Pool.close();
+    if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
     if (_drawn) _drawn.clearLayers();
     _history = [];
@@ -921,7 +1178,9 @@ const App = {
 
   copyCode() {
     if (!_roomCode) return;
-    navigator.clipboard?.writeText(_roomCode).then(() => toast('Raumcode kopiert: ' + _roomCode)).catch(() => toast(_roomCode));
+    navigator.clipboard?.writeText(_roomCode)
+      .then(() => toast('📋 Raumcode kopiert: ' + _roomCode))
+      .catch(() => toast(_roomCode));
   },
 
   toggleDark() {
@@ -937,30 +1196,32 @@ const App = {
     ms.style.display = 'flex';
     if (!_map) initMap();
     setTimeout(() => _map.invalidateSize(), 100);
-    // Attach map events
-    _map.on('click', Tools._onMapClick.bind(Tools));
+    _map.on('click',   Tools._onMapClick.bind(Tools));
     _map.on('dblclick', Tools._onMapDblClick.bind(Tools));
   },
 
   _genCode() {
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const nums    = '0123456789';
-    const L = () => letters[Math.floor(Math.random() * letters.length)];
-    const N = () => nums[Math.floor(Math.random() * nums.length)];
-    return `LAGE-${L()}${L()}${N()}${N()}`;
+    // 4-digit numeric code: 1000–9999
+    return String(Math.floor(1000 + Math.random() * 9000));
   },
 };
 
 /* ── HELPERS ─────────────────────────────────────────────────────────── */
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 let _toastTimer;
 function toast(msg, dur = 3000) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.style.background = msg.startsWith('❌') ? 'rgba(255,59,48,.9)' : msg.startsWith('✅') ? 'rgba(52,199,89,.9)' : 'rgba(0,0,0,.75)';
+  el.style.background = msg.startsWith('❌') ? 'rgba(255,59,48,.9)'
+    : msg.startsWith('✅') ? 'rgba(52,199,89,.9)'
+    : 'rgba(0,0,0,.78)';
   el.classList.add('show');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
@@ -968,11 +1229,9 @@ function toast(msg, dur = 3000) {
 
 /* ── BOOT ────────────────────────────────────────────────────────────── */
 (function boot() {
-  // Restore dark mode
   if (localStorage.getItem('lagekarte_dark') === '1') {
     _isDark = true; document.documentElement.classList.add('dark');
   }
-  // Make Layers.deleteById globally accessible for popup onclick
   window._delLayer = (id) => Layers.deleteById(id);
 })();
 </script>
