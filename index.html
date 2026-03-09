@@ -508,7 +508,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 </head>
 <body>
 
-<!-- ═══ LANDING ══════════════════════════════════════════════════════════ -->
 <div id="landing" class="screen">
   <div class="landing-inner">
     <div class="landing-logo">🗺️</div>
@@ -522,9 +521,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   </div>
 </div>
 
-<!-- ═══ MODAL OVERLAY ════════════════════════════════════════════════════ -->
 <div id="modal-overlay" class="hidden">
-  <!-- PIN Modal -->
   <div class="modal-sheet" id="modal-pin">
     <div class="modal-handle"></div>
     <div class="modal-title">🔐 Admin-PIN</div>
@@ -540,7 +537,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <button class="btn btn-primary" onclick="App.checkPin()">✓&nbsp; Bestätigen</button>
     </div>
   </div>
-  <!-- JOIN Modal -->
   <div class="modal-sheet hidden" id="modal-join">
     <div class="modal-handle"></div>
     <div class="modal-title">👁 Lage beitreten</div>
@@ -555,7 +551,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <button class="btn btn-primary" onclick="App.joinRoom()">Beitreten →</button>
     </div>
   </div>
-  <!-- DELETE Modal -->
   <div class="modal-sheet hidden" id="modal-delete">
     <div class="modal-handle"></div>
     <div class="modal-title">⚠️ Lage beenden</div>
@@ -567,10 +562,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   </div>
 </div>
 
-<!-- ═══ MAP SCREEN ═══════════════════════════════════════════════════════ -->
 <div id="map-screen" class="hidden" style="position:fixed;inset:0;display:flex;flex-direction:column;">
 
-  <!-- Header -->
   <div id="header">
     <span id="mode-badge" class="solo">SOLO</span>
     <span id="room-code-display" onclick="App.copyCode()" title="Raumcode kopieren" class="hidden"></span>
@@ -582,10 +575,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="header-btn" onclick="App.goHome()" title="Zurück">✕</button>
   </div>
 
-  <!-- Map -->
   <div id="map" style="flex:1;"></div>
 
-  <!-- Toolbar (admin + solo only) -->
   <div id="toolbar">
     <button class="tool-btn" data-tool="tatort"  onclick="Tools.toggle('tatort')"  title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
     <button class="tool-btn" data-tool="gefahr"  onclick="Tools.toggle('gefahr')"  title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
@@ -609,7 +600,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="tool-btn" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
   </div>
 
-  <!-- Color Picker (for circle/polygon/line/arrow) -->
   <div id="color-picker" class="hidden">
     <div class="color-dot selected" style="background:#FF3B30" data-color="#FF3B30" onclick="Tools.setColor('#FF3B30',this)"></div>
     <div class="color-dot" style="background:#FF9500" data-color="#FF9500" onclick="Tools.setColor('#FF9500',this)"></div>
@@ -620,10 +610,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="color-dot" style="background:#1C1C1E" data-color="#1C1C1E" onclick="Tools.setColor('#1C1C1E',this)"></div>
   </div>
 
-  <!-- Draw-finish button (polygon + line) -->
   <button id="draw-finish-btn" class="hidden" onclick="Tools.finishDraw()">✓ Zeichnung abschließen</button>
 
-  <!-- Vehicle Pool Panel -->
   <div id="pool-panel" class="hidden">
     <div id="pool-header">
       <span>🚗 Fahrzeugpool</span>
@@ -637,10 +625,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     </div>
   </div>
 
-  <!-- Viewer hint -->
   <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
 
-  <!-- Search Bar (floating top-center) -->
   <div id="search-bar" class="hidden">
     <div id="search-input-row">
       <input id="search-input" type="text" placeholder="Ort suchen …"
@@ -653,7 +639,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div id="search-results" class="hidden"></div>
   </div>
 
-  <!-- Text Input Modal (multi-line) -->
   <div id="text-modal" class="hidden" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;">
     <div style="background:var(--card);border-radius:22px;width:100%;max-width:440px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
       <div style="font-size:16px;font-weight:700;margin-bottom:12px;">📝 Text eingeben</div>
@@ -669,7 +654,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     </div>
   </div>
 
-  <!-- Route Panel (bottom sheet) -->
   <div id="route-panel">
     <div id="route-handle"></div>
     <div id="route-header">
@@ -679,13 +663,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="route-input-row">
       <span class="route-dot">🟢</span>
       <input class="route-input" id="route-from" type="text"
-             placeholder="Start (Adresse oder Ort)" autocomplete="off"/>
+             placeholder="Start (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('from')" title="Mein Standort">📍</button>
     </div>
     <div class="route-input-row">
       <span class="route-dot">🔴</span>
       <input class="route-input" id="route-to" type="text"
-             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"/>
+             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('to')" title="Mein Standort">📍</button>
     </div>
     <div id="route-actions">
@@ -705,12 +691,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- ═══ SCRIPTS ══════════════════════════════════════════════════════════ -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.editable/1.2.0/Leaflet.Editable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 'use strict';
@@ -771,8 +754,7 @@ function initMap() {
   _map = L.map('map', {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
-    doubleClickZoom: false,
-    editable: true,        // Leaflet.Editable – enables .enableEdit() on layers
+    doubleClickZoom: false
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -885,12 +867,12 @@ const Layers = {
     return { layers, mapView: { center: [_map.getCenter().lat, _map.getCenter().lng], zoom: _map.getZoom() } };
   },
 
-  deserialize(state) {
+  deserialize(state, ignoreView = false) {
     _drawn.clearLayers();
     _history = [];
     if (!state || !state.layers) return;
     state.layers.forEach(d => this.render(d));
-    if (state.mapView) _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
+    if (state.mapView && !ignoreView) _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
   },
 
   render(d, pushHistory) {
@@ -991,7 +973,7 @@ const Layers = {
       </div>`, { maxWidth: 260 });
   },
 
-  // Delegate to custom Editor module (Leaflet.Editable no longer used)
+  // Delegate to custom Editor module
   editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
@@ -1499,14 +1481,25 @@ const Sync = {
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
     const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
     if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
-    Layers.deserialize(data.state);
+    
+    // First load: allow center view
+    Layers.deserialize(data.state, false);
 
     _channel = _sb.channel('room:' + roomCode)
       .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public',
+        event: '*', schema: 'public',
         table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
       }, payload => {
-        if (_mode !== 'admin') Layers.deserialize(payload.new.state);
+        // Handle deletion of room
+        if (payload.eventType === 'DELETE') {
+          toast('⚠️ Die Lage wurde von der Einsatzleitung beendet.');
+          App.goHome();
+          return;
+        }
+        // Handle updates for viewers (pass true to ignore map view updates)
+        if (payload.eventType === 'UPDATE' && _mode !== 'admin') {
+          Layers.deserialize(payload.new.state, true);
+        }
       })
       .on('presence', { event: 'sync' }, () => {
         const state = _channel.presenceState();
@@ -1590,11 +1583,15 @@ const App = {
     this.closeModal();
     _mode = 'admin';
     _roomCode = this._genCode();
+    
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
     const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
     if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
-    await Sync.connect(_roomCode, true);
+    
+    // WICHTIG: Karte vor Connect initialisieren
     this._openMap();
+    await Sync.connect(_roomCode, true);
+    
     Pool.load();
     document.getElementById('mode-badge').className = 'admin';
     document.getElementById('mode-badge').textContent = 'ADMIN';
@@ -1629,9 +1626,16 @@ const App = {
     if (raw.length !== 4) { toast('Bitte 4-stelligen Code eingeben'); return; }
     this.closeModal();
     _mode = 'viewer'; _roomCode = raw;
-    const ok = await Sync.connect(raw, false);
-    if (!ok) { _mode = null; _roomCode = null; return; }
+    
+    // WICHTIG: Karte vor Connect initialisieren
     this._openMap();
+    
+    const ok = await Sync.connect(raw, false);
+    if (!ok) { 
+      this.goHome();
+      return; 
+    }
+    
     document.getElementById('mode-badge').className = 'viewer';
     document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
     const rc = document.getElementById('room-code-display');
