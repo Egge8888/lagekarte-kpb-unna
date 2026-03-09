@@ -694,7 +694,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.editable/1.2.0/Leaflet.Editable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════
@@ -754,7 +756,8 @@ function initMap() {
   _map = L.map('map', {
     center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
     zoomControl: false, attributionControl: true,
-    doubleClickZoom: false
+    doubleClickZoom: false,
+    editable: true // Sicherstellen, dass alles läuft wie zuvor
   });
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
@@ -863,16 +866,20 @@ const Layers = {
 
   serialize() {
     const layers = [];
-    _drawn.eachLayer(l => { if (l._ldata) layers.push(l._ldata); });
+    if (_drawn) _drawn.eachLayer(l => { if (l._ldata) layers.push(l._ldata); });
     return { layers, mapView: { center: [_map.getCenter().lat, _map.getCenter().lng], zoom: _map.getZoom() } };
   },
 
   deserialize(state, ignoreView = false) {
-    _drawn.clearLayers();
+    // Zusätzliche Sicherheit: Prüfen, ob _drawn bereits bereit ist
+    if (_drawn) _drawn.clearLayers();
     _history = [];
     if (!state || !state.layers) return;
+    
     state.layers.forEach(d => this.render(d));
-    if (state.mapView && !ignoreView) _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
+    if (_map && state.mapView && !ignoreView) {
+      _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
+    }
   },
 
   render(d, pushHistory) {
@@ -910,7 +917,7 @@ const Layers = {
         break;
     }
 
-    if (!layer) return;
+    if (!layer || !_drawn) return;
     layer._lid   = d.id;
     layer._ldata = d;
 
@@ -977,6 +984,7 @@ const Layers = {
   editLayer(id) { Editor.start(id); },
 
   deleteById(id) {
+    if (!_drawn) return;
     _drawn.eachLayer(l => {
       if (l._lid === id) { _drawn.removeLayer(l); }
       if (l._ldata && l._ldata.id === id && l instanceof L.LayerGroup) { _drawn.removeLayer(l); }
@@ -1307,6 +1315,7 @@ const Editor = {
   start(id) {
     this.finish(true);
     let found = null;
+    if (!_drawn) return;
     _drawn.eachLayer(l => {
       if (l._lid === id && l._ldata) { found = l; return; }
       // LayerGroup (arrows): check sub-layers
@@ -1497,7 +1506,7 @@ const Sync = {
           return;
         }
         // Handle updates for viewers (pass true to ignore map view updates)
-        if (payload.eventType === 'UPDATE' && _mode !== 'admin') {
+        if (payload.eventType === 'UPDATE' && _mode !== 'admin' && payload.new) {
           Layers.deserialize(payload.new.state, true);
         }
       })
@@ -1588,7 +1597,7 @@ const App = {
     const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
     if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
     
-    // WICHTIG: Karte vor Connect initialisieren
+    // WICHTIG: Karte VOR Connect initialisieren
     this._openMap();
     await Sync.connect(_roomCode, true);
     
@@ -1627,7 +1636,7 @@ const App = {
     this.closeModal();
     _mode = 'viewer'; _roomCode = raw;
     
-    // WICHTIG: Karte vor Connect initialisieren
+    // WICHTIG: Karte VOR Connect initialisieren
     this._openMap();
     
     const ok = await Sync.connect(raw, false);
@@ -1687,7 +1696,7 @@ const App = {
   confirmReset() {
     if (!confirm('Alle Elemente auf der Karte löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden.')) return;
     if (typeof Editor !== 'undefined') Editor.finish(true);
-    _drawn.clearLayers();
+    if (_drawn) _drawn.clearLayers();
     _history = [];
     Sync.push();
     toast('🗑 Karte zurückgesetzt');
