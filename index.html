@@ -237,18 +237,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
   border:1px solid var(--sep); border-radius:18px; padding:10px 10px 12px;
   box-shadow:0 4px 24px rgba(0,0,0,.2);
-  display:flex; flex-direction:column; gap:8px; overflow-y:auto;
+  display:flex; flex-direction:column; overflow-y:auto;
 }
 .dark #pool-panel { background:rgba(44,44,46,.97); }
-#pool-header {
-  display:flex; align-items:center; justify-content:space-between;
-  font-size:12px; font-weight:700; color:var(--txt2);
-  padding-bottom:7px; border-bottom:1px solid var(--sep); flex-shrink:0;
-}
-#pool-close-btn {
-  background:none; border:none; color:var(--txt2); font-size:18px;
-  cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent;
-}
+
 #pool-list { display:flex; flex-direction:column; gap:4px; }
 .pool-empty { text-align:center; color:var(--txt2); font-size:12px; padding:10px 0; line-height:1.5; }
 .pool-item {
@@ -306,7 +298,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 
 /* ── TOOL-ACTIVE: Overlays click-through wenn Tool aktiv ─ */
-/* Ermöglicht Platzierung von EM INNERHALB von Kreisen/Flächen */
 #map.tool-active .leaflet-overlay-pane { pointer-events: none !important; }
 #map.tool-active .leaflet-marker-pane  { pointer-events: none !important; }
 
@@ -408,7 +399,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 /* ══════════════════════════════════════════════════════════
    MOBILE LAYOUT  ≤ 767 px  (iPhone / kleines Tablet)
-   Toolbar wird zur horizontalen Leiste am unteren Rand.
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
 
@@ -569,7 +559,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="tool-btn admin-only" data-tool="el"      onclick="Tools.toggle('el')"      title="Einsatzleitung"><span>⭐</span><span class="tool-label">EL</span></button>
     <button class="tool-btn admin-only" data-tool="posten"  onclick="Tools.toggle('posten')"  title="Posten"><span>🔵</span><span class="tool-label">Posten</span></button>
     <button class="tool-btn admin-only" data-tool="pin"     onclick="Tools.toggle('pin')"     title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
-    <button class="tool-btn admin-only" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeugpool"><span>🚗</span><span class="tool-label">Fahrzeuge</span></button>
+    <button class="tool-btn admin-only" id="pool-toggle-btn" onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚗</span><span class="tool-label">Kräfte</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -588,7 +578,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     
     <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
     <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
-    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.toggle()" title="Live Standort"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.toggle()" title="Live Standort senden"><span>🛰️</span><span class="tool-label">GPS</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -608,15 +598,24 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <button id="draw-finish-btn" class="hidden" onclick="Tools.finishDraw()">✓ Zeichnung abschließen</button>
 
   <div id="pool-panel" class="hidden">
-    <div id="pool-header">
-      <span>🚗 Fahrzeugpool</span>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-shrink:0;">
+      <span style="font-size:14px; font-weight:800; color:var(--txt);">Fahrzeuge</span>
       <button id="pool-close-btn" onclick="Pool.close()">✕</button>
     </div>
-    <div id="pool-list"><div class="pool-empty">Noch keine Fahrzeuge.<br>Rufname eingeben und + drücken.</div></div>
-    <div id="pool-add-row">
-      <input id="pool-input" type="text" placeholder="z. B. H1121"
-             autocomplete="off" onkeydown="if(event.key==='Enter')Pool.add()"/>
-      <button id="pool-add-btn" onclick="Pool.add()" title="Fahrzeug hinzufügen">+</button>
+
+    <div id="live-section" class="hidden" style="margin-bottom:14px; flex-shrink:0;">
+      <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Einsatzmittel</div>
+      <div id="live-list" style="display:flex; flex-direction:column; gap:4px;"></div>
+    </div>
+
+    <div id="static-section">
+      <div style="font-size:11px; font-weight:700; color:var(--txt2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">📌 Pool (Statisch)</div>
+      <div id="pool-list"></div>
+      <div id="pool-add-row" style="margin-top:6px;">
+        <input id="pool-input" type="text" placeholder="z. B. H1121"
+               autocomplete="off" onkeydown="if(event.key==='Enter')Pool.add()"/>
+        <button id="pool-add-btn" onclick="Pool.add()" title="Fahrzeug hinzufügen">+</button>
+      </div>
     </div>
   </div>
 
@@ -1010,7 +1009,6 @@ const Layers = {
     });
     _map.closePopup();
     Sync.push();
-    toast('Gelöscht');
   },
 
   undo() {
@@ -1041,21 +1039,46 @@ const LiveGPS = {
       btn.classList.remove('active');
       
       _myRuf = null;
-      // Entferne Live-Standort aus dem Sync (Presence Update ohne lat/lng)
+      // Entferne Live-Standort aus dem Sync
       if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+      Pool.updateLiveList({}); // Liste leeren (für uns selbst)
       
       toast('🛰️ Live-Standort deaktiviert');
     } else {
-      // Einschalten
+      // Einschalten - Namen abfragen
       let ruf = '';
       if (_mode !== 'solo') {
-        ruf = prompt('Gib deinen Rufnamen ein (z. B. H1131), damit die Leitstelle dich live sehen kann:');
+        ruf = prompt('Gib deinen Rufnamen ein (z. B. H1131), damit die Einsatzleitung dich live sehen kann:');
         if (!ruf) return; // Abgebrochen
       }
-      _myRuf = ruf ? ruf.trim().toUpperCase() : 'Ich';
+      ruf = ruf ? ruf.trim().toUpperCase() : 'Ich';
+
+      // Prüfen, ob der Name schon von jemand anderem Live genutzt wird
+      let alreadyLive = false;
+      if (_liveGpsLayer) {
+        _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
+      }
+      if (alreadyLive) {
+         toast(`❌ ${ruf} ist bereits auf der Karte live!`);
+         return;
+      }
+      
+      _myRuf = ruf;
+
+      // Wenn wir Admin sind und live gehen: den statischen Marker von UNS SELBST löschen!
+      if (_mode === 'admin' || _mode === 'solo') {
+        let duplicateId = null;
+        if (_drawn) {
+           _drawn.eachLayer(l => {
+             if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
+           });
+        }
+        if (duplicateId) Layers.deleteById(duplicateId);
+      }
 
       btn.classList.add('active');
-      toast('🛰️ Suche Live-Standort...');
+      toast('🛰️ Suche GPS-Signal...');
+      
       this._watchId = navigator.geolocation.watchPosition(
         pos => {
           const lat = pos.coords.latitude;
@@ -1067,7 +1090,7 @@ const LiveGPS = {
             this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1 }).addTo(_map);
             this._marker = L.circleMarker([lat, lng], { radius: 7, color: '#fff', weight: 2, fillColor: '#007AFF', fillOpacity: 1 }).addTo(_map);
             _map.setView([lat, lng], Math.max(_map.getZoom(), 15));
-            toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Live auf der Karte sichtbar' : 'Nur für dich sichtbar'})`);
+            toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Wird für alle gesendet' : 'Nur für dich sichtbar'})`);
           } else {
             this._marker.setLatLng([lat, lng]);
             this._circle.setLatLng([lat, lng]);
@@ -1078,6 +1101,9 @@ const LiveGPS = {
           if (_channel) {
             _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           }
+          
+          // Zwinge das Panel, sich selbst in die Live-Liste aufzunehmen
+          Pool.refreshLiveList();
         },
         err => {
           console.warn(err);
@@ -1089,10 +1115,11 @@ const LiveGPS = {
   }
 };
 
-/* ── VEHICLE POOL ────────────────────────────────────────────────────── */
+/* ── VEHICLE POOL & LIVE LIST ────────────────────────────────────────── */
 const Pool = {
   _vehicles: [],
   _placingFromPool: false,
+  _currentLiveState: {}, // Speichert die aktuellen Live-Daten der Anderen
 
   load() {
     try { this._vehicles = JSON.parse(localStorage.getItem('lagekarte_pool') || '[]'); } catch(e) { this._vehicles = []; }
@@ -1104,7 +1131,6 @@ const Pool = {
   },
 
   toggle() {
-    if (_mode === 'viewer') return;
     if (this._placingFromPool) {
       this._placingFromPool = false;
       Tools._active = null;
@@ -1114,12 +1140,14 @@ const Pool = {
     const panel = document.getElementById('pool-panel');
     panel.classList.toggle('hidden');
     if (!panel.classList.contains('hidden')) {
-      setTimeout(() => document.getElementById('pool-input').focus(), 150);
+      setTimeout(() => { 
+         const inp = document.getElementById('pool-input'); 
+         if (inp) inp.focus(); 
+      }, 150);
     }
   },
 
   open() {
-    if (_mode === 'viewer') return;
     document.getElementById('pool-panel').classList.remove('hidden');
   },
 
@@ -1146,6 +1174,19 @@ const Pool = {
   },
 
   startPlace(ruf, poolId) {
+    // DOPPLUNGSSCHUTZ: Prüfen ob bereits live!
+    let isLive = false;
+    if (_liveGpsLayer) {
+      _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
+    }
+    // Oder ob man selbst es ist
+    if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
+
+    if (isLive) {
+      toast(`❌ ${ruf} sendet bereits live GPS!`);
+      return;
+    }
+
     this._placingFromPool = true;
     this._placingPoolId   = poolId || null;
     this.close();
@@ -1174,7 +1215,7 @@ const Pool = {
     const list = document.getElementById('pool-list');
     if (!list) return;
     if (!this._vehicles.length) {
-      list.innerHTML = '<div class="pool-empty">Noch keine Fahrzeuge.<br>Rufname eingeben und + drücken.</div>';
+      list.innerHTML = '<div class="pool-empty">Keine statischen Kräfte im Pool.</div>';
       return;
     }
     list.innerHTML = this._vehicles.map(v => {
@@ -1189,6 +1230,50 @@ const Pool = {
       </div>`;
     }).join('');
   },
+
+  // Wird von Sync aufgerufen, wenn neue Presence-Daten eintreffen
+  updateLiveList(liveStateObj) {
+    this._currentLiveState = liveStateObj;
+    this.refreshLiveList();
+  },
+
+  // Baut die grüne Liste im Panel neu auf
+  refreshLiveList() {
+    let html = '';
+    let hasLive = false;
+
+    // 1. Zuerst uns selbst hinzufügen (falls wir live sind)
+    if (LiveGPS._watchId && LiveGPS._marker) {
+       hasLive = true;
+       const lat = LiveGPS._marker.getLatLng().lat;
+       const lng = LiveGPS._marker.getLatLng().lng;
+       html += `<div class="pool-item" onclick="_map.flyTo([${lat}, ${lng}], 16); Pool.close();" style="border-color:var(--green); background:rgba(52,199,89,.08);">
+         <span class="pool-emoji" style="animation:pulse 1.5s infinite">🟢</span>
+         <span class="pool-ruf" style="color:var(--green)">${escHtml(_myRuf)} (Du)</span>
+       </div>`;
+    }
+
+    // 2. Dann alle anderen aus dem liveStateObj
+    for (const id in this._currentLiveState) {
+      const p = this._currentLiveState[id];
+      hasLive = true;
+      html += `<div class="pool-item" onclick="_map.flyTo([${p.lat}, ${p.lng}], 16); Pool.close();" style="border-color:var(--green); background:rgba(52,199,89,.08);">
+        <span class="pool-emoji" style="animation:pulse 1.5s infinite">🟢</span>
+        <span class="pool-ruf" style="color:var(--green)">${escHtml(p.ruf)}</span>
+      </div>`;
+    }
+
+    const section = document.getElementById('live-section');
+    const list = document.getElementById('live-list');
+    
+    if (hasLive) {
+      list.innerHTML = html;
+      section.classList.remove('hidden');
+    } else {
+      section.classList.add('hidden');
+      list.innerHTML = '';
+    }
+  }
 };
 
 /* ── TOOLS ───────────────────────────────────────────────────────────── */
@@ -1277,6 +1362,16 @@ const Tools = {
 
     if (tool === 'einheit' && Tools._pendingRuf) {
       const ruf = Tools._pendingRuf;
+      // Letzter Sicherheits-Check gegen Live-Dopplung beim Klicken
+      let isLive = false;
+      if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
+      if (_myRuf === ruf && LiveGPS._watchId) isLive = true;
+      if (isLive) {
+        toast(`❌ ${ruf} sendet bereits live GPS!`);
+        Tools.deactivate();
+        return;
+      }
+
       const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf };
       Layers.render(d, true);
       Sync.push();
@@ -1575,21 +1670,83 @@ const Sync = {
         const state = _channel.presenceState();
         let count = 0;
         
-        // Live GPS Layer aktualisieren
-        if (_liveGpsLayer) _liveGpsLayer.clearLayers();
+        const currentLive = {}; // Speichert alle fremden Live-Signale
+        let needsStaticCleanup = false;
 
         for (const id in state) {
           const p = state[id][0];
           if (p) {
             count++;
-            // Nur wenn jemand lat/lng hat und nicht man selbst ist, rendern
             if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
-              const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true); // true = isLive
-              const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
-              m._ruf = p.ruf; // Fürs Re-Skalieren beim Zoomen
+              currentLive[id] = p;
+              needsStaticCleanup = true;
             }
           }
         }
+        
+        // --- 1. Live Marker sauber updaten (ohne Flackern) ---
+        if (_liveGpsLayer) {
+          // Entferne alte, die nicht mehr senden
+          _liveGpsLayer.eachLayer(l => {
+             if (!currentLive[l._connId]) _liveGpsLayer.removeLayer(l);
+          });
+          
+          // Neue hinzufügen oder bestehende verschieben
+          for (const id in currentLive) {
+             const p = currentLive[id];
+             let existing = null;
+             _liveGpsLayer.eachLayer(l => { if (l._connId === id) existing = l; });
+             
+             if (existing) {
+                existing.setLatLng([p.lat, p.lng]);
+                // Falls sich der Rufname geändert haben sollte
+                if (existing._ruf !== p.ruf) {
+                    existing._ruf = p.ruf;
+                    existing.setIcon(Icons.unit(p.ruf, _map.getZoom(), true));
+                }
+             } else {
+                const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true);
+                const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
+                m._ruf = p.ruf;
+                m._connId = id;
+                
+                const safeLabel = escHtml(p.ruf).replace(/'/g, "\\'");
+                m.bindPopup(`
+                  <div class="popup-body">
+                    <div class="popup-title" style="color:var(--green)">🛰️ ${escHtml(p.ruf)} (Live)</div>
+                    <div style="display:flex; gap:8px; width:100%;">
+                      <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${p.lat}, ${p.lng}, '${safeLabel}')">↗️ Ab hier</button>
+                      <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${p.lat}, ${p.lng}, '${safeLabel}')">↘️ Hierhin</button>
+                    </div>
+                  </div>
+                `, { maxWidth: 260 });
+             }
+          }
+        }
+
+        // --- 2. Statische Doppelgänger bei Admin automatisch löschen ---
+        if (needsStaticCleanup && (_mode === 'admin' || _mode === 'solo')) {
+          let pushNeeded = false;
+          for (const id in currentLive) {
+             const p = currentLive[id];
+             let duplicateId = null;
+             if (_drawn) {
+               _drawn.eachLayer(l => {
+                 if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === p.ruf) {
+                   duplicateId = l._lid;
+                 }
+               });
+             }
+             if (duplicateId) {
+               Layers.deleteById(duplicateId); // Sync.push wird darin aufgerufen
+               pushNeeded = true;
+               toast(`♻️ Statischer Marker für ${p.ruf} wurde durch Live-Signal ersetzt.`);
+             }
+          }
+        }
+        
+        // Panel-Liste aktualisieren
+        Pool.updateLiveList(currentLive);
 
         this._viewerCount = count;
         const vc = document.getElementById('viewer-count');
@@ -1598,7 +1755,6 @@ const Sync = {
       })
       .subscribe(async status => {
         if (status === 'SUBSCRIBED') {
-          // Standard-Track, ohne GPS
           await _channel.track({ mode: _mode, ts: Date.now() });
           document.getElementById('live-dot').classList.remove('off');
         }
@@ -1623,6 +1779,7 @@ const Sync = {
     if (_channel) { _sb.removeChannel(_channel); _channel = null; }
     document.getElementById('live-dot').classList.add('off');
     if (_liveGpsLayer) _liveGpsLayer.clearLayers();
+    Pool.updateLiveList({});
   },
 };
 
@@ -1751,7 +1908,6 @@ const App = {
     const rc = document.getElementById('room-code-display');
     rc.textContent = _roomCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.add('hidden');
-    document.getElementById('pool-panel').classList.add('hidden');
     document.getElementById('viewer-hint').classList.remove('hidden');
     toast(`👁 Lage ${_roomCode} beigetreten`);
   },
