@@ -429,9 +429,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  /* Knöpfe etwas größer und griffiger */
+  /* Knöpfe größer für Wurstfinger-Sicherheit im Einsatz */
   .tool-btn { width: 54px; height: 54px; font-size: 26px; flex-shrink: 0; }
-  .tool-label { font-size: 8px; }
+  .tool-label { font-size: 8.5px; }
   .tool-divider { width: 1px; height: 36px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
@@ -897,7 +897,6 @@ const Layers = {
     if (!state || !Array.isArray(state.layers)) return;
     
     state.layers.forEach(d => {
-       // Migration für alte Pfeile, die das System crashen würden
        if (d.type === 'arrow' && d.points && d.points.length >= 2) {
            d.start = d.points[0];
            d.end = d.points[d.points.length - 1];
@@ -954,24 +953,18 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
+    // Nur der dragend Event! (Behebt den Pfeil-Ziehen-Bug)
     if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
-      layer.on('drag', (e) => {
-          if (d.type === 'arrow') {
-              const newCenter = e.target.getLatLng();
-              const dLat = newCenter.lat - d.lat;
-              const dLng = newCenter.lng - d.lng;
-              d.start = [d.start[0] + dLat, d.start[1] + dLng];
-              d.end = [d.end[0] + dLat, d.end[1] + dLng];
-              d.lat = newCenter.lat;
-              d.lng = newCenter.lng;
-              layer.setIcon(Icons.arrow(d.start, d.end, d.color));
-          }
-      });
       layer.on('dragend', (e) => {
         const ll = e.target.getLatLng();
-        if (d.type !== 'arrow') {
-            d.lat = ll.lat; d.lng = ll.lng;
+        if (d.type === 'arrow') {
+            const dLat = ll.lat - d.lat;
+            const dLng = ll.lng - d.lng;
+            d.start = [d.start[0] + dLat, d.start[1] + dLng];
+            d.end = [d.end[0] + dLat, d.end[1] + dLng];
         }
+        d.lat = ll.lat; 
+        d.lng = ll.lng;
         Sync.push();
       });
     }
@@ -1052,7 +1045,6 @@ const LiveGPS = {
   _marker: null,
   _circle: null,
   _following: false,
-  _isLive: false,
 
   handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
@@ -1077,11 +1069,9 @@ const LiveGPS = {
 
   start() {
     if (_mode === 'solo') {
-       this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
-       // ZWANG in Lage: Kein Bestätigungsdialog mehr!
-       this._isLive = true;
+       // Zwanghaftes Teilen in der Lage (kein Bestätigen)
        let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
        if (!ruf) return; 
        
@@ -1135,7 +1125,7 @@ const LiveGPS = {
           this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
           this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
           _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
-          toast(`✅ GPS aktiv. (${this._isLive ? 'Sende an Leitstelle' : 'Privates Navi'})`);
+          toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Sende an Leitstelle' : 'Privates Navi'})`);
         } else {
           this._marker.setLatLng([lat, lng]);
           this._marker.setIcon(myIcon);
@@ -1147,7 +1137,7 @@ const LiveGPS = {
            _map.panTo([lat, lng], {animate: true});
         }
         
-        if (this._isLive && _channel) {
+        if (_mode !== 'solo' && _channel) {
           _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           Pool.refreshLiveList();
         }
@@ -1174,12 +1164,11 @@ const LiveGPS = {
     btn.classList.remove('active');
     btn.classList.remove('tracking-paused');
     
-    if (this._isLive) {
+    if (_mode !== 'solo') {
         _myRuf = null;
         if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
         Pool.updateLiveList({}); 
     }
-    this._isLive = false;
     toast('🛰️ Navigation beendet');
   },
   
@@ -1256,7 +1245,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1316,7 +1305,7 @@ const Pool = {
     let html = '';
     let hasLive = false;
 
-    if (LiveGPS._watchId && LiveGPS._marker && LiveGPS._isLive) {
+    if (LiveGPS._watchId && LiveGPS._marker && _mode !== 'solo') {
        hasLive = true;
        const lat = LiveGPS._marker.getLatLng().lat;
        const lng = LiveGPS._marker.getLatLng().lng;
@@ -1460,7 +1449,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -1521,7 +1510,6 @@ const Tools = {
     }
 
     if (['polygon', 'line', 'measure'].includes(tool)) {
-      // Spam/Doppelklick-Schutz
       if (Tools._drawPoints.length > 0) {
           const lastPt = Tools._drawPoints[Tools._drawPoints.length - 1];
           if (_map.distance(lastPt, [lat, lng]) < 2) return; 
@@ -1661,7 +1649,6 @@ const Editor = {
   },
 
   _editArrow(layer, d) {
-    // Start Handle (Grün)
     this._addHandle(d.start, this._handleIcon('#34C759'), e => {
         const ll = e.target.getLatLng();
         d.start = [ll.lat, ll.lng];
@@ -1670,7 +1657,6 @@ const Editor = {
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
-    // End Handle (Rot)
     this._addHandle(d.end, this._handleIcon('#FF3B30'), e => {
         const ll = e.target.getLatLng();
         d.end = [ll.lat, ll.lng];
