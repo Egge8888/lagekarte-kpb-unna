@@ -414,7 +414,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 95px - max(24px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 95px - max(45px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
@@ -426,8 +426,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
     border-radius: 16px 16px 0 0; 
-    /* Massive Padding unten, um versehentliches iOS-Wischen zu verhindern */
-    padding: 8px 8px max(32px, env(safe-area-inset-bottom));
+    /* Massive Padding unten, um versehentliches iOS-Wischen/Schließen zu verhindern */
+    padding: 8px 8px max(45px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
@@ -437,15 +437,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto; bottom: calc(85px + max(32px, env(safe-area-inset-bottom)));
+    left: 8px; top: auto; bottom: calc(90px + max(45px, env(safe-area-inset-bottom)));
     transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-  #draw-finish-btn { bottom: calc(95px + max(32px, env(safe-area-inset-bottom))); }
+  #draw-finish-btn { bottom: calc(100px + max(45px, env(safe-area-inset-bottom))); }
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #viewer-hint { bottom: calc(95px + max(32px, env(safe-area-inset-bottom))); }
+  #viewer-hint { bottom: calc(100px + max(45px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
@@ -768,8 +768,13 @@ function initMap() {
   _map.on('zoomend', () => {
     const z = _map.getZoom();
     _drawn.eachLayer(l => {
+      // Autos skalieren
       if (l._ldata && l._ldata.type === 'einheit') {
         l.setIcon(Icons.unit(l._ldata.ruf, z));
+      }
+      // Text skalieren (Neu!)
+      else if (l._ldata && l._ldata.type === 'text') {
+        l.setIcon(Icons.text(l._ldata.text, z));
       }
     });
     if (_liveGpsLayer) {
@@ -786,7 +791,7 @@ const Icons = {
     tatort:     { emoji: '🔴', label: 'Tatort',        color: '#FF3B30' },
     ereignis:   { emoji: '🟣', label: 'Ereignisort',   color: '#AF52DE' },
     gefahr:     { emoji: '⚠️',  label: 'Gefahr',        color: '#FF9500' },
-    absperrung: { emoji: '🚧', label: 'Absperrung',    color: '#8E8E93' },
+    absperrung: { emoji: '🚧', label: 'Sperrung',      color: '#8E8E93' },
     pin:        { emoji: '📍', label: 'Stecknadel',    color: '#8E8E93' },
   },
 
@@ -794,6 +799,7 @@ const Icons = {
     if (type === 'ksst') return this.ksst(desc);
     const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
     
+    // Zusatzinfo-Schild (wird nur angezeigt, wenn Text eingegeben wurde)
     const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:100px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
 
     return L.divIcon({
@@ -841,12 +847,35 @@ const Icons = {
     });
   },
 
-  text(txt) {
+  text(txt, zoom) {
+    // Zoom-abhängige Textskalierung
+    const z = Math.max(12, Math.min(19, zoom ?? 15));
+    const px = Math.round(9 + (z - 12) * 1.5);
     return L.divIcon({
-      html: `<div style="font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:4px 9px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:240px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
-      className: '', iconAnchor: [0, 10], 
+      html: `<div style="font-size:${px}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${Math.round(px/2.5)}px ${Math.round(px/1.2)}px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:${px*15}px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
+      className: '', iconAnchor: [0, px], 
     });
   },
+
+  // Neuer, frei skalierbarer Vektor-Pfeil als Marker-Icon
+  arrow(length, angle, color) {
+    const w = length;
+    const h = 24;
+    const tailH = 6;
+    const headW = 18;
+    const esc = color.replace(/"/g, '');
+
+    const path = `M 0,${h/2 - tailH/2} L ${w - headW},${h/2 - tailH/2} L ${w - headW},0 L ${w},${h/2} L ${w - headW},${h} L ${w - headW},${h/2 + tailH/2} L 0,${h/2 + tailH/2} Z`;
+
+    return L.divIcon({
+        html: `<div style="width:${w}px; height:${h}px; transform:rotate(${angle}deg); transform-origin:center center; pointer-events:auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                 <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="overflow:visible;">
+                   <path d="${path}" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+                 </svg>
+               </div>`,
+        className: '', iconSize: [w, h], iconAnchor: [w/2, h/2]
+    });
+  }
 };
 
 /* ── LAYER SERIALISER / DESERIALISER ─────────────────────────────────── */
@@ -884,7 +913,11 @@ const Layers = {
         layer = L.marker([d.lat, d.lng], { icon: Icons.unit(d.ruf, _map.getZoom()), draggable: isAdmin });
         break;
       case 'text':
-        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text), draggable: isAdmin });
+        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text, _map.getZoom()), draggable: isAdmin });
+        break;
+      case 'arrow':
+        // Pfeil als Marker zeichnen (wie ein Fahrzeug)
+        layer = L.marker([d.lat, d.lng], { icon: Icons.arrow(d.length, d.angle, d.color), draggable: isAdmin });
         break;
       case 'circle':
         layer = L.circle([d.lat, d.lng], {
@@ -894,9 +927,6 @@ const Layers = {
         break;
       case 'polyline':
         layer = L.polyline(d.points, { color: d.color, weight: 3.5 });
-        break;
-      case 'arrow':
-        layer = this._makeArrow(d);
         break;
       case 'polygon':
         layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.12, weight: 2.5 });
@@ -911,57 +941,20 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    // Pfeil-Popup-Handling: An die Linie heften, damit es klickbar bleibt
-    const targetPopupLayer = layer._line || layer;
-
-    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text'].includes(d.type)) {
-      targetPopupLayer.on('dragend', () => {
-        const ll = targetPopupLayer.getLatLng();
+    // Alle Marker (inkl. Pfeil) senden beim Loslassen ein Update
+    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
+      layer.on('dragend', () => {
+        const ll = layer.getLatLng();
         d.lat = ll.lat; d.lng = ll.lng;
         Sync.push();
       });
     }
     
-    this._addPopup(targetPopupLayer, d, isAdmin);
-
-    if (d.type === 'arrow') {
-      layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
-    }
+    this._addPopup(layer, d, isAdmin);
 
     _drawn.addLayer(layer);
     if (pushHistory) _history.push(d.id);
     return layer;
-  },
-
-  _makeArrow(d) {
-    const pts = d.points;
-    const line = L.polyline(pts, { color: d.color, weight: 4 });
-    if (pts.length < 2) {
-       const group = L.layerGroup([line]);
-       group._line = line;
-       return group;
-    }
-    
-    const a = pts[pts.length - 2];
-    const b = pts[pts.length - 1];
-    
-    const angle = Math.atan2(b[1] - a[1], b[0] - a[0]) * (180 / Math.PI);
-    const esc   = d.color.replace(/"/g, '');
-    
-    const headHtml = `<div style="transform:rotate(${angle}deg); transform-origin:12px 2px; width:24px; height:24px; pointer-events:none;">
-      <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="12,2 22,22 12,17 2,22" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-      </svg>
-    </div>`;
-
-    const head = L.marker(b, {
-      icon: L.divIcon({ html: headHtml, className: '', iconSize: [24, 24], iconAnchor: [12, 2] }),
-      interactive: false 
-    });
-    
-    const group = L.layerGroup([line, head]);
-    group._line = line; 
-    return group;
   },
 
   _addPopup(layer, d, isAdmin) {
@@ -969,14 +962,14 @@ const Layers = {
     
     let titleStr = d.ruf || d.text || d.desc;
     if (!titleStr) {
-       titleStr = (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+       titleStr = d.type === 'arrow' ? 'Pfeil' : (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
     }
     
     const radiusInfo = d.type === 'circle'
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
     
-    const canEdit = ['circle','polyline','polygon','arrow'].includes(d.type);
+    const canEdit = ['circle','polyline','polygon'].includes(d.type); // Pfeil ist nicht mehr 'editierbar', nur verschiebbar
     const editBtn = (canEdit && isAdmin)
       ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
       : '';
@@ -1014,7 +1007,6 @@ const Layers = {
     if (!_drawn) return;
     _drawn.eachLayer(l => {
       if (l._lid === id) { _drawn.removeLayer(l); }
-      if (l._ldata && l._ldata.id === id && l instanceof L.LayerGroup) { _drawn.removeLayer(l); }
     });
     _map.closePopup();
     Sync.push();
@@ -1065,30 +1057,33 @@ const LiveGPS = {
        this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
-       // LAGE Modus: Zwanghaftes Teilen!
-       this._isLive = true;
-       let ruf = prompt('Lage-Modus aktiv! Dein Live-Standort wird mit der Leitstelle geteilt.\n\nBitte Rufnamen eingeben (z. B. H1131):');
-       if (!ruf) return; // Cancel if no name is provided
+       // LAGE Modus: Option zum Live gehen
+       this._isLive = confirm('Soll dein Standort LIVE für die Leitstelle sichtbar sein?\n\n[OK] = Ja, für alle sichtbar\n[Abbrechen] = Nein, nur privates Navi');
        
-       ruf = ruf.trim().toUpperCase();
-       
-       let alreadyLive = false;
-       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
-       if (alreadyLive) {
-          toast(`❌ ${ruf} ist bereits live auf der Karte!`);
-          return;
-       }
-       _myRuf = ruf;
+       if (this._isLive) {
+           let ruf = prompt('Lage-Modus aktiv! Dein Live-Standort wird mit der Leitstelle geteilt.\n\nBitte Rufnamen eingeben (z. B. H1131):');
+           if (!ruf) return; // Cancel
+           
+           ruf = ruf.trim().toUpperCase();
+           
+           let alreadyLive = false;
+           if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
+           if (alreadyLive) {
+              toast(`❌ ${ruf} ist bereits live auf der Karte!`);
+              return;
+           }
+           _myRuf = ruf;
 
-       // Entferne eigenen statischen Marker (falls Admin sich selbst live schaltet)
-       if (_mode === 'admin') {
-         let duplicateId = null;
-         if (_drawn) {
-            _drawn.eachLayer(l => {
-              if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
-            });
-         }
-         if (duplicateId) Layers.deleteById(duplicateId);
+           // Entferne eigenen statischen Marker (falls Admin sich selbst live schaltet)
+           if (_mode === 'admin') {
+             let duplicateId = null;
+             if (_drawn) {
+                _drawn.eachLayer(l => {
+                  if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
+                });
+             }
+             if (duplicateId) Layers.deleteById(duplicateId);
+           }
        }
     }
 
@@ -1110,7 +1105,7 @@ const LiveGPS = {
         
         let iconHtml = '';
         if (heading !== null && !isNaN(heading)) {
-            // Echter Navi-Pfeil (dreht sich)
+            // Echter Navi-Pfeil (dreht sich in Fahrtrichtung)
             iconHtml = `<div style="transform:rotate(${heading}deg); transform-origin:center; width:24px; height:24px; background:rgba(0,122,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">
                             <div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid #007AFF; margin-bottom:4px;"></div>
                         </div>`;
@@ -1341,6 +1336,9 @@ const Tools = {
   _drawPoints: [],
   _drawLayer:  null,
   _pendingRuf: null,
+  
+  _arrowStart: null,
+  _arrowTempLine: null,
 
   toggle(name) {
     if (this._active === name) { this.deactivate(); return; }
@@ -1352,7 +1350,7 @@ const Tools = {
     if (name === 'circle') {
       toast('Klick = Mittelpunkt setzen, dann Radius eingeben');
     } else if (name === 'arrow') {
-      toast('1. Klick = Start, 2. Klick = Ende');
+      toast('1. Klick = Start, Maus ziehen, 2. Klick = Ziel (Pfeilspitze)');
     } else if (['polygon', 'line', 'measure'].includes(name)) {
       toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
     }
@@ -1365,6 +1363,12 @@ const Tools = {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
     if (typeof Editor !== 'undefined') Editor.finish(true);
+    
+    // Aufräumen vom Arrow-Tool
+    if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
+    _map.off('mousemove', this._onArrowMove, this);
+    this._arrowStart = null;
+    
     this._active = null;
     this._pendingRuf = null;
     this._drawPoints = [];
@@ -1377,6 +1381,7 @@ const Tools = {
     _map.getContainer().classList.remove('tool-active');
     _map.getContainer().style.cursor = '';
     
+    // Verhindert doppelte Klick-Events
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
   },
@@ -1414,6 +1419,12 @@ const Tools = {
     Layers.render(d, true);
     Sync.push();
     this.deactivate();
+  },
+  
+  _onArrowMove(e) {
+    if (this._arrowTempLine && this._arrowStart) {
+        this._arrowTempLine.setLatLngs([this._arrowStart, e.latlng]);
+    }
   },
 
   _onMapClick(e) {
@@ -1470,23 +1481,49 @@ const Tools = {
       return;
     }
 
+    // Neuer Pfeil (Marker mit dynamischer Skalierung, verhält sich wie ein Fahrzeug)
     if (tool === 'arrow') {
-      if (Tools._drawPoints.length === 0) {
-        Tools._drawPoints = [[lat, lng]];
-        if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
-        Tools._drawLayer = L.circleMarker([lat, lng], { radius: 5, color: Tools._color, fillOpacity: 1 }).addTo(_map);
-        toast('2. Klick = Pfeilspitze');
+      if (!this._arrowStart) {
+        this._arrowStart = e.latlng;
+        this._arrowTempLine = L.polyline([this._arrowStart, this._arrowStart], {color: this._color, weight: 4, dashArray: '4 4'}).addTo(_map);
+        _map.on('mousemove', this._onArrowMove, this);
+        toast('Maus/Finger zum Ziel ziehen und klicken');
       } else {
-        Tools._drawPoints.push([lat, lng]);
-        const d = { id: Layers.uid(), type: 'arrow', points: [...Tools._drawPoints], color: Tools._color };
+        const start = this._arrowStart;
+        const end = e.latlng;
+        
+        _map.off('mousemove', this._onArrowMove, this);
+        if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
+
+        // Länge & Winkel berechnen
+        const p1 = _map.latLngToLayerPoint(start);
+        const p2 = _map.latLngToLayerPoint(end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); // Min. 30px lang
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        // Marker genau in die Mitte setzen
+        const centerLat = (start.lat + end.lat) / 2;
+        const centerLng = (start.lng + end.lng) / 2;
+
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, length: length, angle: angle, color: Tools._color };
         Layers.render(d, true);
         Sync.push();
-        Tools.deactivate();
+
+        this._arrowStart = null;
+        this.deactivate();
       }
       return;
     }
 
     if (['polygon', 'line', 'measure'].includes(tool)) {
+      // Spam/Doppelklick-Schutz: Verhindert Geisterpunkte!
+      if (Tools._drawPoints.length > 0) {
+          const lastPt = Tools._drawPoints[Tools._drawPoints.length - 1];
+          if (_map.distance(lastPt, [lat, lng]) < 2) return; 
+      }
+        
       Tools._drawPoints.push([lat, lng]);
       if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
       
@@ -1564,8 +1601,7 @@ const Editor = {
 
     if      (d.type === 'circle')                   this._editCircle(found, d);
     else if (d.type === 'polygon' || d.type === 'polyline') this._editShape(found, d);
-    else if (d.type === 'arrow')                    this._editArrow(found, d);
-    else { toast('Dieses Element kann nicht bearbeitet werden'); return; }
+    else { toast('Dieses Element kann nicht bearbeitet werden'); return; } // Pfeil ist nicht mehr 'editierbar', nur ziehbar.
 
     toast('✏️ Handles ziehen · dann „✓ Speichern" drücken');
     const finBtn = document.getElementById('draw-finish-btn');
@@ -1616,47 +1652,6 @@ const Editor = {
         if (this._handles[i]) this._handles[i].setLatLng(pts[i]);
       }
       layer.setLatLngs(pts);
-    });
-  },
-
-  _editArrow(layerGroup, d) {
-    const pts = d.points;
-    pts.forEach((pt, i) => {
-      const col = i === 0 ? '#34C759' : '#FF3B30';
-      this._addHandle(pt, this._handleIcon(col), e => {
-        const ll = e.target.getLatLng();
-        pts[i] = [ll.lat, ll.lng];
-        this._rebuildArrow(layerGroup, d);
-        const mIdx = pts.length;
-        if (this._handles[mIdx]) {
-          this._handles[mIdx].setLatLng([
-            (pts[0][0] + pts[pts.length-1][0]) / 2,
-            (pts[0][1] + pts[pts.length-1][1]) / 2,
-          ]);
-        }
-      });
-    });
-    let lastMid = [(pts[0][0]+pts[pts.length-1][0])/2, (pts[0][1]+pts[pts.length-1][1])/2];
-    this._addHandle(lastMid, this._moveIcon(), e => {
-      const ll   = e.target.getLatLng();
-      const dlat = ll.lat - lastMid[0];
-      const dlng = ll.lng - lastMid[1];
-      lastMid = [ll.lat, ll.lng];
-      for (let i = 0; i < pts.length; i++) {
-        pts[i] = [pts[i][0] + dlat, pts[i][1] + dlng];
-        if (this._handles[i]) this._handles[i].setLatLng(pts[i]);
-      }
-      this._rebuildArrow(layerGroup, d);
-    });
-  },
-
-  _rebuildArrow(layerGroup, d) {
-    layerGroup.clearLayers();
-    const newGroup = Layers._makeArrow(d);
-    newGroup.eachLayer(l => {
-      l._lid   = d.id;
-      l._ldata = d;
-      layerGroup.addLayer(l);
     });
   },
 
