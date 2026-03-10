@@ -197,18 +197,32 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── UNIT MARKERS (Neu: Sauberes Sticker-Design) ─────── */
+/* ── UNIT MARKERS (Leuchtendes Sticker-Design) ───────── */
+.unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.unit-icon-img { line-height:1; }
 .unit-label {
-  font-weight:800; color:#003580;
-  white-space:nowrap; font-family:var(--font);
+  font-weight:900; color:#0055FF; /* Leuchtend Blau (Standard Polizei) */
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  white-space:nowrap; margin-top:2px; font-family:var(--font);
 }
-.dark .unit-label { color:#60A0FF; }
-.unit-label.dgl { color:#996600 !important; }
-.dark .unit-label.dgl { color:#FFD700 !important; }
-.unit-label.fremd { color:#6B0AC9 !important; }
+.dark .unit-label { 
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #3399FF; 
+}
+/* DGL – Führungskraft (ends in 21) -> Leuchtendes Rot-Orange statt Bronze */
+.unit-label.dgl { color:#FF3300 !important; }
+.dark .unit-label.dgl { color:#FF453A !important; }
+/* Fremdkräfte (U-prefix) -> Leuchtendes Lila */
+.unit-label.fremd { color:#B500FF !important; }
 .dark .unit-label.fremd { color:#BF5AF2 !important; }
-.unit-label.kripo { color:#3a3a3a !important; }
-.dark .unit-label.kripo { color:#aaaaaa !important; }
+/* Kriminalwache (H9610–H9620) -> Leuchtendes Cyan */
+.unit-label.kripo { color:#00AACC !important; }
+.dark .unit-label.kripo { color:#30B0C7 !important; }
 
 /* ── TACTIC MARKERS ──────────────────────────────────── */
 .tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
@@ -252,13 +266,17 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .pool-item:hover { border-color:var(--blue); }
 .pool-item:active { transform:scale(.97); }
 .pool-emoji { font-size:18px; flex-shrink:0; line-height:1; }
-.pool-ruf { flex:1; font-size:13px; font-weight:700; color:var(--txt); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pool-ruf.dgl { color:#996600; }
-.dark .pool-ruf.dgl { color:#FFD700; }
-.pool-ruf.fremd { color:#6B0AC9; }
+
+/* Passende Farben in der Liste rechts */
+.pool-ruf { flex:1; font-size:13px; font-weight:700; color:#0055FF; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dark .pool-ruf { color:#3399FF; }
+.pool-ruf.dgl { color:#FF3300; }
+.dark .pool-ruf.dgl { color:#FF453A; }
+.pool-ruf.fremd { color:#B500FF; }
 .dark .pool-ruf.fremd { color:#BF5AF2; }
-.pool-ruf.kripo { color:#3a3a3a; }
-.dark .pool-ruf.kripo { color:#aaaaaa; }
+.pool-ruf.kripo { color:#00AACC; }
+.dark .pool-ruf.kripo { color:#30B0C7; }
+
 .pool-del-btn {
   background:none; border:none; color:var(--txt2); font-size:13px;
   cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0;
@@ -423,7 +441,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
     border-radius: 16px 16px 0 0; 
-    /* Reduziertes Padding auf ein sicheres Maß (16px) */
     padding: 8px 8px max(16px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
@@ -733,7 +750,6 @@ function initMap() {
     doubleClickZoom: false
   });
 
-  // Layer-Auswahl oben rechts
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
 
@@ -798,7 +814,6 @@ const Icons = {
     if (type === 'ksst') return this.ksst(desc);
     const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
     
-    // Zusatzinfo-Schild
     const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
 
     return L.divIcon({
@@ -837,14 +852,14 @@ const Icons = {
       : '';
 
     return L.divIcon({
-      html: `<div style="position:absolute; transform:translate(-50%, -50%); cursor:pointer;">
-        <div style="position:relative; display:flex; flex-direction:column; align-items:center; background:var(--card); padding:4px 6px 3px; border-radius:12px; border:1px solid var(--sep); box-shadow:0 3px 12px rgba(0,0,0,0.15);">
+      html: `<div class="unit-marker-wrap" style="position:relative; display:flex; flex-direction:column; align-items:center;">
+        <div style="position:relative;">
           ${liveBadge}
-          <div style="font-size:${px}px; line-height:1;">${emoji}</div>
-          <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px; margin-top:2px;">${star}${escHtml(ruf)}</div>
+          <div class="unit-icon-img" style="font-size:${px}px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); line-height:1;">${emoji}</div>
         </div>
+        <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px;">${star}${escHtml(ruf)}</div>
       </div>`,
-      className: '', iconSize: [0, 0], iconAnchor: [0, 0]
+      className: '', iconAnchor: [px / 2, px / 2], iconSize: [px * 2, px + lx + 10],
     });
   },
 
@@ -961,16 +976,24 @@ const Layers = {
     const targetPopupLayer = layer._line || layer;
 
     if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
+      targetPopupLayer.on('drag', (e) => {
+          if (d.type === 'arrow') {
+              const newCenter = e.target.getLatLng();
+              const dLat = newCenter.lat - d.lat;
+              const dLng = newCenter.lng - d.lng;
+              d.start = [d.start[0] + dLat, d.start[1] + dLng];
+              d.end = [d.end[0] + dLat, d.end[1] + dLng];
+              d.lat = newCenter.lat;
+              d.lng = newCenter.lng;
+              layer.setIcon(Icons.arrow(d.start, d.end, d.color));
+          }
+      });
       targetPopupLayer.on('dragend', (e) => {
         const ll = e.target.getLatLng();
-        if (d.type === 'arrow') {
-            const dLat = ll.lat - d.lat;
-            const dLng = ll.lng - d.lng;
-            d.start = [d.start[0] + dLat, d.start[1] + dLng];
-            d.end = [d.end[0] + dLat, d.end[1] + dLng];
+        if (d.type !== 'arrow') {
+            d.lat = ll.lat; 
+            d.lng = ll.lng;
         }
-        d.lat = ll.lat; 
-        d.lng = ll.lng;
         Sync.push();
       });
     }
@@ -1505,10 +1528,17 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
+        const p1 = _map.latLngToLayerPoint(start);
+        const p2 = _map.latLngToLayerPoint(end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
         const centerLat = (start[0] + end[0]) / 2;
         const centerLng = (start[1] + end[1]) / 2;
 
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color };
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
         Layers.render(d, true);
         Sync.push();
 
@@ -1664,6 +1694,13 @@ const Editor = {
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
         
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
@@ -1672,6 +1709,13 @@ const Editor = {
         d.end = [ll.lat, ll.lng];
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
         
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
