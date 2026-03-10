@@ -197,15 +197,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── UNIT MARKERS ────────────────────────────────────── */
-.unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
-.unit-icon-img { line-height:1; }
+/* ── UNIT MARKERS (Neu: Sauberes Sticker-Design) ─────── */
 .unit-label {
   font-weight:800; color:#003580;
-  text-shadow:0 1px 3px rgba(255,255,255,.9), 0 0 6px rgba(255,255,255,.7);
-  white-space:nowrap; margin-top:1px; font-family:var(--font);
+  white-space:nowrap; font-family:var(--font);
 }
-.dark .unit-label { color:#60A0FF; text-shadow:0 1px 3px rgba(0,0,0,.9); }
+.dark .unit-label { color:#60A0FF; }
 .unit-label.dgl { color:#996600 !important; }
 .dark .unit-label.dgl { color:#FFD700 !important; }
 .unit-label.fremd { color:#6B0AC9 !important; }
@@ -801,6 +798,7 @@ const Icons = {
     if (type === 'ksst') return this.ksst(desc);
     const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
     
+    // Zusatzinfo-Schild
     const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
 
     return L.divIcon({
@@ -839,12 +837,14 @@ const Icons = {
       : '';
 
     return L.divIcon({
-      html: `<div class="unit-marker-wrap" style="position:relative;">
-        ${liveBadge}
-        <div class="unit-icon-img" style="font-size:${px}px">${emoji}</div>
-        <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px">${star}${escHtml(ruf)}</div>
+      html: `<div style="position:absolute; transform:translate(-50%, -50%); cursor:pointer;">
+        <div style="position:relative; display:flex; flex-direction:column; align-items:center; background:var(--card); padding:4px 6px 3px; border-radius:12px; border:1px solid var(--sep); box-shadow:0 3px 12px rgba(0,0,0,0.15);">
+          ${liveBadge}
+          <div style="font-size:${px}px; line-height:1;">${emoji}</div>
+          <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px; margin-top:2px;">${star}${escHtml(ruf)}</div>
+        </div>
       </div>`,
-      className: '', iconAnchor: [px / 2, px / 2], iconSize: [px * 2, px + lx + 6],
+      className: '', iconSize: [0, 0], iconAnchor: [0, 0]
     });
   },
 
@@ -1505,17 +1505,10 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
-        const p1 = _map.latLngToLayerPoint(start);
-        const p2 = _map.latLngToLayerPoint(end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
         const centerLat = (start[0] + end[0]) / 2;
         const centerLng = (start[1] + end[1]) / 2;
 
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color };
         Layers.render(d, true);
         Sync.push();
 
@@ -1671,13 +1664,6 @@ const Editor = {
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
         
-        const p1 = _map.latLngToLayerPoint(d.start);
-        const p2 = _map.latLngToLayerPoint(d.end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
-        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
@@ -1686,13 +1672,6 @@ const Editor = {
         d.end = [ll.lat, ll.lng];
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
-        
-        const p1 = _map.latLngToLayerPoint(d.start);
-        const p2 = _map.latLngToLayerPoint(d.end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
-        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
         
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
