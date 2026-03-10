@@ -414,7 +414,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 105px - max(30px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 90px - max(16px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
@@ -426,26 +426,25 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
     border-radius: 16px 16px 0 0; 
-    /* Massive iOS Swipe-Out Protection (50px buffer) */
-    padding: 10px 10px calc(50px + env(safe-area-inset-bottom));
+    /* Reduziertes Padding auf ein sicheres Maß (16px) */
+    padding: 8px 8px max(16px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  /* Knöpfe größer für Wurstfinger-Sicherheit im Einsatz */
-  .tool-btn { width: 54px; height: 54px; font-size: 26px; flex-shrink: 0; }
-  .tool-label { font-size: 8.5px; }
-  .tool-divider { width: 1px; height: 36px; margin: auto 4px; flex-shrink: 0; }
+  .tool-btn { width: 50px; height: 50px; font-size: 24px; flex-shrink: 0; }
+  .tool-label { font-size: 8px; }
+  .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto; bottom: calc(110px + max(45px, env(safe-area-inset-bottom)));
+    left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom)));
     transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-  #draw-finish-btn { bottom: calc(120px + max(45px, env(safe-area-inset-bottom))); }
+  #draw-finish-btn { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #viewer-hint { bottom: calc(120px + max(45px, env(safe-area-inset-bottom))); }
+  #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
@@ -736,6 +735,8 @@ function initMap() {
     zoomControl: false, attributionControl: true,
     doubleClickZoom: false
   });
+
+  // Layer-Auswahl oben rechts
   L.control.zoom({ position: 'bottomright' }).addTo(_map);
   L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
 
@@ -762,7 +763,7 @@ function initMap() {
     '🛩 Luftbild NRW (DOP)':       dop,
     '📋 Amtl. Basiskarte NRW':     abk,
     '⬛ Topograph. Karte S/W':     dtk,
-  }, {}, { position: 'bottomright' }).addTo(_map);
+  }, {}, { position: 'topright' }).addTo(_map);
 
   _drawn = L.featureGroup().addTo(_map);
   _liveGpsLayer = L.featureGroup().addTo(_map); 
@@ -1078,7 +1079,6 @@ const LiveGPS = {
        this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
-       // Zwanghaftes Teilen in der Lage (kein Bestätigen)
        this._isLive = true;
        let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
        if (!ruf) return; 
@@ -1505,10 +1505,17 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
+        const p1 = _map.latLngToLayerPoint(start);
+        const p2 = _map.latLngToLayerPoint(end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
         const centerLat = (start[0] + end[0]) / 2;
         const centerLng = (start[1] + end[1]) / 2;
 
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color };
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
         Layers.render(d, true);
         Sync.push();
 
@@ -1663,6 +1670,14 @@ const Editor = {
         d.start = [ll.lat, ll.lng];
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
@@ -1671,6 +1686,14 @@ const Editor = {
         d.end = [ll.lat, ll.lng];
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
