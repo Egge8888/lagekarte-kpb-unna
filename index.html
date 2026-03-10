@@ -137,6 +137,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .dark #toolbar { background:rgba(44,44,46,.97); }
 
+/* Viewer Mode: Hide all admin tools */
 #toolbar.viewer-mode .admin-only { display: none !important; }
 
 .tool-btn {
@@ -150,6 +151,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
 .tool-btn.active .tool-label { color:#fff; }
 
+/* CSS für Navigation: Wenn Map verschoben wurde (Pausiert) */
 .tool-btn.tracking-paused { 
   box-shadow: inset 0 0 0 2px var(--blue); 
   background: rgba(0,122,255,0.1) !important;
@@ -639,13 +641,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="route-input-row">
       <span class="route-dot">🟢</span>
       <input class="route-input" id="route-from" type="text"
-             placeholder="Start (Adresse oder Ort)" autocomplete="off"/>
+             placeholder="Start (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('from')" title="Mein Standort">📍</button>
     </div>
     <div class="route-input-row">
       <span class="route-dot">🔴</span>
       <input class="route-input" id="route-to" type="text"
-             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"/>
+             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
       <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('to')" title="Mein Standort">📍</button>
     </div>
     <div id="route-actions">
@@ -953,9 +957,10 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    // Nur der dragend Event! (Behebt den Pfeil-Ziehen-Bug)
+    const targetPopupLayer = layer._line || layer;
+
     if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
-      layer.on('dragend', (e) => {
+      targetPopupLayer.on('dragend', (e) => {
         const ll = e.target.getLatLng();
         if (d.type === 'arrow') {
             const dLat = ll.lat - d.lat;
@@ -969,7 +974,7 @@ const Layers = {
       });
     }
     
-    this._addPopup(layer, d, isAdmin);
+    this._addPopup(targetPopupLayer, d, isAdmin);
 
     _drawn.addLayer(layer);
     if (pushHistory) _history.push(d.id);
@@ -1045,6 +1050,7 @@ const LiveGPS = {
   _marker: null,
   _circle: null,
   _following: false,
+  _isLive: false,
 
   handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
@@ -1069,9 +1075,11 @@ const LiveGPS = {
 
   start() {
     if (_mode === 'solo') {
+       this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
        // Zwanghaftes Teilen in der Lage (kein Bestätigen)
+       this._isLive = true;
        let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
        if (!ruf) return; 
        
@@ -1125,7 +1133,7 @@ const LiveGPS = {
           this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
           this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
           _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
-          toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Sende an Leitstelle' : 'Privates Navi'})`);
+          toast(`✅ GPS aktiv. (${this._isLive ? 'Sende an Leitstelle' : 'Privates Navi'})`);
         } else {
           this._marker.setLatLng([lat, lng]);
           this._marker.setIcon(myIcon);
@@ -1137,7 +1145,7 @@ const LiveGPS = {
            _map.panTo([lat, lng], {animate: true});
         }
         
-        if (_mode !== 'solo' && _channel) {
+        if (this._isLive && _channel) {
           _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           Pool.refreshLiveList();
         }
@@ -1164,11 +1172,12 @@ const LiveGPS = {
     btn.classList.remove('active');
     btn.classList.remove('tracking-paused');
     
-    if (_mode !== 'solo') {
+    if (this._isLive) {
         _myRuf = null;
         if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
         Pool.updateLiveList({}); 
     }
+    this._isLive = false;
     toast('🛰️ Navigation beendet');
   },
   
@@ -1245,7 +1254,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1305,7 +1314,7 @@ const Pool = {
     let html = '';
     let hasLive = false;
 
-    if (LiveGPS._watchId && LiveGPS._marker && _mode !== 'solo') {
+    if (LiveGPS._watchId && LiveGPS._marker && LiveGPS._isLive) {
        hasLive = true;
        const lat = LiveGPS._marker.getLatLng().lat;
        const lng = LiveGPS._marker.getLatLng().lng;
@@ -1449,7 +1458,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -2211,6 +2220,7 @@ const Search = {
 /* ── ROUTE PANEL (OSRM routing + Geolocation) ────────────────────────── */
 const RoutePanel = {
   _routeLayer: null,
+  _isCalculating: false,
 
   open() {
     document.getElementById('route-panel').classList.add('open');
@@ -2233,6 +2243,8 @@ const RoutePanel = {
     if (!otherEl.value) {
       otherEl.focus();
       toast('📍 Bitte ' + (type === 'from' ? 'Ziel' : 'Start') + ' eingeben oder GPS nutzen');
+    } else {
+      setTimeout(() => this.calc(), 300);
     }
   },
 
@@ -2291,42 +2303,57 @@ const RoutePanel = {
   },
 
   async calc() {
+    if (this._isCalculating) return;
+    
     const fromText = document.getElementById('route-from').value.trim();
     const toText   = document.getElementById('route-to').value.trim();
     if (!fromText || !toText) { toast('Bitte Start und Ziel eingeben'); return; }
+    
+    this._isCalculating = true;
+    const btn = document.getElementById('route-calc-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Berechne...';
+    btn.style.opacity = '0.7';
+
+    if (this._routeLayer) { _map.removeLayer(this._routeLayer); this._routeLayer = null; }
+    document.getElementById('route-info').classList.add('hidden');
     toast('🔄 Route wird berechnet …');
 
-    const fromCoord = await this._resolve('route-from');
-    if (!fromCoord) { toast('❌ Start-Adresse nicht gefunden'); return; }
-    const toCoord = await this._resolve('route-to');
-    if (!toCoord)   { toast('❌ Ziel-Adresse nicht gefunden'); return; }
-
     try {
-      const url = `https://router.project-osrm.org/route/v1/driving/`
-        + `${fromCoord.lng},${fromCoord.lat};${toCoord.lng},${toCoord.lat}`
-        + `?overview=full&geometries=geojson`;
-      const resp = await fetch(url);
-      const data = await resp.json();
-      if (data.code !== 'Ok' || !data.routes.length) { toast('❌ Route nicht gefunden'); return; }
+        const fromCoord = await this._resolve('route-from');
+        if (!fromCoord) { toast('❌ Start-Adresse nicht gefunden'); return; }
+        const toCoord = await this._resolve('route-to');
+        if (!toCoord)   { toast('❌ Ziel-Adresse nicht gefunden'); return; }
 
-      const route   = data.routes[0];
-      const distKm  = (route.distance / 1000).toFixed(1);
-      const durMin  = Math.round(route.duration / 60);
-      const durText = durMin >= 60 ? `${Math.floor(durMin/60)}h ${durMin%60}min` : `${durMin} min`;
+        const url = `https://router.project-osrm.org/route/v1/driving/`
+          + `${fromCoord.lng},${fromCoord.lat};${toCoord.lng},${toCoord.lat}`
+          + `?overview=full&geometries=geojson`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.code !== 'Ok' || !data.routes.length) { toast('❌ Route nicht gefunden'); return; }
 
-      if (this._routeLayer) _map.removeLayer(this._routeLayer);
-      const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-      this._routeLayer = L.polyline(coords, {
-        color: '#007AFF', weight: 5, opacity: 0.85,
-      }).addTo(_map);
-      _map.fitBounds(this._routeLayer.getBounds(), { padding: [40, 60] });
+        const route   = data.routes[0];
+        const distKm  = (route.distance / 1000).toFixed(1);
+        const durMin  = Math.round(route.duration / 60);
+        const durText = durMin >= 60 ? `${Math.floor(durMin/60)}h ${durMin%60}min` : `${durMin} min`;
 
-      document.getElementById('route-dist').textContent = distKm + ' km';
-      document.getElementById('route-time').textContent = durText;
-      document.getElementById('route-info').classList.remove('hidden');
-      toast(`✅ ${distKm} km · ${durText}`);
+        const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        this._routeLayer = L.polyline(coords, {
+          color: '#007AFF', weight: 6, opacity: 0.85, lineCap: 'round', lineJoin: 'round'
+        }).addTo(_map);
+        
+        _map.flyToBounds(this._routeLayer.getBounds(), { padding: [40, 60], duration: 0.8 });
+
+        document.getElementById('route-dist').textContent = distKm + ' km';
+        document.getElementById('route-time').textContent = durText;
+        document.getElementById('route-info').classList.remove('hidden');
+        toast(`✅ ${distKm} km · ${durText}`);
     } catch(e) {
-      toast('❌ Routing-Fehler'); console.error(e);
+        toast('❌ Routing-Fehler'); console.error(e);
+    } finally {
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+        this._isCalculating = false;
     }
   },
 
