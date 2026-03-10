@@ -414,7 +414,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   #pool-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 95px - max(45px, env(safe-area-inset-bottom)));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 95px - max(24px, env(safe-area-inset-bottom)));
   }
 
   #search-bar {
@@ -426,26 +426,26 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
     border-radius: 16px 16px 0 0; 
-    /* Massive Padding unten, um versehentliches iOS-Wischen/Schließen zu verhindern */
-    padding: 8px 8px max(45px, env(safe-area-inset-bottom));
+    /* Massives Padding unten, um iOS-Swipe-Outs radikal zu verhindern! */
+    padding: 8px 8px calc(45px + env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
   }
   #toolbar::-webkit-scrollbar { display: none; }
   /* Knöpfe größer für Wurstfinger-Sicherheit im Einsatz */
-  .tool-btn { width: 52px; height: 52px; font-size: 24px; flex-shrink: 0; }
+  .tool-btn { width: 56px; height: 56px; font-size: 26px; flex-shrink: 0; }
   .tool-label { font-size: 8.5px; }
-  .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
+  .tool-divider { width: 1px; height: 36px; margin: auto 4px; flex-shrink: 0; }
 
   #color-picker {
-    left: 8px; top: auto; bottom: calc(90px + max(45px, env(safe-area-inset-bottom)));
+    left: 8px; top: auto; bottom: calc(105px + max(45px, env(safe-area-inset-bottom)));
     transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
   }
-  #draw-finish-btn { bottom: calc(100px + max(45px, env(safe-area-inset-bottom))); }
+  #draw-finish-btn { bottom: calc(115px + max(45px, env(safe-area-inset-bottom))); }
   #toast {
     top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #viewer-hint { bottom: calc(100px + max(45px, env(safe-area-inset-bottom))); }
+  #viewer-hint { bottom: calc(115px + max(45px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
@@ -688,7 +688,7 @@ const CFG = {
 };
 
 /* ── GLOBAL STATE ────────────────────────────────────────────────────── */
-let _mode         = null;   // 'solo' | 'admin' | 'viewer'
+let _mode         = null;   
 let _roomCode     = null;
 let _sb           = null;
 let _channel      = null;
@@ -768,13 +768,8 @@ function initMap() {
   _map.on('zoomend', () => {
     const z = _map.getZoom();
     _drawn.eachLayer(l => {
-      // Autos skalieren
       if (l._ldata && l._ldata.type === 'einheit') {
         l.setIcon(Icons.unit(l._ldata.ruf, z));
-      }
-      // Text skalieren (Neu!)
-      else if (l._ldata && l._ldata.type === 'text') {
-        l.setIcon(Icons.text(l._ldata.text, z));
       }
     });
     if (_liveGpsLayer) {
@@ -799,8 +794,7 @@ const Icons = {
     if (type === 'ksst') return this.ksst(desc);
     const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
     
-    // Zusatzinfo-Schild (wird nur angezeigt, wenn Text eingegeben wurde)
-    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:100px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
 
     return L.divIcon({
       html: `<div class="tac-marker" style="display:flex;flex-direction:column;align-items:center;">
@@ -813,7 +807,7 @@ const Icons = {
   },
 
   ksst(desc = '') {
-    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:100px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
     return L.divIcon({
       html: `<div class="ksst-marker" style="display:flex;flex-direction:column;align-items:center;">
         <div class="ksst-icon">🔶</div>
@@ -847,19 +841,20 @@ const Icons = {
     });
   },
 
-  text(txt, zoom) {
-    // Zoom-abhängige Textskalierung
-    const z = Math.max(12, Math.min(19, zoom ?? 15));
-    const px = Math.round(9 + (z - 12) * 1.5);
+  text(txt, scale = 1) {
+    const fz = Math.round(14 * scale);
+    const pX = Math.round(9 * scale);
+    const pY = Math.round(4 * scale);
+    const br = Math.round(8 * scale);
     return L.divIcon({
-      html: `<div style="font-size:${px}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${Math.round(px/2.5)}px ${Math.round(px/1.2)}px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:${px*15}px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
-      className: '', iconAnchor: [0, px], 
+      html: `<div style="font-size:${fz}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${pY}px ${pX}px;border-radius:${br}px;white-space:pre-wrap;width:max-content;max-width:500px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;">${escHtml(txt)}</div>`,
+      className: '', 
+      iconAnchor: [0, 0], 
     });
   },
 
-  // Neuer, frei skalierbarer Vektor-Pfeil als Marker-Icon
   arrow(length, angle, color) {
-    const w = length;
+    const w = Math.max(30, Math.round(length));
     const h = 24;
     const tailH = 6;
     const headW = 18;
@@ -873,7 +868,7 @@ const Icons = {
                    <path d="${path}" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
                  </svg>
                </div>`,
-        className: '', iconSize: [w, h], iconAnchor: [w/2, h/2]
+        className: '', iconSize: [w, h], iconAnchor: [w/2, h/2] 
     });
   }
 };
@@ -892,7 +887,6 @@ const Layers = {
     if (_drawn) _drawn.clearLayers();
     _history = [];
     
-    // Security: Absturzschutz gegen fehlerhafte Daten
     if (!state || !Array.isArray(state.layers)) return;
     
     state.layers.forEach(d => this.render(d));
@@ -913,10 +907,9 @@ const Layers = {
         layer = L.marker([d.lat, d.lng], { icon: Icons.unit(d.ruf, _map.getZoom()), draggable: isAdmin });
         break;
       case 'text':
-        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text, _map.getZoom()), draggable: isAdmin });
+        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text, d.scale || 1), draggable: isAdmin });
         break;
       case 'arrow':
-        // Pfeil als Marker zeichnen (wie ein Fahrzeug)
         layer = L.marker([d.lat, d.lng], { icon: Icons.arrow(d.length, d.angle, d.color), draggable: isAdmin });
         break;
       case 'circle':
@@ -941,16 +934,21 @@ const Layers = {
     layer._lid   = d.id;
     layer._ldata = d;
 
-    // Alle Marker (inkl. Pfeil) senden beim Loslassen ein Update
+    const targetPopupLayer = layer._line || layer;
+
     if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
-      layer.on('dragend', () => {
-        const ll = layer.getLatLng();
+      targetPopupLayer.on('dragend', () => {
+        const ll = targetPopupLayer.getLatLng();
         d.lat = ll.lat; d.lng = ll.lng;
         Sync.push();
       });
     }
     
-    this._addPopup(layer, d, isAdmin);
+    this._addPopup(targetPopupLayer, d, isAdmin);
+
+    if (d.type === 'arrow') {
+      layer.eachLayer(sub => { sub._lid = d.id; sub._ldata = d; });
+    }
 
     _drawn.addLayer(layer);
     if (pushHistory) _history.push(d.id);
@@ -969,7 +967,7 @@ const Layers = {
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
     
-    const canEdit = ['circle','polyline','polygon'].includes(d.type); // Pfeil ist nicht mehr 'editierbar', nur verschiebbar
+    const canEdit = ['circle','polyline','polygon','arrow','text'].includes(d.type);
     const editBtn = (canEdit && isAdmin)
       ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
       : '';
@@ -1035,7 +1033,6 @@ const LiveGPS = {
       this.start();
     } else {
       if (!this._following) {
-         // Wieder fangen / zentrieren
          this._following = true;
          if (this._marker) _map.panTo(this._marker.getLatLng(), { animate: true });
          const btn = document.getElementById('gps-toggle-btn');
@@ -1043,7 +1040,6 @@ const LiveGPS = {
          btn.classList.remove('tracking-paused');
          toast('📍 Kamera zentriert. (Mitlauf-Modus aktiv)');
       } else {
-         // Ausschalten
          if (confirm('Navigation / GPS beenden?')) {
             this.stop();
          }
@@ -1052,38 +1048,32 @@ const LiveGPS = {
   },
 
   start() {
-    // SOLO Modus: Offline Navi
     if (_mode === 'solo') {
        this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
-       // LAGE Modus: Option zum Live gehen
-       this._isLive = confirm('Soll dein Standort LIVE für die Leitstelle sichtbar sein?\n\n[OK] = Ja, für alle sichtbar\n[Abbrechen] = Nein, nur privates Navi');
+       // Hier kein Nachfragen mehr im Lagen-Modus! Zwanghaftes Teilen.
+       this._isLive = true;
+       let ruf = prompt('Lage-Modus aktiv! Dein Live-Standort wird mit der Leitstelle geteilt.\n\nBitte Rufnamen eingeben (z. B. H1131):');
+       if (!ruf) return; 
        
-       if (this._isLive) {
-           let ruf = prompt('Lage-Modus aktiv! Dein Live-Standort wird mit der Leitstelle geteilt.\n\nBitte Rufnamen eingeben (z. B. H1131):');
-           if (!ruf) return; // Cancel
-           
-           ruf = ruf.trim().toUpperCase();
-           
-           let alreadyLive = false;
-           if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
-           if (alreadyLive) {
-              toast(`❌ ${ruf} ist bereits live auf der Karte!`);
-              return;
-           }
-           _myRuf = ruf;
+       ruf = ruf.trim().toUpperCase();
+       let alreadyLive = false;
+       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
+       if (alreadyLive) {
+          toast(`❌ ${ruf} ist bereits live auf der Karte!`);
+          return;
+       }
+       _myRuf = ruf;
 
-           // Entferne eigenen statischen Marker (falls Admin sich selbst live schaltet)
-           if (_mode === 'admin') {
-             let duplicateId = null;
-             if (_drawn) {
-                _drawn.eachLayer(l => {
-                  if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
-                });
-             }
-             if (duplicateId) Layers.deleteById(duplicateId);
-           }
+       if (_mode === 'admin') {
+         let duplicateId = null;
+         if (_drawn) {
+            _drawn.eachLayer(l => {
+              if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
+            });
+         }
+         if (duplicateId) Layers.deleteById(duplicateId);
        }
     }
 
@@ -1093,7 +1083,6 @@ const LiveGPS = {
     this._following = true;
     toast('🛰️ Suche GPS-Signal...');
     
-    // Deaktiviere Follow-Mode, wenn Nutzer Karte wischt
     _map.on('dragstart', this._onMapDrag, this);
     
     this._watchId = navigator.geolocation.watchPosition(
@@ -1101,16 +1090,14 @@ const LiveGPS = {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const acc = pos.coords.accuracy;
-        const heading = pos.coords.heading; // Fahrtrichtung (null, wenn man steht oder Gerät das nicht liefert)
+        const heading = pos.coords.heading; 
         
         let iconHtml = '';
         if (heading !== null && !isNaN(heading)) {
-            // Echter Navi-Pfeil (dreht sich in Fahrtrichtung)
             iconHtml = `<div style="transform:rotate(${heading}deg); transform-origin:center; width:24px; height:24px; background:rgba(0,122,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">
                             <div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid #007AFF; margin-bottom:4px;"></div>
                         </div>`;
         } else {
-            // Normaler blauer Punkt
             iconHtml = `<div style="width:16px;height:16px;background:#007AFF;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`;
         }
 
@@ -1364,7 +1351,6 @@ const Tools = {
     }
     if (typeof Editor !== 'undefined') Editor.finish(true);
     
-    // Aufräumen vom Arrow-Tool
     if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
     _map.off('mousemove', this._onArrowMove, this);
     this._arrowStart = null;
@@ -1381,7 +1367,6 @@ const Tools = {
     _map.getContainer().classList.remove('tool-active');
     _map.getContainer().style.cursor = '';
     
-    // Verhindert doppelte Klick-Events
     _map.off('click', this._onMapClick, this);
     _map.on('click', this._onMapClick, this);
   },
@@ -1481,7 +1466,6 @@ const Tools = {
       return;
     }
 
-    // Neuer Pfeil (Marker mit dynamischer Skalierung, verhält sich wie ein Fahrzeug)
     if (tool === 'arrow') {
       if (!this._arrowStart) {
         this._arrowStart = e.latlng;
@@ -1495,15 +1479,13 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
-        // Länge & Winkel berechnen
         const p1 = _map.latLngToLayerPoint(start);
         const p2 = _map.latLngToLayerPoint(end);
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
-        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); // Min. 30px lang
+        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-        // Marker genau in die Mitte setzen
         const centerLat = (start.lat + end.lat) / 2;
         const centerLng = (start.lng + end.lng) / 2;
 
@@ -1518,7 +1500,6 @@ const Tools = {
     }
 
     if (['polygon', 'line', 'measure'].includes(tool)) {
-      // Spam/Doppelklick-Schutz: Verhindert Geisterpunkte!
       if (Tools._drawPoints.length > 0) {
           const lastPt = Tools._drawPoints[Tools._drawPoints.length - 1];
           if (_map.distance(lastPt, [lat, lng]) < 2) return; 
@@ -1558,7 +1539,7 @@ const Tools = {
   },
 };
 
-/* ── EDITOR (Sauberer, Eigener Hand-Editor ohne Geisterpunkte) ──────── */
+/* ── EDITOR (Hand-Editor) ──────────────────────────────────── */
 const Editor = {
   _handles: [],
 
@@ -1601,7 +1582,9 @@ const Editor = {
 
     if      (d.type === 'circle')                   this._editCircle(found, d);
     else if (d.type === 'polygon' || d.type === 'polyline') this._editShape(found, d);
-    else { toast('Dieses Element kann nicht bearbeitet werden'); return; } // Pfeil ist nicht mehr 'editierbar', nur ziehbar.
+    else if (d.type === 'arrow')                    this._editArrow(found, d);
+    else if (d.type === 'text')                     this._editText(found, d);
+    else { toast('Dieses Element kann nicht bearbeitet werden'); return; }
 
     toast('✏️ Handles ziehen · dann „✓ Speichern" drücken');
     const finBtn = document.getElementById('draw-finish-btn');
@@ -1655,6 +1638,68 @@ const Editor = {
     });
   },
 
+  _editArrow(layer, d) {
+    this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
+      const ll = e.target.getLatLng();
+      d.lat = ll.lat; d.lng = ll.lng;
+      layer.setLatLng(ll); 
+      
+      if (this._handles[1]) {
+         const pt = _map.latLngToLayerPoint(ll);
+         const rad = d.angle * (Math.PI / 180);
+         const headPt = L.point(pt.x + (d.length/2)*Math.cos(rad), pt.y + (d.length/2)*Math.sin(rad));
+         this._handles[1].setLatLng(_map.layerPointToLatLng(headPt));
+      }
+    });
+
+    const pt = _map.latLngToLayerPoint([d.lat, d.lng]);
+    const rad = d.angle * (Math.PI / 180);
+    const headPt = L.point(pt.x + (d.length/2)*Math.cos(rad), pt.y + (d.length/2)*Math.sin(rad));
+
+    this._addHandle(_map.layerPointToLatLng(headPt), this._handleIcon('#FF3B30'), e => {
+      const centerPt = _map.latLngToLayerPoint([d.lat, d.lng]);
+      const dragPt = _map.latLngToLayerPoint(e.target.getLatLng());
+      
+      const dx = dragPt.x - centerPt.x;
+      const dy = dragPt.y - centerPt.y;
+      
+      d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy) * 2);
+      d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      
+      layer.setIcon(Icons.arrow(d.length, d.angle, d.color));
+    });
+  },
+
+  _editText(layer, d) {
+    if (!d.scale) d.scale = 1;
+
+    this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
+      const ll = e.target.getLatLng();
+      d.lat = ll.lat; d.lng = ll.lng;
+      layer.setLatLng(ll);
+      if (this._handles[1]) {
+         const pt = _map.latLngToLayerPoint(ll);
+         const resizePt = L.point(pt.x + (80 * d.scale), pt.y + (30 * d.scale));
+         this._handles[1].setLatLng(_map.layerPointToLatLng(resizePt));
+      }
+    });
+
+    const pt = _map.latLngToLayerPoint([d.lat, d.lng]);
+    const resizePt = L.point(pt.x + (80 * d.scale), pt.y + (30 * d.scale));
+
+    this._addHandle(_map.layerPointToLatLng(resizePt), this._handleIcon('#FF9500'), e => {
+      const tlPt = _map.latLngToLayerPoint([d.lat, d.lng]);
+      const dragPt = _map.latLngToLayerPoint(e.target.getLatLng());
+      
+      let newScale = (dragPt.x - tlPt.x) / 80;
+      if (newScale < 0.5) newScale = 0.5;
+      if (newScale > 10) newScale = 10;
+      
+      d.scale = newScale;
+      layer.setIcon(Icons.text(d.text, d.scale));
+    });
+  },
+
   finish(silent) {
     this._handles.forEach(h => { try { _map.removeLayer(h); } catch(e) {} });
     this._handles = [];
@@ -1691,7 +1736,7 @@ const TextInput = {
     this.hide();
     if (!raw || !raw.trim()) return;
     const txt = raw.trim();
-    const d = { id: Layers.uid(), type: 'text', lat: this._lat, lng: this._lng, text: txt };
+    const d = { id: Layers.uid(), type: 'text', lat: this._lat, lng: this._lng, text: txt, scale: 1 };
     Layers.render(d, true);
     Sync.push();
     Tools.deactivate();
