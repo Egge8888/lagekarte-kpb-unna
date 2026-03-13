@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#0d1b2e"/>
+  <!-- Map background grid -->
+  <rect x="80" y="120" width="352" height="280" rx="16" fill="#1a2a4a"/>
+  <!-- Grid lines -->
+  <line x1="80" y1="213" x2="432" y2="213" stroke="#243750" stroke-width="2"/>
+  <line x1="80" y1="307" x2="432" y2="307" stroke="#243750" stroke-width="2"/>
+  <line x1="197" y1="120" x2="197" y2="400" stroke="#243750" stroke-width="2"/>
+  <line x1="315" y1="120" x2="315" y2="400" stroke="#243750" stroke-width="2"/>
+  <!-- Road -->
+  <path d="M80 260 Q180 240 256 260 Q330 280 432 260" stroke="#2a4a7a" stroke-width="18" fill="none" stroke-linecap="round"/>
+  <!-- Location pin -->
+  <circle cx="256" cy="230" r="52" fill="#007AFF"/>
+  <circle cx="256" cy="222" r="26" fill="#ffffff"/>
+  <path d="M256 252 L280 300 L256 284 L232 300 Z" fill="#007AFF"/>
+  <!-- Emergency dot -->
+  <circle cx="340" cy="170" r="22" fill="#FF3B30"/>
+  <text x="340" y="178" font-size="24" text-anchor="middle" fill="white" font-family="Arial">!</text>
+</svg>
