@@ -129,20 +129,23 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* ── TOOLBAR ─────────────────────────────────────────── */
 #toolbar {
   position:fixed; left:12px; top:50%; transform:translateY(calc(-50% + 26px));
-  z-index:1000; display:flex; flex-direction:column; gap:3px;
+  z-index:1000; display:flex; flex-direction:column; gap:4px;
   background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:18px; padding:7px 6px;
+  border:1px solid var(--sep); border-radius:18px; padding:8px 6px;
   box-shadow:0 4px 24px rgba(0,0,0,.2);
   max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
+  /* Versteckt den unschönen Windows-Scrollbalken, scrollen per Mausrad geht trotzdem */
+  scrollbar-width: none; -ms-overflow-style: none;
 }
+#toolbar::-webkit-scrollbar { display: none; }
 .dark #toolbar { background:rgba(44,44,46,.97); }
 
 /* Viewer Mode: Hide all admin tools */
 #toolbar.viewer-mode .admin-only { display: none !important; }
 
 .tool-btn {
-  width:40px; height:40px; border-radius:11px; border:none;
-  background:transparent; cursor:pointer; font-size:18px;
+  width:52px; height:50px; border-radius:12px; border:none;
+  background:transparent; cursor:pointer; font-size:22px;
   display:flex; align-items:center; justify-content:center;
   position:relative; transition:all .12s; -webkit-tap-highlight-color:transparent;
   flex-direction:column; gap:1px; flex-shrink:0;
@@ -158,12 +161,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .tool-btn.tracking-paused .tool-label { color: var(--blue); }
 
-.tool-label { font-size:7.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
-.tool-divider { width:28px; height:1px; background:var(--sep); margin:2px auto; }
+.tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
 
 /* ── COLOR PICKER ────────────────────────────────────── */
 #color-picker {
-  position:fixed; left:66px; top:50%; transform:translateY(calc(-50% + 26px));
+  position:fixed; left:82px; top:50%; transform:translateY(calc(-50% + 26px));
   z-index:1001; background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
   border:1px solid var(--sep); border-radius:14px; padding:10px;
   box-shadow:0 4px 24px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:6px;
@@ -414,6 +417,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 /* ══════════════════════════════════════════════════════════
+   TABLET LAYOUT
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tool-btn { width: 46px; height: 46px; font-size: 20px; }
+  #toolbar { gap: 4px; padding: 6px 5px; }
+  #color-picker { left: 74px; }
+}
+
+/* ══════════════════════════════════════════════════════════
    MOBILE LAYOUT
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
@@ -461,11 +473,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .landing-inner { padding: 24px 20px; gap: 10px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
   .landing-title { font-size: 22px; }
-}
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .tool-btn { width: 44px; height: 44px; font-size: 20px; }
-  #toolbar { gap: 4px; padding: 6px 5px; }
 }
 
 @media print {
@@ -880,13 +887,13 @@ const Icons = {
     const z = Math.max(12, Math.min(19, zoom ?? 15));
     const basePx = Math.round(10 + (z - 12) * 1.5);
     const px = Math.round(basePx * scale);
+    
     return L.divIcon({
       html: `<div style="font-size:${px}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${Math.round(px/2.5)}px ${Math.round(px/1.2)}px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:${px*15}px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
       className: '', iconAnchor: [0, 0], 
     });
   },
   
-  // Neues Skalierbares Emoji/Symbol
   symbol(emoji, desc = '', scale = 1) {
     const px = Math.round(32 * scale);
     const descHtml = desc ? `<div style="font-size:${Math.max(10, Math.round(10*scale))}px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:${Math.max(120, 120*scale)}px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
@@ -1239,7 +1246,8 @@ const SymbolPanel = {
   _symbols: [
     { cat: 'Blaulicht & Rettung', items: ['🚓','🚔','🏍️','🚁','🛩️','🚒','🚑','🚤','🏥','⛺️'] },
     { cat: 'Gefahrenlage', items: ['🔥','💥','💣','☣️','☢️','☠️','⚡','🌊','🌪️','💧'] },
-    { cat: 'Infrastruktur & Verkehr', items: ['🚧','🛑','🏭','🛢️','🚗','🚚','🚂','⛽','⚓','🚥'] },
+    { cat: 'Verkehr & Fahrzeuge', items: ['🚗','🚕','🚌','🚐','🚚','🚛','🚜','🚂','🚋','⚓'] },
+    { cat: 'Infrastruktur & Natur', items: ['🚧','🛑','🏭','🛢️','⛽','🚥','🌳','🌲','🪵','🍂'] },
     { cat: 'Personen & Tiere', items: ['🧍','🏃','🧑‍🤝‍🧑','👤','🕵️','🐕','🐄','🐎','🐗','🐺'] }
   ],
   
@@ -1250,7 +1258,7 @@ const SymbolPanel = {
     const panel = document.getElementById('symbol-panel');
     const isHidden = panel.classList.contains('hidden');
     
-    Pool.close(); // Immer das andere Menü schließen
+    Pool.close(); 
     
     if (isHidden) {
       this.render();
@@ -1315,7 +1323,7 @@ const Pool = {
     const panel = document.getElementById('pool-panel');
     const isHidden = panel.classList.contains('hidden');
     
-    SymbolPanel.close(); // Immer das andere Menü schließen
+    SymbolPanel.close(); 
     
     if (isHidden) {
       panel.classList.remove('hidden');
@@ -1630,7 +1638,15 @@ const Tools = {
         const centerLat = (start[0] + end[0]) / 2;
         const centerLng = (start[1] + end[1]) / 2;
 
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color };
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: 100, angle: 0 };
+        // Recalculate correctly before rendering
+        const p1 = _map.latLngToLayerPoint(start);
+        const p2 = _map.latLngToLayerPoint(end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
         Layers.render(d, true);
         Sync.push();
 
@@ -1787,6 +1803,13 @@ const Editor = {
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
         
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
@@ -1795,6 +1818,13 @@ const Editor = {
         d.end = [ll.lat, ll.lng];
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
         
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
