@@ -1,0 +1,2539 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Lagekarte – KPB Unna</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ════════════════════════════════════════════════════════
+   DESIGN SYSTEM – iOS inspired
+   ════════════════════════════════════════════════════════ */
+:root {
+  --blue:#007AFF; --red:#FF3B30; --green:#34C759; --orange:#FF9500;
+  --yellow:#FFCC00; --purple:#AF52DE; --teal:#30B0C7; --gray:#8E8E93;
+  --bg:#F2F2F7; --card:#FFFFFF; --txt:#000000; --txt2:#3C3C43;
+  --sep:rgba(60,60,67,.18); --glass:rgba(255,255,255,.85);
+  --shadow:0 4px 24px rgba(0,0,0,.10);
+  --r:16px; --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+.dark {
+  --bg:#1C1C1E; --card:#2C2C2E; --txt:#FFFFFF; --txt2:rgba(235,235,245,.6);
+  --sep:rgba(84,84,88,.55); --glass:rgba(44,44,46,.92);
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; font-family:var(--font); background:var(--bg); color:var(--txt); overflow:hidden; }
+
+/* ── GLOBAL HIDDEN ────────────────────────────────────── */
+.hidden { display:none !important; }
+
+/* ── SCREENS ──────────────────────────────────────────── */
+.screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:100; }
+
+/* ── LANDING ─────────────────────────────────────────── */
+#landing {
+  background: linear-gradient(160deg, #1a2a4a 0%, #0d1b2e 60%, #162640 100%);
+  flex-direction:column; gap:0;
+}
+.landing-inner { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:380px; padding:32px 24px; }
+.landing-logo { font-size:72px; filter:drop-shadow(0 4px 12px rgba(0,120,255,.4)); margin-bottom:8px; }
+.landing-title { font-size:28px; font-weight:700; color:#fff; letter-spacing:-.5px; }
+.landing-sub { font-size:14px; color:rgba(255,255,255,.5); margin-bottom:20px; }
+.btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:16px; border-radius:14px; border:none; font-family:var(--font); font-size:16px; font-weight:600; cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-secondary { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.2); }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-ghost { background:transparent; color:rgba(255,255,255,.6); font-size:14px; padding:10px; }
+.landing-divider { width:100%; text-align:center; font-size:12px; color:rgba(255,255,255,.3); margin:4px 0; }
+
+/* ── MODAL ───────────────────────────────────────────── */
+#modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500;
+  display:flex; align-items:flex-end; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#modal-overlay.hidden { display:none; }
+.modal-sheet {
+  background:var(--card); border-radius:24px 24px 0 0;
+  padding:28px 24px max(40px, env(safe-area-inset-bottom));
+  width:100%; max-width:460px;
+}
+#modal-overlay[style*="center"] .modal-sheet {
+  border-radius:24px; margin: 16px; width: calc(100% - 32px);
+}
+.modal-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 20px; }
+.modal-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:6px; }
+.modal-sub { font-size:14px; color:var(--txt2); text-align:center; margin-bottom:24px; }
+.pin-row { display:flex; gap:12px; justify-content:center; margin-bottom:24px; }
+.pin-digit {
+  width:56px; height:64px; border-radius:12px; border:2px solid var(--sep);
+  font-size:28px; font-weight:700; text-align:center; background:var(--bg);
+  color:var(--txt); font-family:var(--font); outline:none; caret-color:var(--blue);
+  -webkit-appearance:none; appearance:none;
+}
+.pin-digit:focus { border-color:var(--blue); }
+.modal-input {
+  width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid var(--sep);
+  font-size:17px; font-family:var(--font); background:var(--bg); color:var(--txt);
+  outline:none; text-align:center; font-weight:600; margin-bottom:20px;
+}
+.modal-input:focus { border-color:var(--blue); }
+.modal-input::placeholder { font-weight:400; color:var(--txt2); }
+.modal-actions { display:flex; gap:12px; }
+.modal-actions .btn { flex:1; }
+
+/* ── MAP SCREEN ──────────────────────────────────────── */
+#map-screen { display:flex; flex-direction:column; background:var(--bg); }
+#map-screen.hidden { display:none; }
+#map { flex:1; }
+
+/* ── HEADER ──────────────────────────────────────────── */
+#header {
+  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--sep); z-index:200;
+  flex-shrink:0; height:52px;
+}
+#mode-badge {
+  font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;
+  text-transform:uppercase; letter-spacing:.5px; flex-shrink:0;
+}
+#mode-badge.admin { background:rgba(255,59,48,.15); color:var(--red); }
+#mode-badge.viewer { background:rgba(52,199,89,.15); color:var(--green); }
+#mode-badge.solo { background:rgba(0,122,255,.15); color:var(--blue); }
+#room-code-display {
+  font-size:18px; font-weight:800; letter-spacing:4px; color:var(--txt);
+  background:var(--card); padding:4px 14px; border-radius:20px;
+  border:1px solid var(--sep); cursor:pointer; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+#room-code-display:active { opacity:.7; }
+#live-dot {
+  width:8px; height:8px; border-radius:50%; background:var(--green);
+  flex-shrink:0; animation:pulse 2s infinite;
+}
+#live-dot.off { background:var(--gray); animation:none; }
+#viewer-count { font-size:12px; color:var(--txt2); font-weight:600; }
+.header-spacer { flex:1; }
+.header-btn {
+  width:36px; height:36px; border-radius:10px; border:none;
+  background:var(--card); color:var(--txt); font-size:16px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent;
+}
+.header-btn:active { transform:scale(.93); }
+#end-btn { background:rgba(255,59,48,.1); color:var(--red); border-color:rgba(255,59,48,.3); font-size:12px; font-weight:700; width:auto; padding:0 12px; letter-spacing:.3px; }
+
+/* ── TOOLBAR ─────────────────────────────────────────── */
+#toolbar {
+  position:fixed; left:12px; top:50%; transform:translateY(calc(-50% + 26px));
+  z-index:1000; display:flex; flex-direction:column; gap:4px;
+  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:8px 6px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
+  /* Versteckt den unschönen Windows-Scrollbalken, scrollen per Mausrad geht trotzdem */
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+#toolbar::-webkit-scrollbar { display: none; }
+.dark #toolbar { background:rgba(44,44,46,.97); }
+
+/* Viewer Mode: Hide all admin tools */
+#toolbar.viewer-mode .admin-only { display: none !important; }
+
+.tool-btn {
+  width:52px; height:50px; border-radius:12px; border:none;
+  background:transparent; cursor:pointer; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; transition:all .12s; -webkit-tap-highlight-color:transparent;
+  flex-direction:column; gap:1px; flex-shrink:0;
+}
+.tool-btn:active { transform:scale(.9); }
+.tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
+.tool-btn.active .tool-label { color:#fff; }
+
+/* CSS für Navigation: Wenn Map verschoben wurde (Pausiert) */
+.tool-btn.tracking-paused { 
+  box-shadow: inset 0 0 0 2px var(--blue); 
+  background: rgba(0,122,255,0.1) !important;
+}
+.tool-btn.tracking-paused .tool-label { color: var(--blue); }
+
+.tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
+
+/* ── COLOR PICKER ────────────────────────────────────── */
+#color-picker {
+  position:fixed; left:82px; top:50%; transform:translateY(calc(-50% + 26px));
+  z-index:1001; background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:14px; padding:10px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:6px;
+}
+.dark #color-picker { background:rgba(44,44,46,.97); }
+#color-picker.hidden { display:none; }
+.color-dot {
+  width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent;
+  transition:all .12s; -webkit-tap-highlight-color:transparent;
+}
+.color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
+.color-dot:active { transform:scale(.9); }
+
+/* ── DRAW FINISH BUTTON ──────────────────────────────── */
+#draw-finish-btn {
+  position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
+  z-index:1100; background:var(--green); color:#fff; border:none;
+  padding:14px 28px; border-radius:18px; font-size:16px; font-weight:700;
+  cursor:pointer; font-family:var(--font);
+  box-shadow:0 4px 20px rgba(52,199,89,.55);
+  -webkit-tap-highlight-color:transparent;
+}
+#draw-finish-btn:active { transform:translateX(-50%) scale(.96); }
+
+/* ── TOAST ───────────────────────────────────────────── */
+#toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  z-index:600; padding:12px 20px; border-radius:20px; font-size:14px; font-weight:600;
+  color:#fff; pointer-events:none; opacity:0; transition:all .3s; white-space:nowrap;
+  backdrop-filter:blur(10px); box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── UNIT MARKERS (Leuchtendes Sticker-Design) ───────── */
+.unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.unit-icon-img { line-height:1; }
+.unit-label {
+  font-weight:900; color:#0055FF;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  white-space:nowrap; margin-top:2px; font-family:var(--font);
+}
+.dark .unit-label { 
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #3399FF; 
+}
+.unit-label.dgl { color:#FF3300 !important; }
+.dark .unit-label.dgl { color:#FF453A !important; }
+.unit-label.fremd { color:#B500FF !important; }
+.dark .unit-label.fremd { color:#BF5AF2 !important; }
+.unit-label.kripo { color:#00AACC !important; }
+.dark .unit-label.kripo { color:#30B0C7 !important; }
+
+/* ── TACTIC MARKERS ──────────────────────────────────── */
+.tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+.tac-icon { font-size:28px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.tac-label { font-size:10px; font-weight:800; white-space:nowrap; font-family:var(--font); color:#000;
+  text-shadow:0 1px 2px rgba(255,255,255,.9); }
+.dark .tac-label { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8); }
+
+/* ── KSST special marker ─────────────────────────────── */
+.ksst-marker {
+  display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer;
+}
+.ksst-badge {
+  background:#FF9500; color:#fff; font-size:10px; font-weight:900;
+  padding:3px 7px; border-radius:8px; letter-spacing:.5px;
+  box-shadow:0 2px 8px rgba(255,149,0,.5); border:1.5px solid rgba(255,255,255,.6);
+  white-space:nowrap;
+}
+.ksst-icon { font-size:26px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+
+/* ── SIDE PANELS (Pool & Symbole) ────────────────────── */
+.side-panel {
+  position:fixed; right:12px; top:64px;
+  z-index:1000; width:min(280px, calc(100vw - 70px));
+  max-height:calc(100vh - 80px);
+  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:12px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+.dark .side-panel { background:rgba(44,44,46,.97); }
+
+.panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; flex-shrink:0;
+}
+.panel-title { font-size:15px; font-weight:800; color:var(--txt); }
+.panel-close-btn {
+  background:none; border:none; color:var(--txt2); font-size:20px;
+  cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent;
+}
+
+/* Pool Specific */
+#pool-list { display:flex; flex-direction:column; gap:4px; }
+.pool-empty { text-align:center; color:var(--txt2); font-size:12px; padding:10px 0; line-height:1.5; }
+.pool-item {
+  display:flex; align-items:center; gap:7px; padding:8px 9px;
+  background:var(--bg); border-radius:10px; cursor:pointer;
+  transition:all .12s; -webkit-tap-highlight-color:transparent;
+  border:1.5px solid transparent; user-select:none;
+}
+.pool-item:hover { border-color:var(--blue); }
+.pool-item:active { transform:scale(.97); }
+.pool-emoji { font-size:18px; flex-shrink:0; line-height:1; }
+.pool-ruf { flex:1; font-size:13px; font-weight:700; color:#0055FF; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dark .pool-ruf { color:#3399FF; }
+.pool-ruf.dgl { color:#FF3300; }
+.dark .pool-ruf.dgl { color:#FF453A; }
+.pool-ruf.fremd { color:#B500FF; }
+.dark .pool-ruf.fremd { color:#BF5AF2; }
+.pool-ruf.kripo { color:#00AACC; }
+.dark .pool-ruf.kripo { color:#30B0C7; }
+.pool-del-btn { background:none; border:none; color:var(--txt2); font-size:13px; cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+.pool-del-btn:hover { background:rgba(255,59,48,.12); color:var(--red); }
+#pool-add-row { display:flex; gap:6px; flex-shrink:0; }
+#pool-input { flex:1; min-width:0; padding:9px 10px; border-radius:8px; border:1.5px solid var(--sep); font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt); outline:none; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+#pool-input:focus { border-color:var(--blue); }
+#pool-add-btn { width:38px; height:38px; border-radius:8px; background:var(--blue); color:#fff; border:none; font-size:22px; font-weight:300; cursor:pointer; font-family:var(--font); flex-shrink:0; display:flex; align-items:center; justify-content:center; line-height:1; }
+
+/* Symbols Specific */
+.symbol-category { font-size:11px; font-weight:800; color:var(--txt2); text-transform:uppercase; margin-top:10px; margin-bottom:6px; letter-spacing:0.5px; }
+.symbol-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(42px, 1fr)); gap:6px; }
+.symbol-item { font-size:28px; text-align:center; cursor:pointer; padding:6px 0; border-radius:10px; background:var(--bg); border:1.5px solid transparent; transition:all .1s; -webkit-tap-highlight-color:transparent; line-height:1; }
+.symbol-item:active { transform:scale(0.85); }
+.symbol-item:hover { border-color:var(--blue); background:rgba(0,122,255,0.1); }
+
+/* ── VIEWER BANNER ───────────────────────────────────── */
+#viewer-hint {
+  position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+  z-index:300; background:rgba(0,0,0,.6); color:#fff; padding:8px 16px;
+  border-radius:20px; font-size:12px; font-weight:600; pointer-events:none;
+  backdrop-filter:blur(10px); white-space:nowrap;
+}
+#viewer-hint.hidden { display:none; }
+
+/* ── MEASURE POPUP ───────────────────────────────────── */
+.measure-tooltip {
+  background:rgba(0,0,0,.75) !important; color:#fff !important;
+  border:none !important; border-radius:8px !important;
+  font-weight:700 !important; font-size:13px !important;
+  box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important;
+}
+
+/* ── TOOL-ACTIVE ─────────────────────────────────────── */
+#map.tool-active .leaflet-overlay-pane { pointer-events: none !important; }
+#map.tool-active .leaflet-marker-pane  { pointer-events: none !important; }
+
+/* ── LEAFLET OVERRIDES ───────────────────────────────── */
+.leaflet-popup-content-wrapper { border-radius:14px !important; padding:0 !important; overflow:hidden; box-shadow:var(--shadow) !important; }
+.leaflet-popup-content { margin:0 !important; }
+.leaflet-popup-tip-container { filter:drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
+.popup-body { padding:12px 16px; background:var(--card); min-width:160px; }
+.popup-title { font-size:14px; font-weight:700; margin-bottom:10px; color:var(--txt); }
+.popup-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+.popup-btn.del  { background:rgba(255,59,48,.12); color:var(--red); }
+.popup-btn.edit { background:rgba(0,122,255,.12); color:var(--blue); }
+
+/* ── SEARCH BAR ──────────────────────────────────────── */
+#search-bar {
+  position:fixed; top:64px; left:50%; transform:translateX(-50%);
+  z-index:1000; width:min(380px, calc(100vw - 80px));
+  background:rgba(255,255,255,.97); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.18); overflow:hidden;
+}
+.dark #search-bar { background:rgba(44,44,46,.97); }
+#search-input-row { display:flex; align-items:center; gap:0; }
+#search-input {
+  flex:1; padding:12px 14px; border:none; background:transparent;
+  font-size:15px; font-family:var(--font); color:var(--txt); outline:none;
+}
+#search-input::placeholder { color:var(--txt2); }
+#search-clear-btn, #search-go-btn {
+  background:none; border:none; padding:10px 12px; cursor:pointer;
+  font-size:16px; color:var(--txt2); -webkit-tap-highlight-color:transparent;
+}
+#search-results {
+  border-top:1px solid var(--sep); max-height:220px; overflow-y:auto;
+}
+.search-result-item {
+  padding:11px 14px; cursor:pointer; font-size:13px; color:var(--txt);
+  border-bottom:1px solid var(--sep); transition:background .1s;
+  -webkit-tap-highlight-color:transparent;
+}
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover, .search-result-item:active { background:var(--bg); }
+.search-result-name { font-weight:700; margin-bottom:2px; }
+.search-result-detail { font-size:11px; color:var(--txt2); }
+#search-empty { padding:14px; text-align:center; color:var(--txt2); font-size:13px; }
+
+/* ── ROUTE PANEL ─────────────────────────────────────── */
+#route-panel {
+  position:fixed; bottom:0; left:50%; z-index:999;
+  transform:translateX(-50%) translateY(100%);
+  width:min(520px,100vw);
+  background:var(--card); backdrop-filter:blur(20px);
+  border-top:1px solid var(--sep); border-radius:20px 20px 0 0;
+  padding:8px 16px max(20px, env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,.18);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+#route-panel.open { transform:translateX(-50%) translateY(0); }
+#route-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 12px; }
+#route-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+#route-title { font-size:15px; font-weight:700; }
+#route-close-btn { background:none; border:none; color:var(--txt2); font-size:18px; cursor:pointer; padding:0 4px; }
+.route-input-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.route-dot { font-size:14px; flex-shrink:0; }
+.route-input {
+  flex:1; padding:10px 12px; border-radius:10px; border:1.5px solid var(--sep);
+  font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt);
+  outline:none;
+}
+.route-input:focus { border-color:var(--blue); }
+.route-loc-btn {
+  width:36px; height:36px; border-radius:10px; background:var(--bg);
+  border:1.5px solid var(--sep); font-size:16px; cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+#route-actions { display:flex; gap:8px; margin-top:10px; }
+#route-calc-btn {
+  flex:1; padding:12px; border-radius:12px; background:var(--blue); color:#fff;
+  border:none; font-size:15px; font-weight:700; cursor:pointer; font-family:var(--font);
+}
+#route-clear-btn {
+  padding:12px 16px; border-radius:12px; background:var(--bg); color:var(--txt2);
+  border:1.5px solid var(--sep); font-size:13px; font-weight:600; cursor:pointer;
+  font-family:var(--font);
+}
+#route-info {
+  margin-top:10px; padding:10px 12px; border-radius:10px;
+  background:var(--bg); font-size:13px; color:var(--txt2);
+  display:flex; gap:16px; align-items:center;
+}
+#route-info.hidden { display:none; }
+.route-stat { display:flex; flex-direction:column; align-items:center; }
+.route-stat-val { font-size:18px; font-weight:800; color:var(--txt); }
+.route-stat-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ══════════════════════════════════════════════════════════
+   TABLET LAYOUT
+   ══════════════════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tool-btn { width: 46px; height: 46px; font-size: 20px; }
+  #toolbar { gap: 4px; padding: 6px 5px; }
+  #color-picker { left: 74px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE LAYOUT
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  #header {
+    padding-top: max(10px, env(safe-area-inset-top));
+    height: auto; min-height: 52px; gap: 5px; padding-left: 10px; padding-right: 10px;
+  }
+  #room-code-display { font-size:14px; letter-spacing:2px; padding:4px 8px; }
+  .header-btn { width:32px; height:32px; font-size:14px; }
+  #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
+
+  .side-panel {
+    top: max(64px, calc(env(safe-area-inset-top) + 54px));
+    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 90px - max(16px, env(safe-area-inset-bottom)));
+  }
+
+  #search-bar {
+    top: max(64px, calc(env(safe-area-inset-top) + 54px)); width: calc(100vw - 24px);
+  }
+  #search-results { max-height: 40vh; }
+
+  #toolbar {
+    left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
+    width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
+    border-radius: 16px 16px 0 0; 
+    padding: 8px 8px max(16px, env(safe-area-inset-bottom));
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  #toolbar::-webkit-scrollbar { display: none; }
+  .tool-btn { width: 50px; height: 50px; font-size: 24px; flex-shrink: 0; }
+  .tool-label { font-size: 8px; }
+  .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
+
+  #color-picker {
+    left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom)));
+    transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
+  }
+  #draw-finish-btn { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
+  #toast {
+    top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
+  #route-panel { z-index: 1002; }
+  .landing-inner { padding: 24px 20px; gap: 10px; }
+  .landing-logo { font-size: 56px; margin-bottom: 4px; }
+  .landing-title { font-size: 22px; }
+}
+
+@media print {
+  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#symbol-panel,#draw-finish-btn,#search-bar,#route-panel { display:none !important; }
+  #map { position:fixed !important; inset:0 !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="landing" class="screen">
+  <div class="landing-inner">
+    <div class="landing-logo">🗺️</div>
+    <div class="landing-title">Taktische Lagekarte</div>
+    <div class="landing-sub">KPB Unna · Leitstelle</div>
+    <button class="btn btn-primary" onclick="App.startSolo()">🧭&nbsp; Solo nutzen</button>
+    <div class="landing-divider">── oder ──</div>
+    <button class="btn btn-secondary" onclick="App.showPinModal()">🔴&nbsp; Lage starten &nbsp;<span style="font-size:11px;opacity:.7">(Leitstelle)</span></button>
+    <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
+  </div>
+</div>
+
+<div id="modal-overlay" class="hidden">
+  <div class="modal-sheet" id="modal-pin">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔐 Admin-PIN</div>
+    <div class="modal-sub">Nur für Leitstellen-Personal</div>
+    <div class="pin-row">
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p0"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p1"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p2"/>
+      <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p3"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="App.checkPin()">✓&nbsp; Bestätigen</button>
+    </div>
+    <div style="margin-top:24px; text-align:center;">
+      <button class="btn btn-ghost" style="color:var(--red); width:100%;" onclick="App.masterReset()">⚠️ Alle Lagen im System löschen</button>
+    </div>
+  </div>
+  <div class="modal-sheet hidden" id="modal-join">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👁 Lage beitreten</div>
+    <div class="modal-sub">4-stelligen Raumcode von der Leitstelle eingeben</div>
+    <input class="modal-input" id="join-code-input"
+           inputmode="numeric" pattern="[0-9]*"
+           placeholder="z. B.  7 4 8 3" maxlength="4"
+           autocomplete="off" spellcheck="false"
+           style="letter-spacing:10px;font-size:30px;font-weight:800;"/>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="App.joinRoom()">Beitreten →</button>
+    </div>
+  </div>
+  <div class="modal-sheet hidden" id="modal-delete">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚠️ Lage beenden</div>
+    <div class="modal-sub">Alle Daten dieser Lage werden gelöscht.<br>Zuschauer werden getrennt.</div>
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" onclick="App.deleteRoom()">Lage löschen</button>
+    </div>
+  </div>
+</div>
+
+<div id="map-screen" class="hidden" style="position:fixed;inset:0;display:flex;flex-direction:column;">
+
+  <div id="header">
+    <span id="mode-badge" class="solo">SOLO</span>
+    <span id="room-code-display" onclick="App.copyCode()" title="Raumcode kopieren" class="hidden"></span>
+    <span id="live-dot" class="off"></span>
+    <span id="viewer-count" class="hidden"></span>
+    <div class="header-spacer"></div>
+    <button class="header-btn" onclick="App.toggleDark()" title="Darkmode">🌙</button>
+    <button id="end-btn" class="header-btn hidden" onclick="App.confirmDelete()">⏹ Lage beenden</button>
+    <button class="header-btn" onclick="App.goHome()" title="Zurück">✕</button>
+  </div>
+
+  <div id="map" style="flex:1;"></div>
+
+  <div id="toolbar">
+    <button class="tool-btn admin-only" data-tool="tatort"     onclick="Tools.toggle('tatort')"     title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+    <button class="tool-btn admin-only" data-tool="ereignis"   onclick="Tools.toggle('ereignis')"   title="Ereignisort"><span>🟣</span><span class="tool-label">Ereignis</span></button>
+    <button class="tool-btn admin-only" data-tool="gefahr"     onclick="Tools.toggle('gefahr')"     title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+    <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
+    <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"       title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
+    <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"        title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚓</span><span class="tool-label">Kräfte</span></button>
+    <button class="tool-btn admin-only" id="symbol-toggle-btn" onclick="SymbolPanel.toggle()" title="Symbole & Icons"><span>🎭</span><span class="tool-label">Symbole</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
+    <button class="tool-btn admin-only" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
+    <button class="tool-btn admin-only" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
+    <button class="tool-btn admin-only" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+    <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
+    <button class="tool-btn admin-only"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
+    <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
+    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
+  </div>
+
+  <div id="color-picker" class="hidden">
+    <div class="color-dot selected" style="background:#FF3B30" data-color="#FF3B30" onclick="Tools.setColor('#FF3B30',this)"></div>
+    <div class="color-dot" style="background:#FF9500" data-color="#FF9500" onclick="Tools.setColor('#FF9500',this)"></div>
+    <div class="color-dot" style="background:#FFCC00" data-color="#FFCC00" onclick="Tools.setColor('#FFCC00',this)"></div>
+    <div class="color-dot" style="background:#34C759" data-color="#34C759" onclick="Tools.setColor('#34C759',this)"></div>
+    <div class="color-dot" style="background:#007AFF" data-color="#007AFF" onclick="Tools.setColor('#007AFF',this)"></div>
+    <div class="color-dot" style="background:#AF52DE" data-color="#AF52DE" onclick="Tools.setColor('#AF52DE',this)"></div>
+    <div class="color-dot" style="background:#1C1C1E" data-color="#1C1C1E" onclick="Tools.setColor('#1C1C1E',this)"></div>
+  </div>
+
+  <button id="draw-finish-btn" class="hidden" onclick="Tools.finishDraw()">✓ Zeichnung abschließen</button>
+
+  <div id="pool-panel" class="side-panel hidden">
+    <div class="panel-header">
+      <span class="panel-title">Einsatzkräfte</span>
+      <button class="panel-close-btn" onclick="Pool.close()">✕</button>
+    </div>
+    <div id="live-section" style="margin-bottom:14px; flex-shrink:0;">
+      <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Kräfte</div>
+      <div id="live-list" style="display:flex; flex-direction:column; gap:4px;">
+        <div style="font-size:12px; color:var(--txt2); padding-left:2px; font-style:italic;">Wartet auf GPS-Signale...</div>
+      </div>
+    </div>
+    <div id="static-section">
+      <div style="font-size:11px; font-weight:700; color:var(--txt2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">📌 Pool (Statisch)</div>
+      <div id="pool-list"></div>
+      <div id="pool-add-row" style="margin-top:6px;">
+        <input id="pool-input" type="text" placeholder="z. B. H1121"
+               autocomplete="off" onkeydown="if(event.key==='Enter')Pool.add()"/>
+        <button id="pool-add-btn" onclick="Pool.add()" title="Fahrzeug hinzufügen">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="symbol-panel" class="side-panel hidden" style="width:min(340px, calc(100vw - 70px));">
+    <div class="panel-header">
+      <span class="panel-title">Taktische Symbole</span>
+      <button class="panel-close-btn" onclick="SymbolPanel.close()">✕</button>
+    </div>
+    <div id="symbol-content">
+      </div>
+  </div>
+
+  <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
+
+  <div id="search-bar" class="hidden">
+    <div id="search-input-row">
+      <input id="search-input" type="text" placeholder="Ort suchen …"
+             autocomplete="off" inputmode="search"
+             onkeydown="if(event.key==='Enter')Search.go()"
+             oninput="Search.onInput()"/>
+      <button id="search-clear-btn" onclick="Search.clear()" title="Löschen">✕</button>
+      <button id="search-go-btn"   onclick="Search.go()"    title="Suchen">↩</button>
+    </div>
+    <div id="search-results" class="hidden"></div>
+  </div>
+
+  <div id="text-modal" class="hidden" style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;">
+    <div style="background:var(--card);border-radius:22px;width:100%;max-width:440px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;">📝 Text eingeben</div>
+      <textarea id="text-modal-area" rows="4"
+        style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--sep);font-size:15px;font-family:var(--font);background:var(--bg);color:var(--txt);outline:none;resize:vertical;line-height:1.5;box-sizing:border-box;"
+        placeholder="Text eingeben… (Enter = neue Zeile)"
+        onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();TextInput.submit();}"></textarea>
+      <div style="font-size:11px;color:var(--txt2);margin-top:6px;margin-bottom:16px;">Enter = neue Zeile &nbsp;·&nbsp; Ctrl+Enter = bestätigen</div>
+      <div style="display:flex;gap:12px;">
+        <button onclick="TextInput.hide()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--sep);background:var(--bg);color:var(--txt);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;">Abbrechen</button>
+        <button onclick="TextInput.submit()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;">✓ Platzieren</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="route-panel">
+    <div id="route-handle"></div>
+    <div id="route-header">
+      <span id="route-title">🛣 Routenplanung</span>
+      <button id="route-close-btn" onclick="RoutePanel.close()">✕</button>
+    </div>
+    <div class="route-input-row">
+      <span class="route-dot">🟢</span>
+      <input class="route-input" id="route-from" type="text"
+             placeholder="Start (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
+      <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('from')" title="Mein Standort">📍</button>
+    </div>
+    <div class="route-input-row">
+      <span class="route-dot">🔴</span>
+      <input class="route-input" id="route-to" type="text"
+             placeholder="Ziel (Adresse oder Ort)" autocomplete="off"
+             oninput="delete this.dataset.lat; delete this.dataset.lng;"/>
+      <button class="route-loc-btn" onclick="RoutePanel.useMyLocation('to')" title="Mein Standort">📍</button>
+    </div>
+    <div id="route-actions">
+      <button id="route-calc-btn"  onclick="RoutePanel.calc()">🗺 Route berechnen</button>
+      <button id="route-clear-btn" onclick="RoutePanel.clearRoute()">Löschen</button>
+    </div>
+    <div id="route-info" class="hidden">
+      <div class="route-stat">
+        <div class="route-stat-val" id="route-dist">–</div>
+        <div class="route-stat-lbl">Distanz</div>
+      </div>
+      <div class="route-stat">
+        <div class="route-stat-val" id="route-time">–</div>
+        <div class="route-stat-lbl">Fahrzeit</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════════════
+   TAKTISCHE LAGEKARTE v2.0 – KPB Unna
+   © 2026 – Hosted on Vercel + Supabase
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── CONFIG ──────────────────────────────────────────────────────────── */
+const CFG = {
+  SUPABASE_URL: 'https://xfplgmvpxrigyfotlesn.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmcGxnbXZweHJpZ3lmb3RsZXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzY2NDUsImV4cCI6MjA4NjgxMjY0NX0.-FZbqkeJE4O1A9CuNPnOusisRMGP1rRti_1_43dma6M',
+  ADMIN_PIN:    '0906',
+  MAP_CENTER:   [51.5344, 7.6889],
+  MAP_ZOOM:     15,
+};
+
+/* ── GLOBAL STATE ────────────────────────────────────────────────────── */
+let _mode         = null;   
+let _roomCode     = null;
+let _sb           = null;
+let _channel      = null;
+let _map          = null;
+let _drawn        = null;   
+let _liveGpsLayer = null;   
+let _myRuf        = null;   
+let _history      = [];
+let _isDark       = false;
+let _syncTimer    = null;
+
+/* ── VEHICLE TYPE HELPERS ────────────────────────────────────────────── */
+function detectVehicleIcon(ruf) {
+  if (!ruf) return '🚔';
+  const r = ruf.trim().toUpperCase();
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '🚁';  
+  if (/\bFW\b/.test(r))               return '🚒';  
+  if (/^RTW/.test(r))                 return '🚑';  
+  if (/^H96(1[0-9]|20)$/.test(r))    return '🚙';  
+  if (/^H/.test(r))                   return '🚔';  
+  return '🚓';                                       
+}
+
+function detectVehicleClass(ruf) {
+  if (!ruf) return '';
+  const r = ruf.trim().toUpperCase();
+  if (/^(HUMMEL|CHRISTOPH)/i.test(r)) return '';           
+  if (/\bFW\b/.test(r) || /^RTW/.test(r)) return '';      
+  if (/21$/.test(r))                  return 'dgl';        
+  if (/^H96(1[0-9]|20)$/.test(r))    return 'kripo';      
+  if (!/^H/.test(r))                  return 'fremd';      
+  return '';
+}
+
+function isDGL(ruf) {
+  return /21$/.test((ruf || '').trim().toUpperCase());
+}
+
+/* ── LEAFLET MAP INIT ────────────────────────────────────────────────── */
+function initMap() {
+  _map = L.map('map', {
+    center: CFG.MAP_CENTER, zoom: CFG.MAP_ZOOM,
+    zoomControl: false, attributionControl: true,
+    doubleClickZoom: false
+  });
+
+  L.control.zoom({ position: 'bottomright' }).addTo(_map);
+  L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(_map);
+
+  const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  });
+  const dop = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dop', {
+    layers: 'nw_dop_rgb', format: 'image/jpeg', transparent: false,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+  const abk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_abk', {
+    layers: 'WMS_NW_ABK', format: 'image/png', transparent: true,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+  const dtk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dtk', {
+    layers: 'nw_dtk_sw', format: 'image/png', transparent: true,
+    maxZoom: 22, attribution: '© Geobasis NRW 2024',
+  });
+
+  osm.addTo(_map);
+  L.control.layers({
+    '🗺 OpenStreetMap (Standard)': osm,
+    '🛩 Luftbild NRW (DOP)':       dop,
+    '📋 Amtl. Basiskarte NRW':     abk,
+    '⬛ Topograph. Karte S/W':     dtk,
+  }, {}, { position: 'topright' }).addTo(_map);
+
+  _drawn = L.featureGroup().addTo(_map);
+  _liveGpsLayer = L.featureGroup().addTo(_map); 
+
+  _map.on('zoomend', () => {
+    const z = _map.getZoom();
+    _drawn.eachLayer(l => {
+      if (l._ldata && l._ldata.type === 'einheit') {
+        l.setIcon(Icons.unit(l._ldata.ruf, z));
+      } else if (l._ldata && l._ldata.type === 'text') {
+        l.setIcon(Icons.text(l._ldata.text, z, l._ldata.scale));
+      } else if (l._ldata && l._ldata.type === 'arrow') {
+        l.setIcon(Icons.arrow(l._ldata.start, l._ldata.end, l._ldata.color));
+      } else if (l._ldata && l._ldata.type === 'symbol') {
+        l.setIcon(Icons.symbol(l._ldata.emoji, l._ldata.desc, l._ldata.scale));
+      }
+    });
+    if (_liveGpsLayer) {
+      _liveGpsLayer.eachLayer(l => {
+        if (l._ruf) l.setIcon(Icons.unit(l._ruf, z, true));
+      });
+    }
+  });
+}
+
+/* ── ICONS ───────────────────────────────────────────────────────────── */
+const Icons = {
+  _tacDefs: {
+    tatort:     { emoji: '🔴', label: 'Tatort',        color: '#FF3B30' },
+    ereignis:   { emoji: '🟣', label: 'Ereignisort',   color: '#AF52DE' },
+    gefahr:     { emoji: '⚠️',  label: 'Gefahr',        color: '#FF9500' },
+    absperrung: { emoji: '🚧', label: 'Sperrung',      color: '#8E8E93' },
+    pin:        { emoji: '📍', label: 'Stecknadel',    color: '#8E8E93' },
+  },
+
+  tac(type, desc = '') {
+    if (type === 'ksst') return this.ksst(desc);
+    const d = this._tacDefs[type] || { emoji:'❓', label:'Ort', color:'#000' };
+    
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+
+    return L.divIcon({
+      html: `<div class="tac-marker" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="tac-icon">${d.emoji}</div>
+        <div class="tac-label" style="color:${d.color}">${d.label}</div>
+        ${descHtml}
+      </div>`,
+      className: '', iconAnchor: [16, 30], iconSize: [32, desc ? 65 : 38],
+    });
+  },
+
+  ksst(desc = '') {
+    const descHtml = desc ? `<div style="font-size:10px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:120px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+    return L.divIcon({
+      html: `<div class="ksst-marker" style="display:flex;flex-direction:column;align-items:center;">
+        <div class="ksst-icon">🔶</div>
+        <div class="ksst-badge">KSST</div>
+        ${descHtml}
+      </div>`,
+      className: '', iconAnchor: [18, 38], iconSize: [36, desc ? 70 : 50],
+    });
+  },
+
+  unit(ruf, zoom, isLive = false) {
+    const z   = Math.max(12, Math.min(19, zoom ?? 15));
+    const px  = Math.round(10 + (z - 12) * 4.5);   
+    const lx  = Math.min(Math.round(px * 0.48), 13); 
+    const emoji = detectVehicleIcon(ruf);
+    const cls   = detectVehicleClass(ruf);
+    const dgl   = isDGL(ruf);
+    const star  = dgl ? `<span style="font-size:${Math.round(lx * 0.85)}px;">★ </span>` : '';
+      
+    const liveBadge = isLive 
+      ? `<div style="position:absolute;top:-4px;right:-8px;width:12px;height:12px;background:var(--green);border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);animation:pulse 1.5s infinite;z-index:10"></div>` 
+      : '';
+
+    return L.divIcon({
+      html: `<div class="unit-marker-wrap" style="position:relative; display:flex; flex-direction:column; align-items:center;">
+        <div style="position:relative;">
+          ${liveBadge}
+          <div class="unit-icon-img" style="font-size:${px}px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); line-height:1;">${emoji}</div>
+        </div>
+        <div class="unit-label${cls ? ' ' + cls : ''}" style="font-size:${lx}px;">${star}${escHtml(ruf)}</div>
+      </div>`,
+      className: '', iconAnchor: [px / 2, px / 2], iconSize: [px * 2, px + lx + 10],
+    });
+  },
+
+  text(txt, zoom, scale = 1) {
+    const z = Math.max(12, Math.min(19, zoom ?? 15));
+    const basePx = Math.round(10 + (z - 12) * 1.5);
+    const px = Math.round(basePx * scale);
+    
+    return L.divIcon({
+      html: `<div style="font-size:${px}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${Math.round(px/2.5)}px ${Math.round(px/1.2)}px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:${px*15}px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
+      className: '', iconAnchor: [0, 0], 
+    });
+  },
+  
+  symbol(emoji, desc = '', scale = 1) {
+    const px = Math.round(32 * scale);
+    const descHtml = desc ? `<div style="font-size:${Math.max(10, Math.round(10*scale))}px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:${Math.max(120, 120*scale)}px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+    return L.divIcon({
+      html: `<div class="tac-marker" style="display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:${px}px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));">${emoji}</div>
+        ${descHtml}
+      </div>`,
+      className: '', iconAnchor: [px/2, px/2 + (desc ? 15*scale : 0)],
+    });
+  },
+
+  arrow(start, end, color) {
+    if (!start || !end || !_map) return L.divIcon({className:''});
+    const p1 = _map.latLngToLayerPoint(start);
+    const p2 = _map.latLngToLayerPoint(end);
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const w = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+    const h = 24;
+    const tailH = 6;
+    const headW = 18;
+    const esc = color.replace(/"/g, '');
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+    const path = `M 0,${h/2 - tailH/2} L ${w - headW},${h/2 - tailH/2} L ${w - headW},0 L ${w},${h/2} L ${w - headW},${h} L ${w - headW},${h/2 + tailH/2} L 0,${h/2 + tailH/2} Z`;
+
+    return L.divIcon({
+        html: `<div style="width:${w}px; height:${h}px; transform:rotate(${angle}deg); transform-origin:center center; pointer-events:auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                 <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="overflow:visible;">
+                   <path d="${path}" fill="${esc}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+                 </svg>
+               </div>`,
+        className: '', iconSize: [w, h], iconAnchor: [w/2, h/2] 
+    });
+  }
+};
+
+/* ── LAYER SERIALISER / DESERIALISER ─────────────────────────────────── */
+const Layers = {
+  uid() { return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); },
+
+  serialize() {
+    const layers = [];
+    if (_drawn) _drawn.eachLayer(l => { if (l._ldata) layers.push(l._ldata); });
+    return { layers, mapView: { center: [_map.getCenter().lat, _map.getCenter().lng], zoom: _map.getZoom() } };
+  },
+
+  deserialize(state, ignoreView = false) {
+    if (_drawn) _drawn.clearLayers();
+    _history = [];
+    
+    if (!state || !Array.isArray(state.layers)) return;
+    
+    state.layers.forEach(d => {
+       if (d.type === 'arrow' && d.points && d.points.length >= 2) {
+           d.start = d.points[0];
+           d.end = d.points[d.points.length - 1];
+           d.lat = (d.start[0] + d.end[0]) / 2;
+           d.lng = (d.start[1] + d.end[1]) / 2;
+           delete d.points;
+       } else if (d.type === 'arrow' && (!d.start || !d.end)) {
+           return; 
+       }
+       this.render(d);
+    });
+    
+    if (_map && state.mapView && !ignoreView) {
+      _map.setView(state.mapView.center, state.mapView.zoom, { animate: false });
+    }
+  },
+
+  render(d, pushHistory) {
+    let layer;
+    const isAdmin = _mode === 'admin' || _mode === 'solo';
+
+    switch (d.type) {
+      case 'tatort': case 'ereignis': case 'gefahr': case 'absperrung': case 'ksst': case 'pin':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type, d.desc), draggable: isAdmin });
+        break;
+      case 'einheit':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.unit(d.ruf, _map.getZoom()), draggable: isAdmin });
+        break;
+      case 'text':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text, _map.getZoom(), d.scale || 1), draggable: isAdmin });
+        break;
+      case 'symbol':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.symbol(d.emoji, d.desc, d.scale || 1), draggable: isAdmin });
+        break;
+      case 'arrow':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.arrow(d.start, d.end, d.color), draggable: isAdmin });
+        break;
+      case 'circle':
+        layer = L.circle([d.lat, d.lng], {
+          radius: d.radius, color: d.color, fillColor: d.color,
+          fillOpacity: 0.12, weight: 2.5,
+        });
+        break;
+      case 'polyline':
+        layer = L.polyline(d.points, { color: d.color, weight: 3.5 });
+        break;
+      case 'polygon':
+        layer = L.polygon(d.points, { color: d.color, fillColor: d.color, fillOpacity: 0.12, weight: 2.5 });
+        break;
+      case 'measure':
+        layer = L.polyline(d.points, { color: '#007AFF', weight: 3, dashArray: '6 6' });
+        layer.bindTooltip(d.label, { permanent: true, className: 'measure-tooltip', direction: 'center' });
+        break;
+    }
+
+    if (!layer || !_drawn) return;
+    layer._lid   = d.id;
+    layer._ldata = d;
+
+    const targetPopupLayer = layer._line || layer;
+
+    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','symbol','arrow'].includes(d.type)) {
+      targetPopupLayer.on('dragend', (e) => {
+        const ll = e.target.getLatLng();
+        if (d.type === 'arrow') {
+            const dLat = ll.lat - d.lat;
+            const dLng = ll.lng - d.lng;
+            d.start = [d.start[0] + dLat, d.start[1] + dLng];
+            d.end = [d.end[0] + dLat, d.end[1] + dLng];
+        }
+        d.lat = ll.lat; 
+        d.lng = ll.lng;
+        Sync.push();
+      });
+    }
+    
+    this._addPopup(targetPopupLayer, d, isAdmin);
+
+    _drawn.addLayer(layer);
+    if (pushHistory) _history.push(d.id);
+    return layer;
+  },
+
+  _addPopup(layer, d, isAdmin) {
+    if (!layer) return;
+    
+    let titleStr = d.ruf || d.text || d.desc || d.emoji;
+    if (!titleStr) {
+       titleStr = d.type === 'arrow' ? 'Pfeil' : (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
+    }
+    
+    const radiusInfo = d.type === 'circle'
+      ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
+      : '';
+    
+    const canEdit = ['circle','polyline','polygon','arrow','text','symbol'].includes(d.type);
+    const editBtn = (canEdit && isAdmin)
+      ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
+      : '';
+    const delBtn = isAdmin
+      ? `<button class="popup-btn del" onclick="Layers.deleteById('${d.id}')">🗑 Löschen</button>`
+      : '';
+    const actionsHTML = (editBtn || delBtn) ? `
+      <div class="popup-actions">
+        ${editBtn}
+        ${delBtn}
+      </div>
+    ` : '';
+
+    const isPoint = d.lat !== undefined && d.lng !== undefined;
+    const safeLabel = escHtml(titleStr).replace(/'/g, "\\'");
+    const routeBtns = isPoint ? `
+      <div style="display:flex; gap:8px; margin-bottom:${(editBtn||delBtn)?'10px':'0'}; width:100%;">
+        <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${d.lat}, ${d.lng}, '${safeLabel}')">↗️ Ab hier</button>
+        <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${d.lat}, ${d.lng}, '${safeLabel}')">↘️ Hierhin</button>
+      </div>
+    ` : '';
+
+    layer.bindPopup(`
+      <div class="popup-body">
+        <div class="popup-title">${escHtml(titleStr)}</div>
+        ${radiusInfo}
+        ${routeBtns}
+        ${actionsHTML}
+      </div>`, { maxWidth: 260 });
+  },
+
+  editLayer(id) { Editor.start(id); },
+
+  deleteById(id) {
+    if (!_drawn) return;
+    _drawn.eachLayer(l => {
+      if (l._lid === id) { _drawn.removeLayer(l); }
+    });
+    _map.closePopup();
+    Sync.push();
+  },
+
+  undo() {
+    if (!_history.length) { toast('Nichts zum Rückgängigmachen'); return; }
+    const id = _history.pop();
+    this.deleteById(id);
+    toast('Rückgängig gemacht');
+  },
+};
+
+/* ── LIVE GPS TRACKING (Navigation & Broadcast) ──────────────────────── */
+const LiveGPS = {
+  _watchId: null,
+  _marker: null,
+  _circle: null,
+  _following: false,
+  _isLive: false,
+
+  handleBtnClick() {
+    if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
+    
+    if (!this._watchId) {
+      this.start();
+    } else {
+      if (!this._following) {
+         this._following = true;
+         if (this._marker) _map.panTo(this._marker.getLatLng(), { animate: true });
+         const btn = document.getElementById('gps-toggle-btn');
+         btn.classList.add('active');
+         btn.classList.remove('tracking-paused');
+         toast('📍 Kamera zentriert. (Mitlauf-Modus aktiv)');
+      } else {
+         if (confirm('Navigation / GPS beenden?')) {
+            this.stop();
+         }
+      }
+    }
+  },
+
+  start() {
+    if (_mode === 'solo') {
+       this._isLive = false;
+       toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
+    } else {
+       this._isLive = true;
+       let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
+       if (!ruf) return; 
+       
+       ruf = ruf.trim().toUpperCase();
+       let alreadyLive = false;
+       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) alreadyLive = true; });
+       if (alreadyLive) {
+          toast(`❌ ${ruf} ist bereits live auf der Karte!`);
+          return;
+       }
+       _myRuf = ruf;
+
+       if (_mode === 'admin') {
+         let duplicateId = null;
+         if (_drawn) {
+            _drawn.eachLayer(l => {
+              if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === _myRuf) duplicateId = l._lid;
+            });
+         }
+         if (duplicateId) Layers.deleteById(duplicateId);
+       }
+    }
+
+    const btn = document.getElementById('gps-toggle-btn');
+    btn.classList.add('active');
+    btn.classList.remove('tracking-paused');
+    this._following = true;
+    toast('🛰️ Suche GPS-Signal...');
+    
+    _map.on('dragstart', this._onMapDrag, this);
+    
+    this._watchId = navigator.geolocation.watchPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        const heading = pos.coords.heading; 
+        
+        let iconHtml = '';
+        if (heading !== null && !isNaN(heading)) {
+            iconHtml = `<div style="transform:rotate(${heading}deg); transform-origin:center; width:24px; height:24px; background:rgba(0,122,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4);">
+                            <div style="width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid #007AFF; margin-bottom:4px;"></div>
+                        </div>`;
+        } else {
+            iconHtml = `<div style="width:16px;height:16px;background:#007AFF;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`;
+        }
+
+        const myIcon = L.divIcon({ html: iconHtml, className: '', iconSize: [24,24], iconAnchor: [12,12] });
+
+        if (!this._marker) {
+          this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
+          this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
+          _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
+          toast(`✅ GPS aktiv. (${this._isLive ? 'Sende an Leitstelle' : 'Privates Navi'})`);
+        } else {
+          this._marker.setLatLng([lat, lng]);
+          this._marker.setIcon(myIcon);
+          this._circle.setLatLng([lat, lng]);
+          this._circle.setRadius(acc);
+        }
+        
+        if (this._following) {
+           _map.panTo([lat, lng], {animate: true});
+        }
+        
+        if (this._isLive && _channel) {
+          _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
+          Pool.refreshLiveList();
+        }
+      },
+      err => {
+        console.warn(err);
+        toast('❌ GPS-Signal verloren oder verweigert');
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+    );
+  },
+  
+  stop() {
+    if (this._watchId) navigator.geolocation.clearWatch(this._watchId);
+    this._watchId = null;
+    this._following = false;
+    if (this._marker) _map.removeLayer(this._marker);
+    if (this._circle) _map.removeLayer(this._circle);
+    this._marker = null; this._circle = null;
+    
+    _map.off('dragstart', this._onMapDrag, this);
+    
+    const btn = document.getElementById('gps-toggle-btn');
+    btn.classList.remove('active');
+    btn.classList.remove('tracking-paused');
+    
+    if (this._isLive) {
+        _myRuf = null;
+        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+        Pool.updateLiveList({}); 
+    }
+    this._isLive = false;
+    toast('🛰️ Navigation beendet');
+  },
+  
+  _onMapDrag() {
+     if (this._following) {
+         this._following = false;
+         const btn = document.getElementById('gps-toggle-btn');
+         btn.classList.remove('active');
+         btn.classList.add('tracking-paused'); 
+     }
+  }
+};
+
+/* ── SYMBOL PANEL (Neuer Baukasten) ──────────────────────────────────── */
+const SymbolPanel = {
+  _symbols: [
+    { cat: 'Blaulicht & Rettung', items: ['🚓','🚔','🏍️','🚁','🛩️','🚒','🚑','🚤','🏥','⛺️'] },
+    { cat: 'Gefahrenlage', items: ['🔥','💥','💣','☣️','☢️','☠️','⚡','🌊','🌪️','💧'] },
+    { cat: 'Verkehr & Fahrzeuge', items: ['🚗','🚕','🚌','🚐','🚚','🚛','🚜','🚂','🚋','⚓'] },
+    { cat: 'Infrastruktur & Natur', items: ['🚧','🛑','🏭','🛢️','⛽','🚥','🌳','🌲','🪵','🍂'] },
+    { cat: 'Personen & Tiere', items: ['🧍','🏃','🧑‍🤝‍🧑','👤','🕵️','🐕','🐄','🐎','🐗','🐺'] }
+  ],
+  
+  toggle() {
+    if (Pool._placingFromPool || Tools._active === 'symbol') {
+      Tools.deactivate();
+    }
+    const panel = document.getElementById('symbol-panel');
+    const isHidden = panel.classList.contains('hidden');
+    
+    Pool.close(); 
+    
+    if (isHidden) {
+      this.render();
+      panel.classList.remove('hidden');
+    } else {
+      this.close();
+    }
+  },
+  
+  close() {
+    document.getElementById('symbol-panel').classList.add('hidden');
+  },
+  
+  render() {
+    const content = document.getElementById('symbol-content');
+    let html = '';
+    
+    this._symbols.forEach(group => {
+       html += `<div class="symbol-category">${group.cat}</div>`;
+       html += `<div class="symbol-grid">`;
+       group.items.forEach(emoji => {
+           html += `<div class="symbol-item" onclick="SymbolPanel.select('${emoji}')">${emoji}</div>`;
+       });
+       html += `</div>`;
+    });
+    content.innerHTML = html;
+  },
+  
+  select(emoji) {
+    this.close();
+    Tools._active = 'symbol';
+    Tools._pendingSymbol = emoji;
+    document.getElementById('symbol-toggle-btn').classList.add('active');
+    _map.getContainer().classList.add('tool-active');
+    _map.getContainer().style.cursor = 'crosshair';
+    toast(`📍 Symbol ${emoji} – auf Karte tippen`);
+  }
+};
+
+/* ── VEHICLE POOL & LIVE LIST ────────────────────────────────────────── */
+const Pool = {
+  _vehicles: [],
+  _placingFromPool: false,
+  _currentLiveState: {}, 
+
+  load() {
+    try { this._vehicles = JSON.parse(localStorage.getItem('lagekarte_pool') || '[]'); } catch(e) { this._vehicles = []; }
+    this.render();
+  },
+
+  save() {
+    localStorage.setItem('lagekarte_pool', JSON.stringify(this._vehicles));
+  },
+
+  toggle() {
+    if (this._placingFromPool) {
+      this._placingFromPool = false;
+      Tools._active = null;
+      Tools._pendingRuf = null;
+      _map.getContainer().style.cursor = '';
+    }
+    const panel = document.getElementById('pool-panel');
+    const isHidden = panel.classList.contains('hidden');
+    
+    SymbolPanel.close(); 
+    
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      setTimeout(() => { 
+         const inp = document.getElementById('pool-input'); 
+         if (inp) inp.focus(); 
+      }, 150);
+    } else {
+      this.close();
+    }
+  },
+
+  open() {
+    SymbolPanel.close();
+    document.getElementById('pool-panel').classList.remove('hidden');
+  },
+
+  close() {
+    document.getElementById('pool-panel').classList.add('hidden');
+  },
+
+  add() {
+    const input = document.getElementById('pool-input');
+    const ruf = input.value.trim().toUpperCase();
+    if (!ruf) { toast('Rufname eingeben'); input.focus(); return; }
+    this._vehicles.push({ id: Layers.uid(), ruf });
+    this.save();
+    this.render();
+    input.value = '';
+    input.focus();
+    toast(`✅ ${ruf} im Pool`);
+  },
+
+  remove(id) {
+    this._vehicles = this._vehicles.filter(v => v.id !== id);
+    this.save();
+    this.render();
+  },
+
+  startPlace(ruf, poolId) {
+    let isLive = false;
+    if (_liveGpsLayer) {
+      _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
+    }
+    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+
+    if (isLive) {
+      toast(`❌ ${ruf} sendet bereits live GPS!`);
+      return;
+    }
+
+    this._placingFromPool = true;
+    this._placingPoolId   = poolId || null;
+    this.close();
+    Tools._active = 'einheit';
+    Tools._pendingRuf = ruf;
+    document.getElementById('pool-toggle-btn').classList.add('active');
+    _map.getContainer().classList.add('tool-active');
+    _map.getContainer().style.cursor = 'crosshair';
+    toast(`📍 ${ruf} – auf Karte tippen`);
+  },
+
+  onPlaced() {
+    if (this._placingFromPool) {
+      this._placingFromPool = false;
+      document.getElementById('pool-toggle-btn').classList.remove('active');
+      if (this._placingPoolId) {
+        this._vehicles = this._vehicles.filter(v => v.id !== this._placingPoolId);
+        this.save();
+        this._placingPoolId = null;
+      }
+      setTimeout(() => this.open(), 250);
+    }
+  },
+
+  render() {
+    const list = document.getElementById('pool-list');
+    if (!list) return;
+    if (!this._vehicles.length) {
+      list.innerHTML = '<div class="pool-empty">Keine statischen Kräfte im Pool.</div>';
+      return;
+    }
+    list.innerHTML = this._vehicles.map(v => {
+      const emoji   = detectVehicleIcon(v.ruf);
+      const cls     = detectVehicleClass(v.ruf);
+      const star    = isDGL(v.ruf) ? '★ ' : '';
+      const safeRuf = escHtml(v.ruf).replace(/'/g, '&#39;');
+      return `<div class="pool-item" onclick="Pool.startPlace('${safeRuf}','${v.id}')">
+        <span class="pool-emoji">${emoji}</span>
+        <span class="pool-ruf${cls ? ' ' + cls : ''}">${star}${escHtml(v.ruf)}</span>
+        <button class="pool-del-btn" onclick="event.stopPropagation();Pool.remove('${v.id}')" title="Entfernen">✕</button>
+      </div>`;
+    }).join('');
+  },
+
+  updateLiveList(liveStateObj) {
+    this._currentLiveState = liveStateObj;
+    this.refreshLiveList();
+  },
+
+  refreshLiveList() {
+    let html = '';
+    let hasLive = false;
+
+    if (LiveGPS._watchId && LiveGPS._marker && LiveGPS._isLive) {
+       hasLive = true;
+       const lat = LiveGPS._marker.getLatLng().lat;
+       const lng = LiveGPS._marker.getLatLng().lng;
+       html += `<div class="pool-item" onclick="_map.flyTo([${lat}, ${lng}], 16); Pool.close();" style="border-color:var(--green); background:rgba(52,199,89,.08);">
+         <span class="pool-emoji" style="animation:pulse 1.5s infinite">🟢</span>
+         <span class="pool-ruf" style="color:var(--green)">${escHtml(_myRuf)} (Du)</span>
+       </div>`;
+    }
+
+    for (const id in this._currentLiveState) {
+      const p = this._currentLiveState[id];
+      hasLive = true;
+      html += `<div class="pool-item" onclick="_map.flyTo([${p.lat}, ${p.lng}], 16); Pool.close();" style="border-color:var(--green); background:rgba(52,199,89,.08);">
+        <span class="pool-emoji" style="animation:pulse 1.5s infinite">🟢</span>
+        <span class="pool-ruf" style="color:var(--green)">${escHtml(p.ruf)}</span>
+      </div>`;
+    }
+
+    const list = document.getElementById('live-list');
+    if (hasLive) {
+      list.innerHTML = html;
+    } else {
+      list.innerHTML = '<div style="font-size:12px; color:var(--txt2); font-style:italic; padding-left:2px;">Wartet auf GPS-Signale...</div>';
+    }
+  }
+};
+
+/* ── TOOLS ───────────────────────────────────────────────────────────── */
+const Tools = {
+  _active: null,
+  _color:  '#FF3B30',
+  _drawPoints: [],
+  _drawLayer:  null,
+  _pendingRuf: null,
+  _pendingSymbol: null,
+  
+  _arrowStart: null,
+  _arrowTempLine: null,
+
+  toggle(name) {
+    if (this._active === name) { this.deactivate(); return; }
+    this.deactivate();
+    this._active = name;
+    document.querySelector(`[data-tool="${name}"]`)?.classList.add('active');
+    const needsColor = ['circle', 'polygon', 'line', 'arrow'].includes(name);
+    document.getElementById('color-picker').classList.toggle('hidden', !needsColor);
+    if (name === 'circle') {
+      toast('Klick = Mittelpunkt setzen, dann Radius eingeben');
+    } else if (name === 'arrow') {
+      toast('1. Klick = Start, Maus ziehen, 2. Klick = Ziel (Pfeilspitze)');
+    } else if (['polygon', 'line', 'measure'].includes(name)) {
+      toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
+    }
+    _map.getContainer().classList.add('tool-active');
+    _map.getContainer().style.cursor = 'crosshair';
+  },
+
+  deactivate() {
+    if (this._active) {
+      document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
+    }
+    document.getElementById('symbol-toggle-btn').classList.remove('active');
+    
+    if (typeof Editor !== 'undefined') Editor.finish(true);
+    
+    if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
+    _map.off('mousemove', this._onArrowMove, this);
+    this._arrowStart = null;
+    
+    this._active = null;
+    this._pendingRuf = null;
+    this._pendingSymbol = null;
+    this._drawPoints = [];
+    if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
+    document.getElementById('color-picker').classList.add('hidden');
+    const finBtn = document.getElementById('draw-finish-btn');
+    finBtn.classList.add('hidden');
+    finBtn.textContent = '✓ Zeichnung abschließen';
+    finBtn.onclick = () => Tools.finishDraw();
+    _map.getContainer().classList.remove('tool-active');
+    _map.getContainer().style.cursor = '';
+    
+    _map.off('click', this._onMapClick, this);
+    _map.on('click', this._onMapClick, this);
+  },
+
+  setColor(c, el) {
+    this._color = c;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  },
+
+  undo() { Layers.undo(); },
+
+  finishDraw() {
+    const tool = this._active;
+    if (!['polygon', 'line', 'measure'].includes(tool)) return;
+    if (this._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
+    
+    if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
+    const pts = [...this._drawPoints];
+    let d;
+    
+    if (tool === 'polygon') {
+      d = { id: Layers.uid(), type: 'polygon', points: pts, color: this._color };
+    } else if (tool === 'line') {
+      d = { id: Layers.uid(), type: 'polyline', points: pts, color: this._color };
+    } else if (tool === 'measure') {
+      let totalDist = 0;
+      for (let i = 1; i < pts.length; i++) {
+         totalDist += _map.distance(pts[i-1], pts[i]);
+      }
+      const label = totalDist < 1000 ? `${Math.round(totalDist)} m` : `${(totalDist / 1000).toFixed(2)} km`;
+      d = { id: Layers.uid(), type: 'measure', points: pts, label: label };
+    }
+    
+    Layers.render(d, true);
+    Sync.push();
+    this.deactivate();
+  },
+  
+  _onArrowMove(e) {
+    if (this._arrowTempLine && this._arrowStart) {
+        this._arrowTempLine.setLatLngs([this._arrowStart, e.latlng]);
+    }
+  },
+
+  _onMapClick(e) {
+    if (!Tools._active) return;
+    const { lat, lng } = e.latlng;
+    const tool = Tools._active;
+
+    if (['tatort', 'ereignis', 'gefahr', 'absperrung', 'ksst', 'pin'].includes(tool)) {
+      const desc = prompt('Zusatzinfo / Beschriftung (optional):', '');
+      if (desc === null) return; 
+      
+      const d = { id: Layers.uid(), type: tool, lat, lng, desc: desc.trim() };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      return;
+    }
+
+    if (tool === 'einheit' && Tools._pendingRuf) {
+      const ruf = Tools._pendingRuf;
+      let isLive = false;
+      if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
+      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+      if (isLive) {
+        toast(`❌ ${ruf} sendet bereits live GPS!`);
+        Tools.deactivate();
+        return;
+      }
+
+      const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      Pool.onPlaced();
+      toast(`✅ ${ruf} platziert`);
+      return;
+    }
+    
+    if (tool === 'symbol' && Tools._pendingSymbol) {
+      const emoji = Tools._pendingSymbol;
+      const desc = prompt(`Zusatzinfo (optional):`, '');
+      if (desc === null) return; 
+      
+      const d = { id: Layers.uid(), type: 'symbol', lat, lng, emoji: emoji, desc: desc.trim(), scale: 1 };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      toast(`✅ Symbol platziert`);
+      return;
+    }
+
+    if (tool === 'text') {
+      TextInput.show(lat, lng);
+      return;
+    }
+
+    if (tool === 'circle') {
+      const rStr = prompt('Radius in Metern eingeben:', '200');
+      if (rStr === null) return;
+      const radius = Math.max(10, parseInt(rStr) || 200);
+      const d = { id: Layers.uid(), type: 'circle', lat, lng, radius, color: Tools._color };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      toast(`Kreis: ⌀ ${radius >= 1000 ? (radius/1000).toFixed(1)+'km' : radius+'m'}`);
+      return;
+    }
+
+    if (tool === 'arrow') {
+      if (!this._arrowStart) {
+        this._arrowStart = [lat, lng];
+        this._arrowTempLine = L.polyline([this._arrowStart, this._arrowStart], {color: Tools._color, weight: 4, dashArray: '4 4'}).addTo(_map);
+        _map.on('mousemove', this._onArrowMove, this);
+        toast('Maus/Finger zum Ziel ziehen und klicken');
+      } else {
+        const start = this._arrowStart;
+        const end = [lat, lng];
+        
+        _map.off('mousemove', this._onArrowMove, this);
+        if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
+
+        const centerLat = (start[0] + end[0]) / 2;
+        const centerLng = (start[1] + end[1]) / 2;
+
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: 100, angle: 0 };
+        // Recalculate correctly before rendering
+        const p1 = _map.latLngToLayerPoint(start);
+        const p2 = _map.latLngToLayerPoint(end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        Layers.render(d, true);
+        Sync.push();
+
+        this._arrowStart = null;
+        this.deactivate();
+      }
+      return;
+    }
+
+    if (['polygon', 'line', 'measure'].includes(tool)) {
+      if (Tools._drawPoints.length > 0) {
+          const lastPt = Tools._drawPoints[Tools._drawPoints.length - 1];
+          if (_map.distance(lastPt, [lat, lng]) < 2) return; 
+      }
+        
+      Tools._drawPoints.push([lat, lng]);
+      if (Tools._drawLayer) _map.removeLayer(Tools._drawLayer);
+      
+      if (Tools._drawPoints.length > 1) {
+        const lineStyle = tool === 'measure' 
+           ? { color: '#007AFF', weight: 3, dashArray: '6 6' }
+           : { color: Tools._color, weight: 2.5, dashArray: '6 4' };
+           
+        Tools._drawLayer = L.polyline(Tools._drawPoints, lineStyle).addTo(_map);
+        
+        if (tool === 'measure') {
+            let totalDist = 0;
+            for (let i = 1; i < Tools._drawPoints.length; i++) {
+               totalDist += _map.distance(Tools._drawPoints[i-1], Tools._drawPoints[i]);
+            }
+            const label = totalDist < 1000 ? `${Math.round(totalDist)} m` : `${(totalDist / 1000).toFixed(2)} km`;
+            Tools._drawLayer.bindTooltip(label, { permanent: true, className: 'measure-tooltip', direction: 'center' }).openTooltip();
+        }
+      }
+      if (Tools._drawPoints.length >= 2) {
+        document.getElementById('draw-finish-btn').classList.remove('hidden');
+      }
+      toast(`${Tools._drawPoints.length} Punkt(e) – „✓ Fertig" drücken`);
+    }
+  },
+
+  _onMapDblClick(e) {
+    const tool = Tools._active;
+    if (!['polygon', 'line', 'measure'].includes(tool)) return;
+    L.DomEvent.stopPropagation(e);
+    Tools.finishDraw();
+  },
+};
+
+/* ── EDITOR (Hand-Editor) ──────────────────────────────────── */
+const Editor = {
+  _handles: [],
+
+  _handleIcon(color) {
+    return L.divIcon({
+      html: `<div style="width:16px;height:16px;border-radius:50%;background:${color||'#007AFF'};border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:grab;"></div>`,
+      className: '', iconSize: [16, 16], iconAnchor: [8, 8],
+    });
+  },
+
+  _moveIcon() {
+    return L.divIcon({
+      html: `<div style="width:20px;height:20px;border-radius:4px;background:rgba(0,122,255,.9);color:#fff;font-size:14px;line-height:20px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.45);cursor:move;">✥</div>`,
+      className: '', iconSize: [20, 20], iconAnchor: [10, 10],
+    });
+  },
+
+  _addHandle(latLng, icon, onDrag) {
+    const h = L.marker(latLng, { icon: icon || this._handleIcon(), draggable: true, zIndexOffset: 1000 });
+    if (onDrag) h.on('drag', onDrag);
+    h.addTo(_map);
+    this._handles.push(h);
+    return h;
+  },
+
+  start(id) {
+    this.finish(true);
+    let found = null;
+    if (!_drawn) return;
+    _drawn.eachLayer(l => {
+      if (l._lid === id && l._ldata) { found = l; return; }
+      if (l instanceof L.LayerGroup) {
+        l.eachLayer(sub => { if (sub._lid === id) found = l; });
+      }
+    });
+    if (!found) return;
+    _map.closePopup();
+    const d = found._ldata;
+    if (!d) return;
+
+    if      (d.type === 'circle')                   this._editCircle(found, d);
+    else if (d.type === 'polygon' || d.type === 'polyline') this._editShape(found, d);
+    else if (d.type === 'arrow')                    this._editArrow(found, d);
+    else if (d.type === 'text')                     this._editScalable(found, d, 80);
+    else if (d.type === 'symbol')                   this._editScalable(found, d, 32);
+    else { toast('Dieses Element kann nicht bearbeitet werden'); return; }
+
+    toast('✏️ Handles ziehen · dann „✓ Speichern" drücken');
+    const finBtn = document.getElementById('draw-finish-btn');
+    finBtn.textContent = '✓ Bearbeitung speichern';
+    finBtn.classList.remove('hidden');
+    Tools._editingLayer = found;
+    finBtn.onclick = () => this.finish();
+  },
+
+  _editCircle(layer, d) {
+    this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
+      const ll = e.target.getLatLng();
+      d.lat = ll.lat; d.lng = ll.lng;
+      layer.setLatLng(ll);
+      if (this._handles[1]) this._handles[1].setLatLng(this._radiusHandleLatLng(d));
+    });
+    this._addHandle(this._radiusHandleLatLng(d), this._handleIcon('#FF9500'), e => {
+      const ll = e.target.getLatLng();
+      d.radius = L.latLng(d.lat, d.lng).distanceTo(ll);
+      layer.setRadius(d.radius);
+    });
+  },
+
+  _radiusHandleLatLng(d) {
+    const lngOffset = d.radius / (111320 * Math.cos(d.lat * Math.PI / 180));
+    return [d.lat, d.lng + lngOffset];
+  },
+
+  _editShape(layer, d) {
+    const pts = d.points;
+    pts.forEach((pt, i) => {
+      this._addHandle(pt, this._handleIcon(), e => {
+        const ll = e.target.getLatLng();
+        pts[i] = [ll.lat, ll.lng];
+        layer.setLatLngs(pts);
+      });
+    });
+    let cx = pts.reduce((s,p) => s + p[0], 0) / pts.length;
+    let cy = pts.reduce((s,p) => s + p[1], 0) / pts.length;
+    let lastC = [cx, cy];
+    this._addHandle([cx, cy], this._moveIcon(), e => {
+      const ll   = e.target.getLatLng();
+      const dlat = ll.lat - lastC[0];
+      const dlng = ll.lng - lastC[1];
+      lastC = [ll.lat, ll.lng];
+      for (let i = 0; i < pts.length; i++) {
+        pts[i] = [pts[i][0] + dlat, pts[i][1] + dlng];
+        if (this._handles[i]) this._handles[i].setLatLng(pts[i]);
+      }
+      layer.setLatLngs(pts);
+    });
+  },
+
+  _editArrow(layer, d) {
+    this._addHandle(d.start, this._handleIcon('#34C759'), e => {
+        const ll = e.target.getLatLng();
+        d.start = [ll.lat, ll.lng];
+        d.lat = (d.start[0] + d.end[0]) / 2;
+        d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
+        layer.setLatLng([d.lat, d.lng]);
+        layer.setIcon(Icons.arrow(d.start, d.end, d.color));
+    });
+    this._addHandle(d.end, this._handleIcon('#FF3B30'), e => {
+        const ll = e.target.getLatLng();
+        d.end = [ll.lat, ll.lng];
+        d.lat = (d.start[0] + d.end[0]) / 2;
+        d.lng = (d.start[1] + d.end[1]) / 2;
+        
+        const p1 = _map.latLngToLayerPoint(d.start);
+        const p2 = _map.latLngToLayerPoint(d.end);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
+        layer.setLatLng([d.lat, d.lng]);
+        layer.setIcon(Icons.arrow(d.start, d.end, d.color));
+    });
+  },
+
+  _editScalable(layer, d, widthOffset) {
+    if (!d.scale) d.scale = 1;
+
+    this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
+      const ll = e.target.getLatLng();
+      d.lat = ll.lat; d.lng = ll.lng;
+      layer.setLatLng(ll);
+      if (this._handles[1]) {
+         const pt = _map.latLngToLayerPoint(ll);
+         const resizePt = L.point(pt.x + (widthOffset * d.scale), pt.y + (30 * d.scale));
+         this._handles[1].setLatLng(_map.layerPointToLatLng(resizePt));
+      }
+    });
+
+    const pt = _map.latLngToLayerPoint([d.lat, d.lng]);
+    const resizePt = L.point(pt.x + (widthOffset * d.scale), pt.y + (30 * d.scale));
+
+    this._addHandle(_map.layerPointToLatLng(resizePt), this._handleIcon('#FF9500'), e => {
+      const tlPt = _map.latLngToLayerPoint([d.lat, d.lng]);
+      const dragPt = _map.latLngToLayerPoint(e.target.getLatLng());
+      
+      let newScale = (dragPt.x - tlPt.x) / widthOffset;
+      if (newScale < 0.5) newScale = 0.5;
+      if (newScale > 10) newScale = 10;
+      
+      d.scale = newScale;
+      
+      if (d.type === 'text') layer.setIcon(Icons.text(d.text, _map.getZoom(), d.scale));
+      if (d.type === 'symbol') layer.setIcon(Icons.symbol(d.emoji, d.desc, d.scale));
+    });
+  },
+
+  finish(silent) {
+    this._handles.forEach(h => { try { _map.removeLayer(h); } catch(e) {} });
+    this._handles = [];
+    const finBtn = document.getElementById('draw-finish-btn');
+    if (finBtn) {
+      finBtn.classList.add('hidden');
+      finBtn.textContent = '✓ Zeichnung abschließen';
+      finBtn.onclick = () => Tools.finishDraw();
+    }
+    Tools._editingLayer = null;
+    if (!silent) {
+      Sync.push();
+      toast('✅ Bearbeitung gespeichert');
+    }
+  },
+};
+
+/* ── TEXT INPUT (multi-line modal) ───────────────────────────────────── */
+const TextInput = {
+  _lat: null,
+  _lng: null,
+
+  show(lat, lng) {
+    this._lat = lat;
+    this._lng = lng;
+    document.getElementById('text-modal').classList.remove('hidden');
+    const area = document.getElementById('text-modal-area');
+    area.value = '';
+    setTimeout(() => area.focus(), 120);
+  },
+
+  submit() {
+    const raw = document.getElementById('text-modal-area').value.replace(/\r\n/g, '\n');
+    this.hide();
+    if (!raw || !raw.trim()) return;
+    const txt = raw.trim();
+    const d = { id: Layers.uid(), type: 'text', lat: this._lat, lng: this._lng, text: txt, scale: 1 };
+    Layers.render(d, true);
+    Sync.push();
+    Tools.deactivate();
+  },
+
+  hide() {
+    document.getElementById('text-modal').classList.add('hidden');
+  },
+};
+
+/* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
+const Sync = {
+  _viewerCount: 0,
+
+  async connect(roomCode, asAdmin) {
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
+    if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
+    
+    Layers.deserialize(data.state, false);
+
+    _channel = _sb.channel('room:' + roomCode)
+      .on('postgres_changes', {
+        event: '*', schema: 'public',
+        table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
+      }, payload => {
+        if (payload.eventType === 'DELETE') {
+          toast('⚠️ Die Lage wurde von der Leitstelle beendet.');
+          App.goHome();
+          return;
+        }
+        if (payload.eventType === 'UPDATE' && _mode !== 'admin' && payload.new) {
+          Layers.deserialize(payload.new.state, true);
+        }
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = _channel.presenceState();
+        let count = 0;
+        
+        const currentLive = {}; 
+        let needsStaticCleanup = false;
+
+        for (const id in state) {
+          const p = state[id][0];
+          if (p) {
+            count++;
+            if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
+              currentLive[id] = p;
+              needsStaticCleanup = true;
+            }
+          }
+        }
+        
+        if (_liveGpsLayer) {
+          _liveGpsLayer.eachLayer(l => {
+             if (!currentLive[l._connId]) _liveGpsLayer.removeLayer(l);
+          });
+          
+          for (const id in currentLive) {
+             const p = currentLive[id];
+             let existing = null;
+             _liveGpsLayer.eachLayer(l => { if (l._connId === id) existing = l; });
+             
+             if (existing) {
+                existing.setLatLng([p.lat, p.lng]);
+                if (existing._ruf !== p.ruf) {
+                    existing._ruf = p.ruf;
+                    existing.setIcon(Icons.unit(p.ruf, _map.getZoom(), true));
+                }
+             } else {
+                const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true);
+                const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
+                m._ruf = p.ruf;
+                m._connId = id;
+                
+                const safeLabel = escHtml(p.ruf).replace(/'/g, "\\'");
+                m.bindPopup(`
+                  <div class="popup-body">
+                    <div class="popup-title" style="color:var(--green)">🛰️ ${escHtml(p.ruf)} (Live)</div>
+                    <div style="display:flex; gap:8px; width:100%;">
+                      <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${p.lat}, ${p.lng}, '${safeLabel}')">↗️ Ab hier</button>
+                      <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${p.lat}, ${p.lng}, '${safeLabel}')">↘️ Hierhin</button>
+                    </div>
+                  </div>
+                `, { maxWidth: 260 });
+             }
+          }
+        }
+
+        if (needsStaticCleanup && (_mode === 'admin' || _mode === 'solo')) {
+          let pushNeeded = false;
+          for (const id in currentLive) {
+             const p = currentLive[id];
+             let duplicateId = null;
+             if (_drawn) {
+               _drawn.eachLayer(l => {
+                 if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === p.ruf) {
+                   duplicateId = l._lid;
+                 }
+               });
+             }
+             if (duplicateId) {
+               Layers.deleteById(duplicateId); 
+               pushNeeded = true;
+               toast(`♻️ Statischer Marker für ${p.ruf} wurde durch Live-Signal ersetzt.`);
+             }
+          }
+        }
+        
+        Pool.updateLiveList(currentLive);
+
+        this._viewerCount = count;
+        const vc = document.getElementById('viewer-count');
+        if (asAdmin && count > 1) { vc.textContent = `👁 ${count - 1}`; vc.classList.remove('hidden'); }
+        else vc.classList.add('hidden');
+      })
+      .subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
+          await _channel.track({ mode: _mode, ts: Date.now() });
+          document.getElementById('live-dot').classList.remove('off');
+        }
+      });
+    return true;
+  },
+
+  push() {
+    if (_mode === 'viewer') return;
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(async () => {
+      const state = Layers.serialize();
+      if (_roomCode && _sb) {
+        await _sb.from('lagekarte_sessions').update({ state, updated_at: new Date().toISOString() }).eq('room_code', _roomCode);
+      } else {
+        localStorage.setItem('lagekarte_solo', JSON.stringify(state));
+      }
+    }, 800);
+  },
+
+  disconnect() {
+    if (_channel) { _sb.removeChannel(_channel); _channel = null; }
+    document.getElementById('live-dot').classList.add('off');
+    if (_liveGpsLayer) _liveGpsLayer.clearLayers();
+    Pool.updateLiveList({});
+  },
+};
+
+/* ── APP CONTROLLER ──────────────────────────────────────────────────── */
+const App = {
+  async startSolo() {
+    _mode = 'solo';
+    this._openMap();
+    Pool.load();
+    const saved = localStorage.getItem('lagekarte_solo');
+    if (saved) { try { Layers.deserialize(JSON.parse(saved)); } catch(e) {} }
+    
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.remove('viewer-mode');
+    document.getElementById('mode-badge').className = 'solo';
+    document.getElementById('mode-badge').textContent = 'SOLO';
+    document.getElementById('room-code-display').classList.add('hidden');
+    document.getElementById('viewer-count').classList.add('hidden');
+    document.getElementById('live-dot').classList.add('off');
+    document.getElementById('end-btn').classList.add('hidden');
+    document.getElementById('viewer-hint').classList.add('hidden');
+  },
+
+  showPinModal() {
+    document.getElementById('modal-pin').classList.remove('hidden');
+    document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+    setTimeout(() => document.getElementById('p0').focus(), 100);
+    ['p0','p1','p2','p3'].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.oninput = () => { if (el.value && i < 3) document.getElementById(`p${i+1}`).focus(); };
+      el.onkeydown = e => {
+        if (e.key === 'Enter') this.checkPin();
+        if (e.key === 'Backspace' && !el.value && i > 0) document.getElementById(`p${i-1}`).focus();
+      };
+    });
+  },
+
+  async checkPin() {
+    const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
+    if (pin !== CFG.ADMIN_PIN) {
+      toast('❌ Falscher PIN');
+      ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p0').focus();
+      return;
+    }
+    this.closeModal();
+    _mode = 'admin';
+    _roomCode = this._genCode();
+    
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
+    if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
+    
+    this._openMap();
+    await Sync.connect(_roomCode, true);
+    
+    Pool.load();
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.remove('viewer-mode');
+    document.getElementById('mode-badge').className = 'admin';
+    document.getElementById('mode-badge').textContent = 'ADMIN';
+    const rc = document.getElementById('room-code-display');
+    rc.textContent = _roomCode; rc.classList.remove('hidden');
+    document.getElementById('end-btn').classList.remove('hidden');
+    document.getElementById('viewer-hint').classList.add('hidden');
+    toast(`✅ Lage gestartet – Code: ${_roomCode}`, 6000);
+  },
+
+  async masterReset() {
+    const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
+    if (pin !== CFG.ADMIN_PIN) {
+      toast('❌ Falscher PIN für System-Reset');
+      ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('p0').focus();
+      return;
+    }
+    if (!confirm('ACHTUNG: Möchtest du wirklich ALLE aktiven Lagen auf dem Server löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!')) return;
+
+    this.closeModal();
+    toast('🔄 Bereinige Datenbank...');
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    
+    const { error } = await _sb.from('lagekarte_sessions').delete().neq('room_code', '00000000');
+    if (error) { toast('❌ Fehler beim Bereinigen'); console.error(error); }
+    else { toast('✅ System wurde komplett bereinigt'); }
+  },
+
+  showJoinModal() {
+    document.getElementById('modal-pin').classList.add('hidden');
+    document.getElementById('modal-join').classList.remove('hidden');
+    document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    const inp = document.getElementById('join-code-input');
+    inp.value = '';
+    inp.onfocus = () => {
+      document.getElementById('modal-overlay').style.alignItems = 'center';
+    };
+    inp.onblur = () => {
+      document.getElementById('modal-overlay').style.alignItems = '';
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') this.joinRoom(); };
+    setTimeout(() => inp.focus(), 150);
+  },
+
+  async joinRoom() {
+    const raw = document.getElementById('join-code-input').value.trim().replace(/[^0-9]/g, '');
+    if (raw.length !== 4) { toast('Bitte 4-stelligen Code eingeben'); return; }
+    this.closeModal();
+    _mode = 'viewer'; _roomCode = raw;
+    
+    this._openMap();
+    
+    const ok = await Sync.connect(raw, false);
+    if (!ok) { 
+      this.goHome();
+      return; 
+    }
+    
+    document.getElementById('toolbar').style.display = '';
+    document.getElementById('toolbar').classList.add('viewer-mode');
+    document.getElementById('mode-badge').className = 'viewer';
+    document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
+    const rc = document.getElementById('room-code-display');
+    rc.textContent = _roomCode; rc.classList.remove('hidden');
+    document.getElementById('end-btn').classList.add('hidden');
+    document.getElementById('viewer-hint').classList.remove('hidden');
+    toast(`👁 Lage ${_roomCode} beigetreten`);
+  },
+
+  closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+  },
+
+  confirmDelete() {
+    document.getElementById('modal-pin').classList.add('hidden');
+    document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-delete').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  },
+
+  async deleteRoom() {
+    this.closeModal();
+    if (_sb && _roomCode) {
+      await _sb.from('lagekarte_sessions').delete().eq('room_code', _roomCode);
+    }
+    Sync.disconnect();
+    toast('Lage beendet');
+    this.goHome();
+  },
+
+  goHome() {
+    Sync.disconnect();
+    if (typeof Editor !== 'undefined') Editor.finish(true);
+    TextInput.hide();
+    Pool.close();
+    SymbolPanel.close();
+    Search.hide();
+    RoutePanel.close();
+    
+    if (LiveGPS._watchId) LiveGPS.stop();
+    
+    if (_mode === 'solo' && _drawn) Sync.push();
+    _mode = null; _roomCode = null;
+    if (_drawn) _drawn.clearLayers();
+    if (_liveGpsLayer) _liveGpsLayer.clearLayers();
+    _history = [];
+    document.getElementById('map-screen').classList.add('hidden');
+    document.getElementById('landing').classList.remove('hidden');
+    Tools.deactivate();
+  },
+
+  confirmReset() {
+    if (!confirm('Alle Elemente auf der Karte löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden.')) return;
+    if (typeof Editor !== 'undefined') Editor.finish(true);
+    if (_drawn) _drawn.clearLayers();
+    _history = [];
+    Sync.push();
+    toast('🗑 Karte zurückgesetzt');
+  },
+
+  copyCode() {
+    if (!_roomCode) return;
+    navigator.clipboard?.writeText(_roomCode)
+      .then(() => toast('📋 Raumcode kopiert: ' + _roomCode))
+      .catch(() => toast(_roomCode));
+  },
+
+  toggleDark() {
+    _isDark = !_isDark;
+    document.documentElement.classList.toggle('dark', _isDark);
+    localStorage.setItem('lagekarte_dark', _isDark ? '1' : '0');
+  },
+
+  _openMap() {
+    document.getElementById('landing').classList.add('hidden');
+    const ms = document.getElementById('map-screen');
+    ms.classList.remove('hidden');
+    ms.style.display = 'flex';
+    if (!_map) initMap();
+    setTimeout(() => _map.invalidateSize(), 100);
+    _map.on('click',   Tools._onMapClick.bind(Tools));
+    _map.on('dblclick', Tools._onMapDblClick.bind(Tools));
+  },
+
+  _genCode() {
+    return String(Math.floor(1000 + Math.random() * 9000));
+  },
+};
+
+/* ── HELPERS ─────────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+let _toastTimer;
+function toast(msg, dur = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = msg.startsWith('❌') ? 'rgba(255,59,48,.9)'
+    : msg.startsWith('✅') ? 'rgba(52,199,89,.9)'
+    : 'rgba(0,0,0,.78)';
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+/* ── SEARCH (Nominatim OSM geocoding) ────────────────────────────────── */
+const Search = {
+  _marker:   null,
+  _debounce: null,
+
+  toggle() {
+    const bar = document.getElementById('search-bar');
+    if (bar.classList.contains('hidden')) {
+      bar.classList.remove('hidden');
+      document.getElementById('search-input').focus();
+      document.getElementById('search-toggle-btn').classList.add('active');
+    } else {
+      this.hide();
+    }
+  },
+
+  hide() {
+    document.getElementById('search-bar').classList.add('hidden');
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('search-toggle-btn').classList.remove('active');
+  },
+
+  clear() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('search-input').focus();
+    if (this._marker) { _map.removeLayer(this._marker); this._marker = null; }
+  },
+
+  onInput() {
+    clearTimeout(this._debounce);
+    const q = document.getElementById('search-input').value.trim();
+    if (q.length < 3) {
+      document.getElementById('search-results').classList.add('hidden');
+      return;
+    }
+    this._debounce = setTimeout(() => this.go(), 600);
+  },
+
+  async go() {
+    const q = document.getElementById('search-input').value.trim();
+    if (!q) return;
+    const res = document.getElementById('search-results');
+    res.innerHTML = '<div id="search-empty">🔍 Suche läuft …</div>';
+    res.classList.remove('hidden');
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search?format=json'
+        + `&q=${encodeURIComponent(q)}&limit=5&countrycodes=de&addressdetails=1`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+      const data = await resp.json();
+      if (!data.length) {
+        res.innerHTML = '<div id="search-empty">Keine Ergebnisse gefunden</div>';
+        return;
+      }
+      res.innerHTML = data.map(item => {
+        const name   = item.name || item.display_name.split(',')[0];
+        const detail = item.display_name.split(',').slice(1, 3).join(',').trim();
+        return `<div class="search-result-item"
+          onclick="Search.flyTo(${item.lat},${item.lon},'${escHtml(name).replace(/'/g,'&#39;')}')">
+          <div class="search-result-name">${escHtml(name)}</div>
+          <div class="search-result-detail">${escHtml(detail)}</div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      res.innerHTML = '<div id="search-empty">⚠️ Suche fehlgeschlagen</div>';
+    }
+  },
+
+  flyTo(lat, lon, label) {
+    if (this._marker) _map.removeLayer(this._marker);
+    this._marker = L.marker([lat, lon], {
+      icon: L.divIcon({
+        html: `<div style="background:var(--blue);color:#fff;padding:4px 10px;border-radius:12px;
+          font-size:12px;font-weight:700;white-space:nowrap;
+          box-shadow:0 2px 8px rgba(0,122,255,.5);">${escHtml(label)}</div>`,
+        className: '', iconAnchor: [0, 8],
+      }),
+    }).addTo(_map);
+
+    const safeLabel = escHtml(label).replace(/'/g, "\\'");
+    this._marker.bindPopup(`
+      <div class="popup-body">
+        <div class="popup-title">${escHtml(label)}</div>
+        <div style="display:flex; gap:8px; width:100%;">
+          <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${lat}, ${lon}, '${safeLabel}')">↗️ Ab hier</button>
+          <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${lat}, ${lon}, '${safeLabel}')">↘️ Hierhin</button>
+        </div>
+      </div>
+    `, { maxWidth: 260 });
+
+    _map.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
+    document.getElementById('search-results').classList.add('hidden');
+    toast('📍 ' + label);
+    
+    setTimeout(() => { if (this._marker) this._marker.openPopup(); }, 1200);
+  },
+};
+
+/* ── ROUTE PANEL (OSRM routing + Geolocation) ────────────────────────── */
+const RoutePanel = {
+  _routeLayer: null,
+  _isCalculating: false,
+
+  open() {
+    document.getElementById('route-panel').classList.add('open');
+    const toggleBtn = document.getElementById('route-toggle-btn');
+    if (toggleBtn) toggleBtn.classList.add('active');
+  },
+
+  setupRoute(type, lat, lng, label) {
+    _map.closePopup();
+    this.open();
+    const targetId = type === 'from' ? 'route-from' : 'route-to';
+    const otherId  = type === 'from' ? 'route-to' : 'route-from';
+    
+    const el = document.getElementById(targetId);
+    el.value = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    el.dataset.lat = lat;
+    el.dataset.lng = lng;
+
+    const otherEl = document.getElementById(otherId);
+    if (!otherEl.value) {
+      otherEl.focus();
+      toast('📍 Bitte ' + (type === 'from' ? 'Ziel' : 'Start') + ' eingeben oder GPS nutzen');
+    } else {
+      setTimeout(() => this.calc(), 300);
+    }
+  },
+
+  toggle() {
+    const panel = document.getElementById('route-panel');
+    if (panel.classList.contains('open')) {
+      this.close();
+    } else {
+      panel.classList.add('open');
+      document.getElementById('route-toggle-btn').classList.add('active');
+      setTimeout(() => document.getElementById('route-from').focus(), 300);
+    }
+  },
+
+  close() {
+    document.getElementById('route-panel').classList.remove('open');
+    document.getElementById('route-toggle-btn').classList.remove('active');
+  },
+
+  useMyLocation(field) {
+    if (!navigator.geolocation) { toast('⚠️ GPS nicht verfügbar'); return; }
+    toast('📍 Standort wird ermittelt …');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const inputId = field === 'from' ? 'route-from' : 'route-to';
+        const el = document.getElementById(inputId);
+        el.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        el.dataset.lat = lat;
+        el.dataset.lng = lng;
+        toast('✅ Standort gesetzt');
+      },
+      err => { toast('❌ Standort nicht verfügbar'); console.warn(err); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  },
+
+  async _resolve(inputId) {
+    const el   = document.getElementById(inputId);
+    const text = el.value.trim();
+    if (!text) return null;
+    if (el.dataset.lat && el.dataset.lng) {
+      return { lat: parseFloat(el.dataset.lat), lng: parseFloat(el.dataset.lng) };
+    }
+    const m = text.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+    if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+    
+    try {
+      const url = 'https://nominatim.openstreetmap.org/search?format=json'
+        + `&q=${encodeURIComponent(text)}&limit=1&countrycodes=de`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+      const data = await resp.json();
+      if (!data.length) return null;
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    } catch(e) { return null; }
+  },
+
+  async calc() {
+    if (this._isCalculating) return;
+    
+    const fromText = document.getElementById('route-from').value.trim();
+    const toText   = document.getElementById('route-to').value.trim();
+    if (!fromText || !toText) { toast('Bitte Start und Ziel eingeben'); return; }
+    
+    this._isCalculating = true;
+    const btn = document.getElementById('route-calc-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Berechne...';
+    btn.style.opacity = '0.7';
+
+    if (this._routeLayer) { _map.removeLayer(this._routeLayer); this._routeLayer = null; }
+    document.getElementById('route-info').classList.add('hidden');
+    toast('🔄 Route wird berechnet …');
+
+    try {
+        const fromCoord = await this._resolve('route-from');
+        if (!fromCoord) { toast('❌ Start-Adresse nicht gefunden'); return; }
+        const toCoord = await this._resolve('route-to');
+        if (!toCoord)   { toast('❌ Ziel-Adresse nicht gefunden'); return; }
+
+        const url = `https://router.project-osrm.org/route/v1/driving/`
+          + `${fromCoord.lng},${fromCoord.lat};${toCoord.lng},${toCoord.lat}`
+          + `?overview=full&geometries=geojson`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.code !== 'Ok' || !data.routes.length) { toast('❌ Route nicht gefunden'); return; }
+
+        const route   = data.routes[0];
+        const distKm  = (route.distance / 1000).toFixed(1);
+        const durMin  = Math.round(route.duration / 60);
+        const durText = durMin >= 60 ? `${Math.floor(durMin/60)}h ${durMin%60}min` : `${durMin} min`;
+
+        const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        this._routeLayer = L.polyline(coords, {
+          color: '#007AFF', weight: 6, opacity: 0.85, lineCap: 'round', lineJoin: 'round'
+        }).addTo(_map);
+        
+        _map.flyToBounds(this._routeLayer.getBounds(), { padding: [40, 60], duration: 0.8 });
+
+        document.getElementById('route-dist').textContent = distKm + ' km';
+        document.getElementById('route-time').textContent = durText;
+        document.getElementById('route-info').classList.remove('hidden');
+        toast(`✅ ${distKm} km · ${durText}`);
+    } catch(e) {
+        toast('❌ Routing-Fehler'); console.error(e);
+    } finally {
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+        this._isCalculating = false;
+    }
+  },
+
+  clearRoute() {
+    if (this._routeLayer) { _map.removeLayer(this._routeLayer); this._routeLayer = null; }
+    const fromEl = document.getElementById('route-from');
+    const toEl   = document.getElementById('route-to');
+    fromEl.value = ''; toEl.value = '';
+    delete fromEl.dataset.lat; delete fromEl.dataset.lng;
+    delete toEl.dataset.lat;   delete toEl.dataset.lng;
+    document.getElementById('route-info').classList.add('hidden');
+    toast('Route gelöscht');
+  },
+};
+
+/* ── BOOT ────────────────────────────────────────────────────────────── */
+(function boot() {
+  if (localStorage.getItem('lagekarte_dark') === '1') {
+    _isDark = true; document.documentElement.classList.add('dark');
+  }
+  window._delLayer = (id) => Layers.deleteById(id);
+})();
+</script>
+</body>
+</html>
