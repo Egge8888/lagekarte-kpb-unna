@@ -201,7 +201,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 .unit-icon-img { line-height:1; }
 .unit-label {
-  font-weight:900; color:#0055FF; /* Leuchtend Blau (Standard Polizei) */
+  font-weight:900; color:#0055FF;
   background: rgba(255, 255, 255, 0.95);
   padding: 2px 6px;
   border-radius: 6px;
@@ -214,13 +214,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   border: 1px solid rgba(255,255,255,0.1);
   color: #3399FF; 
 }
-/* DGL – Führungskraft (ends in 21) -> Leuchtendes Rot-Orange statt Bronze */
 .unit-label.dgl { color:#FF3300 !important; }
 .dark .unit-label.dgl { color:#FF453A !important; }
-/* Fremdkräfte (U-prefix) -> Leuchtendes Lila */
 .unit-label.fremd { color:#B500FF !important; }
 .dark .unit-label.fremd { color:#BF5AF2 !important; }
-/* Kriminalwache (H9610–H9620) -> Leuchtendes Cyan */
 .unit-label.kripo { color:#00AACC !important; }
 .dark .unit-label.kripo { color:#30B0C7 !important; }
 
@@ -243,18 +240,29 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .ksst-icon { font-size:26px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
 
-/* ── VEHICLE POOL PANEL ───────────────────────────────── */
-#pool-panel {
+/* ── SIDE PANELS (Pool & Symbole) ────────────────────── */
+.side-panel {
   position:fixed; right:12px; top:64px;
-  z-index:1000; width:min(234px, calc(100vw - 70px));
+  z-index:1000; width:min(280px, calc(100vw - 70px));
   max-height:calc(100vh - 80px);
   background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:18px; padding:10px 10px 12px;
+  border:1px solid var(--sep); border-radius:18px; padding:12px;
   box-shadow:0 4px 24px rgba(0,0,0,.2);
   display:flex; flex-direction:column; overflow-y:auto;
 }
-.dark #pool-panel { background:rgba(44,44,46,.97); }
+.dark .side-panel { background:rgba(44,44,46,.97); }
 
+.panel-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; flex-shrink:0;
+}
+.panel-title { font-size:15px; font-weight:800; color:var(--txt); }
+.panel-close-btn {
+  background:none; border:none; color:var(--txt2); font-size:20px;
+  cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent;
+}
+
+/* Pool Specific */
 #pool-list { display:flex; flex-direction:column; gap:4px; }
 .pool-empty { text-align:center; color:var(--txt2); font-size:12px; padding:10px 0; line-height:1.5; }
 .pool-item {
@@ -266,8 +274,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .pool-item:hover { border-color:var(--blue); }
 .pool-item:active { transform:scale(.97); }
 .pool-emoji { font-size:18px; flex-shrink:0; line-height:1; }
-
-/* Passende Farben in der Liste rechts */
 .pool-ruf { flex:1; font-size:13px; font-weight:700; color:#0055FF; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dark .pool-ruf { color:#3399FF; }
 .pool-ruf.dgl { color:#FF3300; }
@@ -276,27 +282,19 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .dark .pool-ruf.fremd { color:#BF5AF2; }
 .pool-ruf.kripo { color:#00AACC; }
 .dark .pool-ruf.kripo { color:#30B0C7; }
-
-.pool-del-btn {
-  background:none; border:none; color:var(--txt2); font-size:13px;
-  cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0;
-  -webkit-tap-highlight-color:transparent;
-}
+.pool-del-btn { background:none; border:none; color:var(--txt2); font-size:13px; cursor:pointer; padding:3px 6px; border-radius:6px; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
 .pool-del-btn:hover { background:rgba(255,59,48,.12); color:var(--red); }
 #pool-add-row { display:flex; gap:6px; flex-shrink:0; }
-#pool-input {
-  flex:1; min-width:0; padding:9px 10px; border-radius:8px;
-  border:1.5px solid var(--sep); font-size:14px; font-family:var(--font);
-  background:var(--bg); color:var(--txt); outline:none;
-  text-transform:uppercase; letter-spacing:1px; font-weight:600;
-}
+#pool-input { flex:1; min-width:0; padding:9px 10px; border-radius:8px; border:1.5px solid var(--sep); font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt); outline:none; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
 #pool-input:focus { border-color:var(--blue); }
-#pool-add-btn {
-  width:38px; height:38px; border-radius:8px; background:var(--blue); color:#fff;
-  border:none; font-size:22px; font-weight:300; cursor:pointer;
-  font-family:var(--font); flex-shrink:0;
-  display:flex; align-items:center; justify-content:center; line-height:1;
-}
+#pool-add-btn { width:38px; height:38px; border-radius:8px; background:var(--blue); color:#fff; border:none; font-size:22px; font-weight:300; cursor:pointer; font-family:var(--font); flex-shrink:0; display:flex; align-items:center; justify-content:center; line-height:1; }
+
+/* Symbols Specific */
+.symbol-category { font-size:11px; font-weight:800; color:var(--txt2); text-transform:uppercase; margin-top:10px; margin-bottom:6px; letter-spacing:0.5px; }
+.symbol-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(42px, 1fr)); gap:6px; }
+.symbol-item { font-size:28px; text-align:center; cursor:pointer; padding:6px 0; border-radius:10px; background:var(--bg); border:1.5px solid transparent; transition:all .1s; -webkit-tap-highlight-color:transparent; line-height:1; }
+.symbol-item:active { transform:scale(0.85); }
+.symbol-item:hover { border-color:var(--blue); background:rgba(0,122,255,0.1); }
 
 /* ── VIEWER BANNER ───────────────────────────────────── */
 #viewer-hint {
@@ -427,7 +425,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .header-btn { width:32px; height:32px; font-size:14px; }
   #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
 
-  #pool-panel {
+  .side-panel {
     top: max(64px, calc(env(safe-area-inset-top) + 54px));
     max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 90px - max(16px, env(safe-area-inset-bottom)));
   }
@@ -471,7 +469,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 
 @media print {
-  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#draw-finish-btn,#search-bar,#route-panel { display:none !important; }
+  #header,#toolbar,#color-picker,#toast,#viewer-hint,#pool-panel,#symbol-panel,#draw-finish-btn,#search-bar,#route-panel { display:none !important; }
   #map { position:fixed !important; inset:0 !important; }
 }
 </style>
@@ -556,7 +554,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
     <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"       title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
     <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"        title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
-    <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚗</span><span class="tool-label">Kräfte</span></button>
+    
+    <div class="tool-divider admin-only"></div>
+    
+    <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚓</span><span class="tool-label">Kräfte</span></button>
+    <button class="tool-btn admin-only" id="symbol-toggle-btn" onclick="SymbolPanel.toggle()" title="Symbole & Icons"><span>🎭</span><span class="tool-label">Symbole</span></button>
     
     <div class="tool-divider admin-only"></div>
     
@@ -594,13 +596,13 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
   <button id="draw-finish-btn" class="hidden" onclick="Tools.finishDraw()">✓ Zeichnung abschließen</button>
 
-  <div id="pool-panel" class="hidden">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-shrink:0;">
-      <span style="font-size:14px; font-weight:800; color:var(--txt);">Fahrzeuge</span>
-      <button id="pool-close-btn" onclick="Pool.close()">✕</button>
+  <div id="pool-panel" class="side-panel hidden">
+    <div class="panel-header">
+      <span class="panel-title">Einsatzkräfte</span>
+      <button class="panel-close-btn" onclick="Pool.close()">✕</button>
     </div>
     <div id="live-section" style="margin-bottom:14px; flex-shrink:0;">
-      <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Einsatzmittel</div>
+      <div style="font-size:11px; font-weight:700; color:var(--green); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">🛰️ Live-Kräfte</div>
       <div id="live-list" style="display:flex; flex-direction:column; gap:4px;">
         <div style="font-size:12px; color:var(--txt2); padding-left:2px; font-style:italic;">Wartet auf GPS-Signale...</div>
       </div>
@@ -614,6 +616,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
         <button id="pool-add-btn" onclick="Pool.add()" title="Fahrzeug hinzufügen">+</button>
       </div>
     </div>
+  </div>
+
+  <div id="symbol-panel" class="side-panel hidden" style="width:min(340px, calc(100vw - 70px));">
+    <div class="panel-header">
+      <span class="panel-title">Taktische Symbole</span>
+      <button class="panel-close-btn" onclick="SymbolPanel.close()">✕</button>
+    </div>
+    <div id="symbol-content">
+      </div>
   </div>
 
   <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
@@ -790,6 +801,8 @@ function initMap() {
         l.setIcon(Icons.text(l._ldata.text, z, l._ldata.scale));
       } else if (l._ldata && l._ldata.type === 'arrow') {
         l.setIcon(Icons.arrow(l._ldata.start, l._ldata.end, l._ldata.color));
+      } else if (l._ldata && l._ldata.type === 'symbol') {
+        l.setIcon(Icons.symbol(l._ldata.emoji, l._ldata.desc, l._ldata.scale));
       }
     });
     if (_liveGpsLayer) {
@@ -867,10 +880,22 @@ const Icons = {
     const z = Math.max(12, Math.min(19, zoom ?? 15));
     const basePx = Math.round(10 + (z - 12) * 1.5);
     const px = Math.round(basePx * scale);
-    
     return L.divIcon({
       html: `<div style="font-size:${px}px;font-weight:700;color:#fff;background:rgba(0,0,0,.68);padding:${Math.round(px/2.5)}px ${Math.round(px/1.2)}px;border-radius:8px;white-space:pre-wrap;width:max-content;max-width:${px*15}px;box-shadow:0 2px 8px rgba(0,0,0,.3);line-height:1.4;text-align:center;">${escHtml(txt)}</div>`,
       className: '', iconAnchor: [0, 0], 
+    });
+  },
+  
+  // Neues Skalierbares Emoji/Symbol
+  symbol(emoji, desc = '', scale = 1) {
+    const px = Math.round(32 * scale);
+    const descHtml = desc ? `<div style="font-size:${Math.max(10, Math.round(10*scale))}px; font-weight:700; background:var(--card); color:var(--txt); padding:2px 5px; border-radius:6px; border:1px solid var(--sep); margin-top:3px; max-width:${Math.max(120, 120*scale)}px; white-space:pre-wrap; line-height:1.2; box-shadow:0 2px 4px rgba(0,0,0,.2); text-align:center;">${escHtml(desc)}</div>` : '';
+    return L.divIcon({
+      html: `<div class="tac-marker" style="display:flex;flex-direction:column;align-items:center;">
+        <div style="font-size:${px}px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));">${emoji}</div>
+        ${descHtml}
+      </div>`,
+      className: '', iconAnchor: [px/2, px/2 + (desc ? 15*scale : 0)],
     });
   },
 
@@ -948,6 +973,9 @@ const Layers = {
       case 'text':
         layer = L.marker([d.lat, d.lng], { icon: Icons.text(d.text, _map.getZoom(), d.scale || 1), draggable: isAdmin });
         break;
+      case 'symbol':
+        layer = L.marker([d.lat, d.lng], { icon: Icons.symbol(d.emoji, d.desc, d.scale || 1), draggable: isAdmin });
+        break;
       case 'arrow':
         layer = L.marker([d.lat, d.lng], { icon: Icons.arrow(d.start, d.end, d.color), draggable: isAdmin });
         break;
@@ -975,25 +1003,17 @@ const Layers = {
 
     const targetPopupLayer = layer._line || layer;
 
-    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','arrow'].includes(d.type)) {
-      targetPopupLayer.on('drag', (e) => {
-          if (d.type === 'arrow') {
-              const newCenter = e.target.getLatLng();
-              const dLat = newCenter.lat - d.lat;
-              const dLng = newCenter.lng - d.lng;
-              d.start = [d.start[0] + dLat, d.start[1] + dLng];
-              d.end = [d.end[0] + dLat, d.end[1] + dLng];
-              d.lat = newCenter.lat;
-              d.lng = newCenter.lng;
-              layer.setIcon(Icons.arrow(d.start, d.end, d.color));
-          }
-      });
+    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','symbol','arrow'].includes(d.type)) {
       targetPopupLayer.on('dragend', (e) => {
         const ll = e.target.getLatLng();
-        if (d.type !== 'arrow') {
-            d.lat = ll.lat; 
-            d.lng = ll.lng;
+        if (d.type === 'arrow') {
+            const dLat = ll.lat - d.lat;
+            const dLng = ll.lng - d.lng;
+            d.start = [d.start[0] + dLat, d.start[1] + dLng];
+            d.end = [d.end[0] + dLat, d.end[1] + dLng];
         }
+        d.lat = ll.lat; 
+        d.lng = ll.lng;
         Sync.push();
       });
     }
@@ -1008,7 +1028,7 @@ const Layers = {
   _addPopup(layer, d, isAdmin) {
     if (!layer) return;
     
-    let titleStr = d.ruf || d.text || d.desc;
+    let titleStr = d.ruf || d.text || d.desc || d.emoji;
     if (!titleStr) {
        titleStr = d.type === 'arrow' ? 'Pfeil' : (Icons._tacDefs[d.type] ? Icons._tacDefs[d.type].label : d.type === 'ksst' ? 'KSST' : d.type);
     }
@@ -1017,7 +1037,7 @@ const Layers = {
       ? `<div style="font-size:12px;color:var(--txt2);margin-bottom:8px;">Radius: ${d.radius >= 1000 ? (d.radius/1000).toFixed(2)+' km' : Math.round(d.radius)+' m'}</div>`
       : '';
     
-    const canEdit = ['circle','polyline','polygon','arrow','text'].includes(d.type);
+    const canEdit = ['circle','polyline','polygon','arrow','text','symbol'].includes(d.type);
     const editBtn = (canEdit && isAdmin)
       ? `<button class="popup-btn edit" onclick="Editor.start('${d.id}')">✏️ Bearbeiten</button>`
       : '';
@@ -1214,6 +1234,62 @@ const LiveGPS = {
   }
 };
 
+/* ── SYMBOL PANEL (Neuer Baukasten) ──────────────────────────────────── */
+const SymbolPanel = {
+  _symbols: [
+    { cat: 'Blaulicht & Rettung', items: ['🚓','🚔','🏍️','🚁','🛩️','🚒','🚑','🚤','🏥','⛺️'] },
+    { cat: 'Gefahrenlage', items: ['🔥','💥','💣','☣️','☢️','☠️','⚡','🌊','🌪️','💧'] },
+    { cat: 'Infrastruktur & Verkehr', items: ['🚧','🛑','🏭','🛢️','🚗','🚚','🚂','⛽','⚓','🚥'] },
+    { cat: 'Personen & Tiere', items: ['🧍','🏃','🧑‍🤝‍🧑','👤','🕵️','🐕','🐄','🐎','🐗','🐺'] }
+  ],
+  
+  toggle() {
+    if (Pool._placingFromPool || Tools._active === 'symbol') {
+      Tools.deactivate();
+    }
+    const panel = document.getElementById('symbol-panel');
+    const isHidden = panel.classList.contains('hidden');
+    
+    Pool.close(); // Immer das andere Menü schließen
+    
+    if (isHidden) {
+      this.render();
+      panel.classList.remove('hidden');
+    } else {
+      this.close();
+    }
+  },
+  
+  close() {
+    document.getElementById('symbol-panel').classList.add('hidden');
+  },
+  
+  render() {
+    const content = document.getElementById('symbol-content');
+    let html = '';
+    
+    this._symbols.forEach(group => {
+       html += `<div class="symbol-category">${group.cat}</div>`;
+       html += `<div class="symbol-grid">`;
+       group.items.forEach(emoji => {
+           html += `<div class="symbol-item" onclick="SymbolPanel.select('${emoji}')">${emoji}</div>`;
+       });
+       html += `</div>`;
+    });
+    content.innerHTML = html;
+  },
+  
+  select(emoji) {
+    this.close();
+    Tools._active = 'symbol';
+    Tools._pendingSymbol = emoji;
+    document.getElementById('symbol-toggle-btn').classList.add('active');
+    _map.getContainer().classList.add('tool-active');
+    _map.getContainer().style.cursor = 'crosshair';
+    toast(`📍 Symbol ${emoji} – auf Karte tippen`);
+  }
+};
+
 /* ── VEHICLE POOL & LIVE LIST ────────────────────────────────────────── */
 const Pool = {
   _vehicles: [],
@@ -1237,16 +1313,23 @@ const Pool = {
       _map.getContainer().style.cursor = '';
     }
     const panel = document.getElementById('pool-panel');
-    panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden')) {
+    const isHidden = panel.classList.contains('hidden');
+    
+    SymbolPanel.close(); // Immer das andere Menü schließen
+    
+    if (isHidden) {
+      panel.classList.remove('hidden');
       setTimeout(() => { 
          const inp = document.getElementById('pool-input'); 
          if (inp) inp.focus(); 
       }, 150);
+    } else {
+      this.close();
     }
   },
 
   open() {
+    SymbolPanel.close();
     document.getElementById('pool-panel').classList.remove('hidden');
   },
 
@@ -1372,6 +1455,7 @@ const Tools = {
   _drawPoints: [],
   _drawLayer:  null,
   _pendingRuf: null,
+  _pendingSymbol: null,
   
   _arrowStart: null,
   _arrowTempLine: null,
@@ -1398,6 +1482,8 @@ const Tools = {
     if (this._active) {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
+    document.getElementById('symbol-toggle-btn').classList.remove('active');
+    
     if (typeof Editor !== 'undefined') Editor.finish(true);
     
     if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
@@ -1406,6 +1492,7 @@ const Tools = {
     
     this._active = null;
     this._pendingRuf = null;
+    this._pendingSymbol = null;
     this._drawPoints = [];
     if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
     document.getElementById('color-picker').classList.add('hidden');
@@ -1491,10 +1578,22 @@ const Tools = {
       const d = { id: Layers.uid(), type: 'einheit', lat, lng, ruf };
       Layers.render(d, true);
       Sync.push();
-      Tools._pendingRuf = null;
       Tools.deactivate();
       Pool.onPlaced();
       toast(`✅ ${ruf} platziert`);
+      return;
+    }
+    
+    if (tool === 'symbol' && Tools._pendingSymbol) {
+      const emoji = Tools._pendingSymbol;
+      const desc = prompt(`Zusatzinfo (optional):`, '');
+      if (desc === null) return; 
+      
+      const d = { id: Layers.uid(), type: 'symbol', lat, lng, emoji: emoji, desc: desc.trim(), scale: 1 };
+      Layers.render(d, true);
+      Sync.push();
+      Tools.deactivate();
+      toast(`✅ Symbol platziert`);
       return;
     }
 
@@ -1528,17 +1627,10 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
-        const p1 = _map.latLngToLayerPoint(start);
-        const p2 = _map.latLngToLayerPoint(end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
         const centerLat = (start[0] + end[0]) / 2;
         const centerLng = (start[1] + end[1]) / 2;
 
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color };
         Layers.render(d, true);
         Sync.push();
 
@@ -1632,7 +1724,8 @@ const Editor = {
     if      (d.type === 'circle')                   this._editCircle(found, d);
     else if (d.type === 'polygon' || d.type === 'polyline') this._editShape(found, d);
     else if (d.type === 'arrow')                    this._editArrow(found, d);
-    else if (d.type === 'text')                     this._editText(found, d);
+    else if (d.type === 'text')                     this._editScalable(found, d, 80);
+    else if (d.type === 'symbol')                   this._editScalable(found, d, 32);
     else { toast('Dieses Element kann nicht bearbeitet werden'); return; }
 
     toast('✏️ Handles ziehen · dann „✓ Speichern" drücken');
@@ -1694,13 +1787,6 @@ const Editor = {
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
         
-        const p1 = _map.latLngToLayerPoint(d.start);
-        const p2 = _map.latLngToLayerPoint(d.end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
-        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
@@ -1710,19 +1796,12 @@ const Editor = {
         d.lat = (d.start[0] + d.end[0]) / 2;
         d.lng = (d.start[1] + d.end[1]) / 2;
         
-        const p1 = _map.latLngToLayerPoint(d.start);
-        const p2 = _map.latLngToLayerPoint(d.end);
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy));
-        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
-        
         layer.setLatLng([d.lat, d.lng]);
         layer.setIcon(Icons.arrow(d.start, d.end, d.color));
     });
   },
 
-  _editText(layer, d) {
+  _editScalable(layer, d, widthOffset) {
     if (!d.scale) d.scale = 1;
 
     this._addHandle([d.lat, d.lng], this._moveIcon(), e => {
@@ -1731,24 +1810,26 @@ const Editor = {
       layer.setLatLng(ll);
       if (this._handles[1]) {
          const pt = _map.latLngToLayerPoint(ll);
-         const resizePt = L.point(pt.x + (80 * d.scale), pt.y + (30 * d.scale));
+         const resizePt = L.point(pt.x + (widthOffset * d.scale), pt.y + (30 * d.scale));
          this._handles[1].setLatLng(_map.layerPointToLatLng(resizePt));
       }
     });
 
     const pt = _map.latLngToLayerPoint([d.lat, d.lng]);
-    const resizePt = L.point(pt.x + (80 * d.scale), pt.y + (30 * d.scale));
+    const resizePt = L.point(pt.x + (widthOffset * d.scale), pt.y + (30 * d.scale));
 
     this._addHandle(_map.layerPointToLatLng(resizePt), this._handleIcon('#FF9500'), e => {
       const tlPt = _map.latLngToLayerPoint([d.lat, d.lng]);
       const dragPt = _map.latLngToLayerPoint(e.target.getLatLng());
       
-      let newScale = (dragPt.x - tlPt.x) / 80;
+      let newScale = (dragPt.x - tlPt.x) / widthOffset;
       if (newScale < 0.5) newScale = 0.5;
       if (newScale > 10) newScale = 10;
       
       d.scale = newScale;
-      layer.setIcon(Icons.text(d.text, _map.getZoom(), d.scale));
+      
+      if (d.type === 'text') layer.setIcon(Icons.text(d.text, _map.getZoom(), d.scale));
+      if (d.type === 'symbol') layer.setIcon(Icons.symbol(d.emoji, d.desc, d.scale));
     });
   },
 
@@ -2090,6 +2171,7 @@ const App = {
     if (typeof Editor !== 'undefined') Editor.finish(true);
     TextInput.hide();
     Pool.close();
+    SymbolPanel.close();
     Search.hide();
     RoutePanel.close();
     
