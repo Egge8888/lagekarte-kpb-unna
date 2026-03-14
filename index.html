@@ -264,7 +264,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── UNIT MARKERS (Leuchtendes Sticker-Design) ───────── */
+/* ── UNIT MARKERS ────────────────────────────────────── */
 .unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 .unit-icon-img { line-height:1; }
 .unit-label {
@@ -1090,6 +1090,7 @@ const Layers = {
         </div>`;
     }
     
+    // UPLOAD BUTTON (Global Trigger)
     const mediaBtn = (isAdmin && isPoint && ['tatort','ereignis','gefahr','absperrung','pin','symbol'].includes(d.type))
       ? `<div style="margin-top:10px;">
            <button class="popup-btn" style="width:100%; background:rgba(255,149,0,.15); color:var(--orange);" onclick="window.triggerUpload('${d.id}')">
@@ -1240,6 +1241,10 @@ const LiveGPS = {
         
         if (this._isLive && _channel) {
           const now = Date.now();
+<<<<<<< HEAD
+=======
+          // Throttle: Max. alle 3 Sekunden senden, um Supabase Server nicht zu überlasten
+>>>>>>> 1e578ac0fa504268ce74036803d3fc88bd047275
           if (now - this._lastTrack > 3000) {
              this._lastTrack = now;
              (async () => {
@@ -1277,7 +1282,7 @@ const LiveGPS = {
     
     if (this._isLive) {
         _myRuf = null;
-        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+        if (_channel) _channel.track({ mode: _mode, ts: Date.now() }); // Ungeschützter Austritt zum Löschen
         Pool.updateLiveList({}); 
     }
     this._isLive = false;
@@ -1421,7 +1426,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1629,7 +1634,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
