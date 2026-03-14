@@ -4,6 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Lagekarte – KPB Unna</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Lagekarte"/>
+<link rel="apple-touch-icon" href="./icon.svg"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 /* ════════════════════════════════════════════════════════
@@ -35,7 +41,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 #landing {
   background: radial-gradient(circle at 50% 30%, #102035 0%, #040914 80%);
   flex-direction: column; gap: 0;
-  position: relative;
+  height: 100dvh; /* Korrektur für iOS Safari Abbruch */
+  width: 100vw;
   overflow: hidden;
 }
 #landing::before {
@@ -69,16 +76,27 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
   border-radius: 28px;
 }
+
+/* Bild/Logo Wrapper */
+.landing-logo-wrapper {
+  display: flex; justify-content: center; align-items: center;
+  margin-bottom: 8px;
+  animation: float 4s ease-in-out infinite;
+}
+.landing-logo-img {
+  width: 110px; height: 110px; object-fit: contain;
+  filter: drop-shadow(0 0 25px rgba(0,122,255,0.6));
+  border-radius: 16px;
+}
 .landing-logo { 
   font-size: 72px; line-height: 1.1; 
   filter: drop-shadow(0 0 25px rgba(0,122,255,0.6)); 
-  margin-bottom: 4px;
-  animation: float 4s ease-in-out infinite;
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
+
 .landing-title { 
   font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; 
   text-shadow: 0 2px 10px rgba(0,0,0,0.5);
@@ -433,6 +451,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   .landing-inner { padding: 24px 20px; gap: 10px; }
+  
+  /* Auf Mobile das Logo minimal anpassen */
+  .landing-logo-img { width: 90px; height: 90px; }
   .landing-logo { font-size: 56px; margin-bottom: 4px; }
   .landing-title { font-size: 22px; }
 }
@@ -447,7 +468,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 <div id="landing" class="screen">
   <div class="landing-inner">
-    <div class="landing-logo">🗺️</div>
+    
+    <div class="landing-logo-wrapper">
+      <img src="logo.jpg" alt="Lagekarte Logo" class="landing-logo-img" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
+      <div id="fallback-logo" class="landing-logo" style="display:none;">🗺️</div>
+    </div>
+    
     <div class="landing-title">Taktische Lagekarte</div>
     <div class="landing-sub">KPB Unna · Leitstelle</div>
     
@@ -672,6 +698,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/mgrs/dist/mgrs.js"></script>
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════
@@ -755,6 +782,10 @@ function initMap() {
     layers: 'nw_dtk_sw', format: 'image/png', transparent: true,
     maxZoom: 22, attribution: '© Geobasis NRW 2024',
   });
+  const dwdWarn = L.tileLayer.wms('https://maps.dwd.de/geoserver/dwd/wms', {
+    layers: 'dwd:Warnungen_Gemeinden', format: 'image/png', transparent: true,
+    opacity: 0.6, attribution: '© DWD',
+  });
 
   osm.addTo(_map);
   L.control.layers({
@@ -762,7 +793,9 @@ function initMap() {
     '🛩 Luftbild NRW (DOP)':       dop,
     '📋 Amtl. Basiskarte NRW':     abk,
     '⬛ Topograph. Karte S/W':     dtk,
-  }, {}, { position: 'topright' }).addTo(_map);
+  }, {
+    '🌩 DWD Unwetterwarnungen': dwdWarn
+  }, { position: 'topright' }).addTo(_map);
 
   _drawn = L.featureGroup().addTo(_map);
   _liveGpsLayer = L.featureGroup().addTo(_map); 
@@ -1035,7 +1068,7 @@ const Layers = {
       </div>
     ` : '';
 
-    // NEW: IMAGE HANDLING
+    // IMAGE HANDLING
     let imgHtml = '';
     if (d.image_url) {
         imgHtml = `<div style="margin:8px 0; border-radius:8px; overflow:hidden; border:1px solid var(--sep);">
@@ -1045,7 +1078,6 @@ const Layers = {
         </div>`;
     }
     
-    // NEW: MEDIA UPLOAD BUTTON
     const mediaBtn = (isAdmin && isPoint && ['tatort','ereignis','gefahr','absperrung','pin','symbol'].includes(d.type))
       ? `<div style="margin-top:10px;">
            <label class="popup-btn" style="display:flex;align-items:center;justify-content:center;background:rgba(255,149,0,.15);color:var(--orange);cursor:pointer;margin:0;">
@@ -1054,10 +1086,19 @@ const Layers = {
            </label>
          </div>`
       : '';
+      
+    let coordsHtml = '';
+    if (isPoint && window.mgrs) {
+       try {
+           const mgrsStr = window.mgrs.forward([d.lng, d.lat]);
+           coordsHtml = `<div style="font-size:11px; font-weight:600; color:var(--txt2); margin-top: -6px; margin-bottom: 8px; font-family:monospace; letter-spacing:1px; cursor:copy;" onclick="navigator.clipboard.writeText('${mgrsStr}'); toast('📍 Koordinate kopiert');" title="MGRS klicken zum Kopieren">📍 ${mgrsStr}</div>`;
+       } catch(e) {}
+    }
 
     layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(titleStr)}</div>
+        ${coordsHtml}
         ${radiusInfo}
         ${imgHtml}
         ${routeBtns}
@@ -1091,6 +1132,7 @@ const LiveGPS = {
   _marker: null,
   _circle: null,
   _following: false,
+  _isLive: false,
 
   handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
@@ -1115,8 +1157,10 @@ const LiveGPS = {
 
   start() {
     if (_mode === 'solo') {
+       this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
+       this._isLive = true;
        let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
        if (!ruf) return; 
        
@@ -1170,7 +1214,7 @@ const LiveGPS = {
           this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
           this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
           _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
-          toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Sende an Leitstelle' : 'Privates Navi'})`);
+          toast(`✅ GPS aktiv. (${this._isLive ? 'Sende an Leitstelle' : 'Privates Navi'})`);
         } else {
           this._marker.setLatLng([lat, lng]);
           this._marker.setIcon(myIcon);
@@ -1182,9 +1226,13 @@ const LiveGPS = {
            _map.panTo([lat, lng], {animate: true});
         }
         
-        if (_mode !== 'solo' && _channel) {
-          _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
-          Pool.refreshLiveList();
+        if (this._isLive && _channel) {
+          (async () => {
+             const payload = { mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() };
+             const encPayload = await CryptoHelper.encrypt(payload);
+             _channel.track(encPayload);
+             Pool.refreshLiveList();
+          })();
         }
       },
       err => {
@@ -1209,11 +1257,12 @@ const LiveGPS = {
     btn.classList.remove('active');
     btn.classList.remove('tracking-paused');
     
-    if (_mode !== 'solo') {
+    if (this._isLive) {
         _myRuf = null;
         if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
         Pool.updateLiveList({}); 
     }
+    this._isLive = false;
     toast('🛰️ Navigation beendet');
   },
   
@@ -1354,7 +1403,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1562,7 +1611,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -1621,17 +1670,18 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
+        const centerLat = (start[0] + end[0]) / 2;
+        const centerLng = (start[1] + end[1]) / 2;
+
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: 100, angle: 0 };
+        // Recalculate correctly before rendering
         const p1 = _map.latLngToLayerPoint(start);
         const p2 = _map.latLngToLayerPoint(end);
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
-        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-        const centerLat = (start[0] + end[0]) / 2;
-        const centerLng = (start[1] + end[1]) / 2;
-
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
         Layers.render(d, true);
         Sync.push();
 
@@ -1893,48 +1943,6 @@ const TextInput = {
   hide() {
     document.getElementById('text-modal').classList.add('hidden');
   },
-};
-
-/* ── MEDIA ATTACHMENTS (Supabase Storage) ────────────────────────────── */
-const Media = {
-  async upload(event, layerId) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-
-    toast('⏳ Lade Foto hoch...');
-
-    const ext = file.name.split('.').pop() || 'jpg';
-    const filename = `img_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    
-    // Finde das dazugehörige Element
-    let targetData = null;
-    if (_drawn) {
-        _drawn.eachLayer(l => {
-            if (l._lid === layerId && l._ldata) targetData = l._ldata;
-        });
-    }
-    if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
-
-    const { data, error } = await _sb.storage
-      .from('lagekarte_media')
-      .upload(filename, file, { cacheControl: '3600', upsert: false });
-
-    if (error) {
-      console.error(error);
-      toast('❌ Upload fehlgeschlagen: ' + error.message);
-      return;
-    }
-
-    const { data: publicUrlData } = _sb.storage.from('lagekarte_media').getPublicUrl(filename);
-    if (publicUrlData && publicUrlData.publicUrl) {
-      targetData.image_url = publicUrlData.publicUrl;
-      Layers.render(targetData, false);
-      Sync.push();
-      toast('✅ Foto angehängt');
-      _map.closePopup();
-    }
-  }
 };
 
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
@@ -2592,3 +2600,5 @@ const RoutePanel = {
 </script>
 </body>
 </html>
+
+}
