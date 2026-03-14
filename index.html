@@ -31,22 +31,94 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* ── SCREENS ──────────────────────────────────────────── */
 .screen { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:100; }
 
-/* ── LANDING ─────────────────────────────────────────── */
+/* ── LANDING (Hyperrealistisch & Taktisch) ───────────── */
 #landing {
-  background: linear-gradient(160deg, #1a2a4a 0%, #0d1b2e 60%, #162640 100%);
-  flex-direction:column; gap:0;
+  background: radial-gradient(circle at 50% 30%, #102035 0%, #040914 80%);
+  flex-direction: column; gap: 0;
+  position: relative;
+  overflow: hidden;
 }
-.landing-inner { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:380px; padding:32px 24px; }
-.landing-logo { font-size:72px; filter:drop-shadow(0 4px 12px rgba(0,120,255,.4)); margin-bottom:8px; }
-.landing-title { font-size:28px; font-weight:700; color:#fff; letter-spacing:-.5px; }
-.landing-sub { font-size:14px; color:rgba(255,255,255,.5); margin-bottom:20px; }
+#landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 122, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 122, 255, 0.07) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: 0;
+}
+#landing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+.landing-inner { 
+  position: relative; 
+  z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; 
+  width: 90%; max-width: 400px; 
+  padding: 45px 28px; 
+  background: rgba(15, 25, 40, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  border-radius: 28px;
+}
+.landing-logo { 
+  font-size: 72px; line-height: 1.1; 
+  filter: drop-shadow(0 0 25px rgba(0,122,255,0.6)); 
+  margin-bottom: 4px;
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.landing-title { 
+  font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; 
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  text-align: center;
+}
+.landing-sub { 
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 20px; 
+  text-transform: uppercase; letter-spacing: 1px; text-align: center;
+}
+.landing-divider { 
+  width:100%; text-align:center; font-size:12px; font-weight: 600; 
+  color:rgba(255,255,255,.3); margin:4px 0; text-transform: uppercase; letter-spacing: 1px; 
+}
 .btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:16px; border-radius:14px; border:none; font-family:var(--font); font-size:16px; font-weight:600; cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
 .btn:active { transform:scale(.97); }
+
+#landing .btn {
+  height: 56px; border-radius: 16px; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
+  position: relative; overflow: hidden;
+}
+#landing .btn-primary { 
+  background: linear-gradient(135deg, #007AFF 0%, #0055FF 100%); 
+  box-shadow: 0 8px 24px rgba(0,122,255,0.3), inset 0 1px 0 rgba(255,255,255,0.2); 
+  border: 1px solid rgba(0,0,0,0.2); color: #fff;
+}
+#landing .btn-secondary { 
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); 
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); color: #fff;
+}
+#landing .btn-secondary:hover, #landing .btn-secondary:active { background: rgba(255,255,255,0.1); }
+.landing-red-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: #FF3B30;
+  box-shadow: 0 0 10px #FF3B30, 0 0 20px #FF3B30; animation: pulse-red 2s infinite;
+}
+@keyframes pulse-red { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
 .btn-primary { background:var(--blue); color:#fff; }
 .btn-secondary { background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.2); }
 .btn-danger { background:var(--red); color:#fff; }
 .btn-ghost { background:transparent; color:rgba(255,255,255,.6); font-size:14px; padding:10px; }
-.landing-divider { width:100%; text-align:center; font-size:12px; color:rgba(255,255,255,.3); margin:4px 0; }
 
 /* ── MODAL ───────────────────────────────────────────── */
 #modal-overlay {
@@ -60,9 +132,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   padding:28px 24px max(40px, env(safe-area-inset-bottom));
   width:100%; max-width:460px;
 }
-#modal-overlay[style*="center"] .modal-sheet {
-  border-radius:24px; margin: 16px; width: calc(100% - 32px);
-}
+#modal-overlay[style*="center"] .modal-sheet { border-radius:24px; margin: 16px; width: calc(100% - 32px); }
 .modal-handle { width:36px; height:4px; background:var(--sep); border-radius:2px; margin:0 auto 20px; }
 .modal-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:6px; }
 .modal-sub { font-size:14px; color:var(--txt2); text-align:center; margin-bottom:24px; }
@@ -96,33 +166,17 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   border-bottom:1px solid var(--sep); z-index:200;
   flex-shrink:0; height:52px;
 }
-#mode-badge {
-  font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;
-  text-transform:uppercase; letter-spacing:.5px; flex-shrink:0;
-}
+#mode-badge { font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; }
 #mode-badge.admin { background:rgba(255,59,48,.15); color:var(--red); }
 #mode-badge.viewer { background:rgba(52,199,89,.15); color:var(--green); }
 #mode-badge.solo { background:rgba(0,122,255,.15); color:var(--blue); }
-#room-code-display {
-  font-size:18px; font-weight:800; letter-spacing:4px; color:var(--txt);
-  background:var(--card); padding:4px 14px; border-radius:20px;
-  border:1px solid var(--sep); cursor:pointer; flex-shrink:0;
-  -webkit-tap-highlight-color:transparent;
-}
+#room-code-display { font-size:18px; font-weight:800; letter-spacing:4px; color:var(--txt); background:var(--card); padding:4px 14px; border-radius:20px; border:1px solid var(--sep); cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
 #room-code-display:active { opacity:.7; }
-#live-dot {
-  width:8px; height:8px; border-radius:50%; background:var(--green);
-  flex-shrink:0; animation:pulse 2s infinite;
-}
+#live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); flex-shrink:0; animation:pulse 2s infinite; }
 #live-dot.off { background:var(--gray); animation:none; }
 #viewer-count { font-size:12px; color:var(--txt2); font-weight:600; }
 .header-spacer { flex:1; }
-.header-btn {
-  width:36px; height:36px; border-radius:10px; border:none;
-  background:var(--card); color:var(--txt); font-size:16px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent;
-}
+.header-btn { width:36px; height:36px; border-radius:10px; border:none; background:var(--card); color:var(--txt); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent; }
 .header-btn:active { transform:scale(.93); }
 #end-btn { background:rgba(255,59,48,.1); color:var(--red); border-color:rgba(255,59,48,.3); font-size:12px; font-weight:700; width:auto; padding:0 12px; letter-spacing:.3px; }
 
@@ -134,13 +188,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   border:1px solid var(--sep); border-radius:18px; padding:8px 6px;
   box-shadow:0 4px 24px rgba(0,0,0,.2);
   max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
-  /* Versteckt den unschönen Windows-Scrollbalken, scrollen per Mausrad geht trotzdem */
   scrollbar-width: none; -ms-overflow-style: none;
 }
 #toolbar::-webkit-scrollbar { display: none; }
 .dark #toolbar { background:rgba(44,44,46,.97); }
-
-/* Viewer Mode: Hide all admin tools */
 #toolbar.viewer-mode .admin-only { display: none !important; }
 
 .tool-btn {
@@ -153,14 +204,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .tool-btn:active { transform:scale(.9); }
 .tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
 .tool-btn.active .tool-label { color:#fff; }
-
-/* CSS für Navigation: Wenn Map verschoben wurde (Pausiert) */
-.tool-btn.tracking-paused { 
-  box-shadow: inset 0 0 0 2px var(--blue); 
-  background: rgba(0,122,255,0.1) !important;
-}
+.tool-btn.tracking-paused { box-shadow: inset 0 0 0 2px var(--blue); background: rgba(0,122,255,0.1) !important; }
 .tool-btn.tracking-paused .tool-label { color: var(--blue); }
-
 .tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
 .tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
 
@@ -173,10 +218,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .dark #color-picker { background:rgba(44,44,46,.97); }
 #color-picker.hidden { display:none; }
-.color-dot {
-  width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent;
-  transition:all .12s; -webkit-tap-highlight-color:transparent;
-}
+.color-dot { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent; transition:all .12s; -webkit-tap-highlight-color:transparent; }
 .color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
 .color-dot:active { transform:scale(.9); }
 
@@ -185,8 +227,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
   z-index:1100; background:var(--green); color:#fff; border:none;
   padding:14px 28px; border-radius:18px; font-size:16px; font-weight:700;
-  cursor:pointer; font-family:var(--font);
-  box-shadow:0 4px 20px rgba(52,199,89,.55);
+  cursor:pointer; font-family:var(--font); box-shadow:0 4px 20px rgba(52,199,89,.55);
   -webkit-tap-highlight-color:transparent;
 }
 #draw-finish-btn:active { transform:translateX(-50%) scale(.96); }
@@ -206,17 +247,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .unit-label {
   font-weight:900; color:#0055FF;
   background: rgba(255, 255, 255, 0.95);
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 6px; border-radius: 6px;
   border: 1px solid rgba(0,0,0,0.1);
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   white-space:nowrap; margin-top:2px; font-family:var(--font);
 }
-.dark .unit-label { 
-  background: rgba(30, 30, 30, 0.95);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #3399FF; 
-}
+.dark .unit-label { background: rgba(30, 30, 30, 0.95); border: 1px solid rgba(255,255,255,0.1); color: #3399FF; }
 .unit-label.dgl { color:#FF3300 !important; }
 .dark .unit-label.dgl { color:#FF453A !important; }
 .unit-label.fremd { color:#B500FF !important; }
@@ -227,53 +263,30 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 /* ── TACTIC MARKERS ──────────────────────────────────── */
 .tac-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
 .tac-icon { font-size:28px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
-.tac-label { font-size:10px; font-weight:800; white-space:nowrap; font-family:var(--font); color:#000;
-  text-shadow:0 1px 2px rgba(255,255,255,.9); }
+.tac-label { font-size:10px; font-weight:800; white-space:nowrap; font-family:var(--font); color:#000; text-shadow:0 1px 2px rgba(255,255,255,.9); }
 .dark .tac-label { color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.8); }
 
 /* ── KSST special marker ─────────────────────────────── */
-.ksst-marker {
-  display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer;
-}
-.ksst-badge {
-  background:#FF9500; color:#fff; font-size:10px; font-weight:900;
-  padding:3px 7px; border-radius:8px; letter-spacing:.5px;
-  box-shadow:0 2px 8px rgba(255,149,0,.5); border:1.5px solid rgba(255,255,255,.6);
-  white-space:nowrap;
-}
+.ksst-marker { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; }
+.ksst-badge { background:#FF9500; color:#fff; font-size:10px; font-weight:900; padding:3px 7px; border-radius:8px; letter-spacing:.5px; box-shadow:0 2px 8px rgba(255,149,0,.5); border:1.5px solid rgba(255,255,255,.6); white-space:nowrap; }
 .ksst-icon { font-size:26px; line-height:1; filter:drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
 
 /* ── SIDE PANELS (Pool & Symbole) ────────────────────── */
 .side-panel {
-  position:fixed; right:12px; top:64px;
-  z-index:1000; width:min(280px, calc(100vw - 70px));
-  max-height:calc(100vh - 80px);
-  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:18px; padding:12px;
-  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  position:fixed; right:12px; top:64px; z-index:1000; width:min(280px, calc(100vw - 70px));
+  max-height:calc(100vh - 80px); background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:12px; box-shadow:0 4px 24px rgba(0,0,0,.2);
   display:flex; flex-direction:column; overflow-y:auto;
 }
 .dark .side-panel { background:rgba(44,44,46,.97); }
-
-.panel-header {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:12px; flex-shrink:0;
-}
+.panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-shrink:0; }
 .panel-title { font-size:15px; font-weight:800; color:var(--txt); }
-.panel-close-btn {
-  background:none; border:none; color:var(--txt2); font-size:20px;
-  cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent;
-}
+.panel-close-btn { background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; padding:0 4px; line-height:1; -webkit-tap-highlight-color:transparent; }
 
 /* Pool Specific */
 #pool-list { display:flex; flex-direction:column; gap:4px; }
 .pool-empty { text-align:center; color:var(--txt2); font-size:12px; padding:10px 0; line-height:1.5; }
-.pool-item {
-  display:flex; align-items:center; gap:7px; padding:8px 9px;
-  background:var(--bg); border-radius:10px; cursor:pointer;
-  transition:all .12s; -webkit-tap-highlight-color:transparent;
-  border:1.5px solid transparent; user-select:none;
-}
+.pool-item { display:flex; align-items:center; gap:7px; padding:8px 9px; background:var(--bg); border-radius:10px; cursor:pointer; transition:all .12s; -webkit-tap-highlight-color:transparent; border:1.5px solid transparent; user-select:none; }
 .pool-item:hover { border-color:var(--blue); }
 .pool-item:active { transform:scale(.97); }
 .pool-emoji { font-size:18px; flex-shrink:0; line-height:1; }
@@ -309,12 +322,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 #viewer-hint.hidden { display:none; }
 
 /* ── MEASURE POPUP ───────────────────────────────────── */
-.measure-tooltip {
-  background:rgba(0,0,0,.75) !important; color:#fff !important;
-  border:none !important; border-radius:8px !important;
-  font-weight:700 !important; font-size:13px !important;
-  box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important;
-}
+.measure-tooltip { background:rgba(0,0,0,.75) !important; color:#fff !important; border:none !important; border-radius:8px !important; font-weight:700 !important; font-size:13px !important; box-shadow:0 2px 8px rgba(0,0,0,.3) !important; padding:4px 10px !important; }
 
 /* ── TOOL-ACTIVE ─────────────────────────────────────── */
 #map.tool-active .leaflet-overlay-pane { pointer-events: none !important; }
@@ -341,23 +349,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 .dark #search-bar { background:rgba(44,44,46,.97); }
 #search-input-row { display:flex; align-items:center; gap:0; }
-#search-input {
-  flex:1; padding:12px 14px; border:none; background:transparent;
-  font-size:15px; font-family:var(--font); color:var(--txt); outline:none;
-}
+#search-input { flex:1; padding:12px 14px; border:none; background:transparent; font-size:15px; font-family:var(--font); color:var(--txt); outline:none; }
 #search-input::placeholder { color:var(--txt2); }
-#search-clear-btn, #search-go-btn {
-  background:none; border:none; padding:10px 12px; cursor:pointer;
-  font-size:16px; color:var(--txt2); -webkit-tap-highlight-color:transparent;
-}
-#search-results {
-  border-top:1px solid var(--sep); max-height:220px; overflow-y:auto;
-}
-.search-result-item {
-  padding:11px 14px; cursor:pointer; font-size:13px; color:var(--txt);
-  border-bottom:1px solid var(--sep); transition:background .1s;
-  -webkit-tap-highlight-color:transparent;
-}
+#search-clear-btn, #search-go-btn { background:none; border:none; padding:10px 12px; cursor:pointer; font-size:16px; color:var(--txt2); -webkit-tap-highlight-color:transparent; }
+#search-results { border-top:1px solid var(--sep); max-height:220px; overflow-y:auto; }
+.search-result-item { padding:11px 14px; cursor:pointer; font-size:13px; color:var(--txt); border-bottom:1px solid var(--sep); transition:background .1s; -webkit-tap-highlight-color:transparent; }
 .search-result-item:last-child { border-bottom:none; }
 .search-result-item:hover, .search-result-item:active { background:var(--bg); }
 .search-result-name { font-weight:700; margin-bottom:2px; }
@@ -382,33 +378,13 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 #route-close-btn { background:none; border:none; color:var(--txt2); font-size:18px; cursor:pointer; padding:0 4px; }
 .route-input-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
 .route-dot { font-size:14px; flex-shrink:0; }
-.route-input {
-  flex:1; padding:10px 12px; border-radius:10px; border:1.5px solid var(--sep);
-  font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt);
-  outline:none;
-}
+.route-input { flex:1; padding:10px 12px; border-radius:10px; border:1.5px solid var(--sep); font-size:14px; font-family:var(--font); background:var(--bg); color:var(--txt); outline:none; }
 .route-input:focus { border-color:var(--blue); }
-.route-loc-btn {
-  width:36px; height:36px; border-radius:10px; background:var(--bg);
-  border:1.5px solid var(--sep); font-size:16px; cursor:pointer; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  -webkit-tap-highlight-color:transparent;
-}
+.route-loc-btn { width:36px; height:36px; border-radius:10px; background:var(--bg); border:1.5px solid var(--sep); font-size:16px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
 #route-actions { display:flex; gap:8px; margin-top:10px; }
-#route-calc-btn {
-  flex:1; padding:12px; border-radius:12px; background:var(--blue); color:#fff;
-  border:none; font-size:15px; font-weight:700; cursor:pointer; font-family:var(--font);
-}
-#route-clear-btn {
-  padding:12px 16px; border-radius:12px; background:var(--bg); color:var(--txt2);
-  border:1.5px solid var(--sep); font-size:13px; font-weight:600; cursor:pointer;
-  font-family:var(--font);
-}
-#route-info {
-  margin-top:10px; padding:10px 12px; border-radius:10px;
-  background:var(--bg); font-size:13px; color:var(--txt2);
-  display:flex; gap:16px; align-items:center;
-}
+#route-calc-btn { flex:1; padding:12px; border-radius:12px; background:var(--blue); color:#fff; border:none; font-size:15px; font-weight:700; cursor:pointer; font-family:var(--font); }
+#route-clear-btn { padding:12px 16px; border-radius:12px; background:var(--bg); color:var(--txt2); border:1.5px solid var(--sep); font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+#route-info { margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--bg); font-size:13px; color:var(--txt2); display:flex; gap:16px; align-items:center; }
 #route-info.hidden { display:none; }
 .route-stat { display:flex; flex-direction:column; align-items:center; }
 .route-stat-val { font-size:18px; font-weight:800; color:var(--txt); }
@@ -429,22 +405,13 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
    MOBILE LAYOUT
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  #header {
-    padding-top: max(10px, env(safe-area-inset-top));
-    height: auto; min-height: 52px; gap: 5px; padding-left: 10px; padding-right: 10px;
-  }
+  #header { padding-top: max(10px, env(safe-area-inset-top)); height: auto; min-height: 52px; gap: 5px; padding-left: 10px; padding-right: 10px; }
   #room-code-display { font-size:14px; letter-spacing:2px; padding:4px 8px; }
   .header-btn { width:32px; height:32px; font-size:14px; }
   #end-btn { font-size:10px; padding:0 8px; letter-spacing:0; }
 
-  .side-panel {
-    top: max(64px, calc(env(safe-area-inset-top) + 54px));
-    max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 90px - max(16px, env(safe-area-inset-bottom)));
-  }
-
-  #search-bar {
-    top: max(64px, calc(env(safe-area-inset-top) + 54px)); width: calc(100vw - 24px);
-  }
+  .side-panel { top: max(64px, calc(env(safe-area-inset-top) + 54px)); max-height: calc(100vh - max(64px, calc(env(safe-area-inset-top) + 54px)) - 90px - max(16px, env(safe-area-inset-bottom))); }
+  #search-bar { top: max(64px, calc(env(safe-area-inset-top) + 54px)); width: calc(100vw - 24px); }
   #search-results { max-height: 40vh; }
 
   #toolbar {
@@ -459,14 +426,9 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .tool-label { font-size: 8px; }
   .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
 
-  #color-picker {
-    left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom)));
-    transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px);
-  }
+  #color-picker { left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom))); transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px); }
   #draw-finish-btn { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
-  #toast {
-    top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px);
-  }
+  #toast { top: max(62px, calc(env(safe-area-inset-top) + 58px)); bottom: auto; transform: translateX(-50%) translateY(-16px); }
   #toast.show { transform: translateX(-50%) translateY(0); }
   #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
@@ -488,9 +450,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="landing-logo">🗺️</div>
     <div class="landing-title">Taktische Lagekarte</div>
     <div class="landing-sub">KPB Unna · Leitstelle</div>
+    
     <button class="btn btn-primary" onclick="App.startSolo()">🧭&nbsp; Solo nutzen</button>
+    
     <div class="landing-divider">── oder ──</div>
-    <button class="btn btn-secondary" onclick="App.showPinModal()">🔴&nbsp; Lage starten &nbsp;<span style="font-size:11px;opacity:.7">(Leitstelle)</span></button>
+    
+    <button class="btn btn-secondary" onclick="App.showPinModal()">
+      <div class="landing-red-dot"></div> Lage starten &nbsp;<span style="font-size:11px;opacity:.6;font-weight:600">(Leitstelle)</span>
+    </button>
+    
     <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
   </div>
 </div>
@@ -523,9 +491,10 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
            placeholder="z. B.  7 4 8 3" maxlength="4"
            autocomplete="off" spellcheck="false"
            style="letter-spacing:10px;font-size:30px;font-weight:800;"/>
+    <div id="join-error" style="color:var(--red);font-size:13px;font-weight:600;text-align:center;min-height:18px;margin-bottom:8px;"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
-      <button class="btn btn-primary" onclick="App.joinRoom()">Beitreten →</button>
+      <button class="btn btn-primary" id="join-btn" onclick="App.joinRoom()">Beitreten →</button>
     </div>
   </div>
   <div class="modal-sheet hidden" id="modal-delete">
@@ -630,8 +599,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <span class="panel-title">Taktische Symbole</span>
       <button class="panel-close-btn" onclick="SymbolPanel.close()">✕</button>
     </div>
-    <div id="symbol-content">
-      </div>
+    <div id="symbol-content"></div>
   </div>
 
   <div id="viewer-hint" class="hidden">👁 Zuschauer-Modus · nur Ansicht</div>
@@ -1067,12 +1035,34 @@ const Layers = {
       </div>
     ` : '';
 
+    // NEW: IMAGE HANDLING
+    let imgHtml = '';
+    if (d.image_url) {
+        imgHtml = `<div style="margin:8px 0; border-radius:8px; overflow:hidden; border:1px solid var(--sep);">
+            <a href="${escHtml(d.image_url)}" target="_blank" style="display:block;">
+                <img src="${escHtml(d.image_url)}" style="width:100%; height:auto; display:block;" alt="Angehängtes Foto"/>
+            </a>
+        </div>`;
+    }
+    
+    // NEW: MEDIA UPLOAD BUTTON
+    const mediaBtn = (isAdmin && isPoint && ['tatort','ereignis','gefahr','absperrung','pin','symbol'].includes(d.type))
+      ? `<div style="margin-top:10px;">
+           <label class="popup-btn" style="display:flex;align-items:center;justify-content:center;background:rgba(255,149,0,.15);color:var(--orange);cursor:pointer;margin:0;">
+             <span>📷 Foto anfügen</span>
+             <input type="file" accept="image/*" style="display:none;" onchange="Media.upload(event, '${d.id}')" />
+           </label>
+         </div>`
+      : '';
+
     layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(titleStr)}</div>
         ${radiusInfo}
+        ${imgHtml}
         ${routeBtns}
         ${actionsHTML}
+        ${mediaBtn}
       </div>`, { maxWidth: 260 });
   },
 
@@ -1101,7 +1091,6 @@ const LiveGPS = {
   _marker: null,
   _circle: null,
   _following: false,
-  _isLive: false,
 
   handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
@@ -1126,10 +1115,8 @@ const LiveGPS = {
 
   start() {
     if (_mode === 'solo') {
-       this._isLive = false;
        toast('ℹ️ Solo-Modus: GPS ist nur für dich sichtbar (offline).');
     } else {
-       this._isLive = true;
        let ruf = prompt('Dein Live-Standort wird an die Leitstelle gesendet.\n\nBitte Rufnamen eingeben (z. B. H1131):');
        if (!ruf) return; 
        
@@ -1183,7 +1170,7 @@ const LiveGPS = {
           this._circle = L.circle([lat, lng], { radius: acc, color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.15, weight: 1, interactive:false }).addTo(_map);
           this._marker = L.marker([lat, lng], { icon: myIcon, interactive:false, zIndexOffset:1000 }).addTo(_map);
           _map.setView([lat, lng], Math.max(_map.getZoom(), 16));
-          toast(`✅ GPS aktiv. (${this._isLive ? 'Sende an Leitstelle' : 'Privates Navi'})`);
+          toast(`✅ GPS aktiv. (${_mode !== 'solo' ? 'Sende an Leitstelle' : 'Privates Navi'})`);
         } else {
           this._marker.setLatLng([lat, lng]);
           this._marker.setIcon(myIcon);
@@ -1195,7 +1182,7 @@ const LiveGPS = {
            _map.panTo([lat, lng], {animate: true});
         }
         
-        if (this._isLive && _channel) {
+        if (_mode !== 'solo' && _channel) {
           _channel.track({ mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() });
           Pool.refreshLiveList();
         }
@@ -1222,12 +1209,11 @@ const LiveGPS = {
     btn.classList.remove('active');
     btn.classList.remove('tracking-paused');
     
-    if (this._isLive) {
+    if (_mode !== 'solo') {
         _myRuf = null;
         if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
         Pool.updateLiveList({}); 
     }
-    this._isLive = false;
     toast('🛰️ Navigation beendet');
   },
   
@@ -1368,7 +1354,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1428,7 +1414,7 @@ const Pool = {
     let html = '';
     let hasLive = false;
 
-    if (LiveGPS._watchId && LiveGPS._marker && LiveGPS._isLive) {
+    if (LiveGPS._watchId && LiveGPS._marker && _mode !== 'solo') {
        hasLive = true;
        const lat = LiveGPS._marker.getLatLng().lat;
        const lng = LiveGPS._marker.getLatLng().lng;
@@ -1576,7 +1562,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -1635,18 +1621,17 @@ const Tools = {
         _map.off('mousemove', this._onArrowMove, this);
         if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
 
-        const centerLat = (start[0] + end[0]) / 2;
-        const centerLng = (start[1] + end[1]) / 2;
-
-        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: 100, angle: 0 };
-        // Recalculate correctly before rendering
         const p1 = _map.latLngToLayerPoint(start);
         const p2 = _map.latLngToLayerPoint(end);
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
-        d.length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
-        d.angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const length = Math.max(30, Math.sqrt(dx*dx + dy*dy)); 
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
+        const centerLat = (start[0] + end[0]) / 2;
+        const centerLng = (start[1] + end[1]) / 2;
+
+        const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: length, angle: angle };
         Layers.render(d, true);
         Sync.push();
 
@@ -1910,6 +1895,48 @@ const TextInput = {
   },
 };
 
+/* ── MEDIA ATTACHMENTS (Supabase Storage) ────────────────────────────── */
+const Media = {
+  async upload(event, layerId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+
+    toast('⏳ Lade Foto hoch...');
+
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `img_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    
+    // Finde das dazugehörige Element
+    let targetData = null;
+    if (_drawn) {
+        _drawn.eachLayer(l => {
+            if (l._lid === layerId && l._ldata) targetData = l._ldata;
+        });
+    }
+    if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
+
+    const { data, error } = await _sb.storage
+      .from('lagekarte_media')
+      .upload(filename, file, { cacheControl: '3600', upsert: false });
+
+    if (error) {
+      console.error(error);
+      toast('❌ Upload fehlgeschlagen: ' + error.message);
+      return;
+    }
+
+    const { data: publicUrlData } = _sb.storage.from('lagekarte_media').getPublicUrl(filename);
+    if (publicUrlData && publicUrlData.publicUrl) {
+      targetData.image_url = publicUrlData.publicUrl;
+      Layers.render(targetData, false);
+      Sync.push();
+      toast('✅ Foto angehängt');
+      _map.closePopup();
+    }
+  }
+};
+
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
 const Sync = {
   _viewerCount: 0,
@@ -2140,6 +2167,10 @@ const App = {
     document.getElementById('modal-overlay').classList.remove('hidden');
     const inp = document.getElementById('join-code-input');
     inp.value = '';
+    const errEl = document.getElementById('join-error');
+    if (errEl) errEl.textContent = '';
+    const joinBtn = document.getElementById('join-btn');
+    if (joinBtn) { joinBtn.textContent = 'Beitreten →'; joinBtn.disabled = false; }
     inp.onfocus = () => {
       document.getElementById('modal-overlay').style.alignItems = 'center';
     };
@@ -2152,27 +2183,51 @@ const App = {
 
   async joinRoom() {
     const raw = document.getElementById('join-code-input').value.trim().replace(/[^0-9]/g, '');
-    if (raw.length !== 4) { toast('Bitte 4-stelligen Code eingeben'); return; }
-    this.closeModal();
-    _mode = 'viewer'; _roomCode = raw;
-    
-    this._openMap();
-    
-    const ok = await Sync.connect(raw, false);
-    if (!ok) { 
-      this.goHome();
-      return; 
+    const errEl  = document.getElementById('join-error');
+    const joinBtn = document.getElementById('join-btn');
+    if (errEl) errEl.textContent = '';
+    if (raw.length !== 4) {
+      if (errEl) errEl.textContent = '❌ Bitte 4-stelligen Code eingeben';
+      return;
     }
-    
-    document.getElementById('toolbar').style.display = '';
-    document.getElementById('toolbar').classList.add('viewer-mode');
-    document.getElementById('mode-badge').className = 'viewer';
-    document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
-    const rc = document.getElementById('room-code-display');
-    rc.textContent = _roomCode; rc.classList.remove('hidden');
-    document.getElementById('end-btn').classList.add('hidden');
-    document.getElementById('viewer-hint').classList.remove('hidden');
-    toast(`👁 Lage ${_roomCode} beigetreten`);
+    if (joinBtn) { joinBtn.textContent = '⏳ Verbinde…'; joinBtn.disabled = true; }
+    try {
+      if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+      const { data, error } = await _sb.from('lagekarte_sessions')
+        .select('room_code')
+        .eq('room_code', raw)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        if (errEl) errEl.textContent = '❌ Lage ' + raw + ' nicht gefunden';
+        if (joinBtn) { joinBtn.textContent = 'Beitreten →'; joinBtn.disabled = false; }
+        return;
+      }
+      this.closeModal();
+      _mode = 'viewer';
+      _roomCode = raw;
+      this._openMap();
+      if (_drawn) _drawn.clearLayers();
+      _history = [];
+      const ok = await Sync.connect(raw, false);
+      if (!ok) {
+        toast('❌ Verbindung zur Lage fehlgeschlagen', 5000);
+        setTimeout(() => App.goHome(), 3000);
+        return;
+      }
+      document.getElementById('toolbar').classList.add('viewer-mode');
+      document.getElementById('mode-badge').className = 'viewer';
+      document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
+      const rc = document.getElementById('room-code-display');
+      rc.textContent = _roomCode; rc.classList.remove('hidden');
+      document.getElementById('end-btn').classList.add('hidden');
+      document.getElementById('viewer-hint').classList.remove('hidden');
+      toast(`👁 Lage ${_roomCode} beigetreten`);
+    } catch(err) {
+      console.error('joinRoom error:', err);
+      if (errEl) errEl.textContent = '❌ Verbindungsfehler – bitte erneut versuchen';
+      if (joinBtn) { joinBtn.textContent = 'Beitreten →'; joinBtn.disabled = false; }
+    }
   },
 
   closeModal() {
