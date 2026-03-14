@@ -264,7 +264,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── UNIT MARKERS ────────────────────────────────────── */
+/* ── UNIT MARKERS (Leuchtendes Sticker-Design) ───────── */
 .unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 .unit-icon-img { line-height:1; }
 .unit-label {
@@ -535,6 +535,15 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
       <button class="btn btn-danger" onclick="App.deleteRoom()">Lage löschen</button>
     </div>
   </div>
+  <div class="modal-sheet hidden" id="modal-reset">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🗑 Karte leeren?</div>
+    <div class="modal-sub">Alle Zeichnungen und Marker werden unwiderruflich gelöscht.</div>
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" onclick="App.executeReset()">Ja, alles löschen</button>
+    </div>
+  </div>
 </div>
 
 <div id="map-screen" class="hidden" style="position:fixed;inset:0;display:flex;flex-direction:column;">
@@ -547,7 +556,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="header-spacer"></div>
     <button class="header-btn" onclick="App.toggleDark()" title="Darkmode">🌙</button>
     <button id="end-btn" class="header-btn hidden" onclick="App.confirmDelete()">⏹ Lage beenden</button>
-    <button class="header-btn" onclick="App.goHome()" title="Zurück">✕</button>
+    <button class="header-btn" onclick="App.goHome()" title="Startbildschirm">🏠</button>
   </div>
 
   <div id="map" style="flex:1;"></div>
@@ -1081,7 +1090,6 @@ const Layers = {
         </div>`;
     }
     
-    // UPLOAD BUTTON (Global Trigger)
     const mediaBtn = (isAdmin && isPoint && ['tatort','ereignis','gefahr','absperrung','pin','symbol'].includes(d.type))
       ? `<div style="margin-top:10px;">
            <button class="popup-btn" style="width:100%; background:rgba(255,149,0,.15); color:var(--orange);" onclick="window.triggerUpload('${d.id}')">
@@ -1232,7 +1240,6 @@ const LiveGPS = {
         
         if (this._isLive && _channel) {
           const now = Date.now();
-          // Throttle: Max. alle 3 Sekunden senden, um Supabase Server nicht zu überlasten
           if (now - this._lastTrack > 3000) {
              this._lastTrack = now;
              (async () => {
@@ -1270,7 +1277,7 @@ const LiveGPS = {
     
     if (this._isLive) {
         _myRuf = null;
-        if (_channel) _channel.track({ mode: _mode, ts: Date.now() }); // Ungeschützter Austritt zum Löschen
+        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
         Pool.updateLiveList({}); 
     }
     this._isLive = false;
@@ -1414,7 +1421,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1622,7 +1629,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -2260,6 +2267,7 @@ const App = {
     document.getElementById('modal-pin').classList.remove('hidden');
     document.getElementById('modal-join').classList.add('hidden');
     document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-reset').classList.add('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
     ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
     setTimeout(() => document.getElementById('p0').focus(), 100);
@@ -2327,6 +2335,7 @@ const App = {
     document.getElementById('modal-pin').classList.add('hidden');
     document.getElementById('modal-join').classList.remove('hidden');
     document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-reset').classList.add('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
     const inp = document.getElementById('join-code-input');
     inp.value = '';
@@ -2400,6 +2409,7 @@ const App = {
   confirmDelete() {
     document.getElementById('modal-pin').classList.add('hidden');
     document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-reset').classList.add('hidden');
     document.getElementById('modal-delete').classList.remove('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
   },
@@ -2436,7 +2446,15 @@ const App = {
   },
 
   confirmReset() {
-    if (!confirm('Alle Elemente auf der Karte löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden.')) return;
+    document.getElementById('modal-pin').classList.add('hidden');
+    document.getElementById('modal-join').classList.add('hidden');
+    document.getElementById('modal-delete').classList.add('hidden');
+    document.getElementById('modal-reset').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  },
+  
+  executeReset() {
+    this.closeModal();
     if (typeof Editor !== 'undefined') Editor.finish(true);
     if (_drawn) _drawn.clearLayers();
     _history = [];
