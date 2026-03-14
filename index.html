@@ -41,7 +41,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 #landing {
   background: radial-gradient(circle at 50% 30%, #102035 0%, #040914 80%);
   flex-direction: column; gap: 0;
-  height: 100dvh; /* Korrektur für iOS Safari Abbruch */
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -67,8 +67,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   position: relative; 
   z-index: 10;
   display: flex; flex-direction: column; align-items: center; gap: 14px; 
-  width: 90%; max-width: 400px; 
-  padding: 45px 28px; 
+  width: 90%; max-width: 440px; 
+  padding: 45px 32px; 
   background: rgba(15, 25, 40, 0.65);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -77,16 +77,22 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   border-radius: 28px;
 }
 
-/* Bild/Logo Wrapper */
+/* Neues, breites Header-Logo Design für das Bild */
 .landing-logo-wrapper {
   display: flex; justify-content: center; align-items: center;
-  margin-bottom: 8px;
+  width: 100%;
+  margin-bottom: 12px;
   animation: float 4s ease-in-out infinite;
 }
 .landing-logo-img {
-  width: 110px; height: 110px; object-fit: contain;
-  filter: drop-shadow(0 0 25px rgba(0,122,255,0.6));
-  border-radius: 16px;
+  width: 100%; 
+  max-width: 320px; 
+  height: auto; 
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 18px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 25px rgba(0, 122, 255, 0.2);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .landing-logo { 
   font-size: 72px; line-height: 1.1; 
@@ -94,7 +100,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
 
 .landing-title { 
@@ -450,11 +456,11 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   #toast.show { transform: translateX(-50%) translateY(0); }
   #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
-  .landing-inner { padding: 24px 20px; gap: 10px; }
   
-  /* Auf Mobile das Logo minimal anpassen */
-  .landing-logo-img { width: 90px; height: 90px; }
-  .landing-logo { font-size: 56px; margin-bottom: 4px; }
+  /* Auf Mobile das Logo anpassen */
+  .landing-inner { padding: 32px 20px; }
+  .landing-logo-img { max-width: 220px; max-height: 120px; }
+  .landing-logo { font-size: 56px; }
   .landing-title { font-size: 22px; }
 }
 
@@ -1067,8 +1073,8 @@ const Layers = {
         <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${d.lat}, ${d.lng}, '${safeLabel}')">↘️ Hierhin</button>
       </div>
     ` : '';
-
-    // IMAGE HANDLING
+    
+    // IMAGE HANDLING (Direkt aus Base64 State)
     let imgHtml = '';
     if (d.image_url) {
         imgHtml = `<div style="margin:8px 0; border-radius:8px; overflow:hidden; border:1px solid var(--sep);">
@@ -1086,19 +1092,10 @@ const Layers = {
            </label>
          </div>`
       : '';
-      
-    let coordsHtml = '';
-    if (isPoint && window.mgrs) {
-       try {
-           const mgrsStr = window.mgrs.forward([d.lng, d.lat]);
-           coordsHtml = `<div style="font-size:11px; font-weight:600; color:var(--txt2); margin-top: -6px; margin-bottom: 8px; font-family:monospace; letter-spacing:1px; cursor:copy;" onclick="navigator.clipboard.writeText('${mgrsStr}'); toast('📍 Koordinate kopiert');" title="MGRS klicken zum Kopieren">📍 ${mgrsStr}</div>`;
-       } catch(e) {}
-    }
 
     layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(titleStr)}</div>
-        ${coordsHtml}
         ${radiusInfo}
         ${imgHtml}
         ${routeBtns}
@@ -1674,7 +1671,6 @@ const Tools = {
         const centerLng = (start[1] + end[1]) / 2;
 
         const d = { id: Layers.uid(), type: 'arrow', lat: centerLat, lng: centerLng, start: start, end: end, color: Tools._color, length: 100, angle: 0 };
-        // Recalculate correctly before rendering
         const p1 = _map.latLngToLayerPoint(start);
         const p2 = _map.latLngToLayerPoint(end);
         const dx = p2.x - p1.x;
@@ -1945,32 +1941,93 @@ const TextInput = {
   },
 };
 
+/* ── E2EE ENCRYPTION (Web Crypto API) ────────────────────────────────── */
+const CryptoHelper = {
+  _key: null,
+  _salt: new TextEncoder().encode('LAGEKARTE_KPB_UNNA_SALT_123'),
+
+  async init(pinOrCode) {
+    if (!pinOrCode) return;
+    try {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(pinOrCode), { name: 'PBKDF2' }, false, ['deriveBits', 'deriveKey']
+      );
+      this._key = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: this._salt, iterations: 100000, hash: 'SHA-256' },
+        keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+      );
+    } catch(e) { console.error('E2EE Init Error', e); }
+  },
+
+  async encrypt(data) {
+    if (!this._key) return data; 
+    try {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encData = new TextEncoder().encode(JSON.stringify(data));
+      const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this._key, encData);
+      
+      const combined = new Uint8Array(iv.length + cipher.byteLength);
+      combined.set(iv, 0);
+      combined.set(new Uint8Array(cipher), iv.length);
+      
+      return { _e2ee: btoa(String.fromCharCode.apply(null, combined)) };
+    } catch(e) {
+      console.error('Encryption failed', e);
+      return data;
+    }
+  },
+
+  async decrypt(payload) {
+    if (!this._key || !payload || !payload._e2ee) return payload;
+    try {
+      const raw = atob(payload._e2ee);
+      const combined = new Uint8Array(raw.length);
+      for(let i = 0; i < raw.length; i++) combined[i] = raw.charCodeAt(i);
+      
+      const iv = combined.slice(0, 12);
+      const cipher = combined.slice(12);
+      
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, this._key, cipher);
+      return JSON.parse(new TextDecoder().decode(decrypted));
+    } catch(e) {
+      console.error('Decryption failed', e);
+      return payload;
+    }
+  }
+};
+
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
 const Sync = {
   _viewerCount: 0,
 
   async connect(roomCode, asAdmin) {
+    try {
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
     const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
-    if (error) { toast('❌ Raum nicht gefunden: ' + roomCode); return false; }
-    
-    Layers.deserialize(data.state, false);
+    if (error || !data) { toast('❌ Raum nicht gefunden: ' + roomCode, 5000); return false; }
+
+    await CryptoHelper.init(roomCode);
+    const decryptedState = await CryptoHelper.decrypt(data.state);
+
+    Layers.deserialize(decryptedState, false);
 
     _channel = _sb.channel('room:' + roomCode)
       .on('postgres_changes', {
         event: '*', schema: 'public',
         table: 'lagekarte_sessions', filter: `room_code=eq.${roomCode}`,
-      }, payload => {
+      }, async payload => {
         if (payload.eventType === 'DELETE') {
           toast('⚠️ Die Lage wurde von der Leitstelle beendet.');
           App.goHome();
           return;
         }
         if (payload.eventType === 'UPDATE' && _mode !== 'admin' && payload.new) {
-          Layers.deserialize(payload.new.state, true);
+          const decUpdate = await CryptoHelper.decrypt(payload.new.state);
+          Layers.deserialize(decUpdate, true);
         }
       })
-      .on('presence', { event: 'sync' }, () => {
+      .on('presence', { event: 'sync' }, async () => {
         const state = _channel.presenceState();
         let count = 0;
         
@@ -1978,14 +2035,20 @@ const Sync = {
         let needsStaticCleanup = false;
 
         for (const id in state) {
-          const p = state[id][0];
-          if (p) {
-            count++;
-            if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
-              currentLive[id] = p;
-              needsStaticCleanup = true;
+          try {
+            const row = state[id][0];
+            if (!row) continue;
+            
+            const p = row._e2ee ? await CryptoHelper.decrypt(row) : row;
+            
+            if (p) {
+              count++;
+              if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
+                currentLive[id] = p;
+                needsStaticCleanup = true;
+              }
             }
-          }
+          } catch(e) {}
         }
         
         if (_liveGpsLayer) {
@@ -2055,9 +2118,22 @@ const Sync = {
         if (status === 'SUBSCRIBED') {
           await _channel.track({ mode: _mode, ts: Date.now() });
           document.getElementById('live-dot').classList.remove('off');
+          
+          if (_mode === 'admin') {
+             const queued = localStorage.getItem('lagekarte_offline_queue_' + roomCode);
+             if (queued) {
+                 toast('🔄 Lade Offline-Änderungen hoch...');
+                 this.push();
+             }
+          }
         }
       });
     return true;
+    } catch(e) {
+      console.error('Sync.connect error:', e);
+      toast('❌ Verbindung zum Server fehlgeschlagen', 5000);
+      return false;
+    }
   },
 
   push() {
@@ -2065,8 +2141,18 @@ const Sync = {
     clearTimeout(_syncTimer);
     _syncTimer = setTimeout(async () => {
       const state = Layers.serialize();
+      
+      if (!navigator.onLine) {
+        toast('⚠️ Offline: Änderung lokal gespeichert');
+        localStorage.setItem('lagekarte_offline_queue_' + (_roomCode || 'solo'), JSON.stringify(state));
+        return;
+      }
+
+      const encryptedState = await CryptoHelper.encrypt(state);
+
       if (_roomCode && _sb) {
-        await _sb.from('lagekarte_sessions').update({ state, updated_at: new Date().toISOString() }).eq('room_code', _roomCode);
+        await _sb.from('lagekarte_sessions').update({ state: encryptedState, updated_at: new Date().toISOString() }).eq('room_code', _roomCode);
+        localStorage.removeItem('lagekarte_offline_queue_' + _roomCode);
       } else {
         localStorage.setItem('lagekarte_solo', JSON.stringify(state));
       }
@@ -2590,15 +2676,80 @@ const RoutePanel = {
   },
 };
 
+/* ── MEDIA ATTACHMENTS (Lokale Komprimierung & Base64) ───────────────── */
+const Media = {
+  upload(event, layerId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    toast('⏳ Optimiere & Lade Foto hoch...');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Skaliere das Bild herunter, damit es als Text in die DB passt
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        const MAX = 800; // Maximale Pixel-Breite/Höhe
+        
+        if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+        else if (h > MAX) { w *= MAX / h; h = MAX; }
+        
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        
+        // Komprimiere als JPG (70% Qualität)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+        let targetData = null;
+        if (_drawn) {
+            _drawn.eachLayer(l => {
+                if (l._lid === layerId && l._ldata) targetData = l._ldata;
+            });
+        }
+        if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
+
+        targetData.image_url = dataUrl;
+        Layers.render(targetData, false);
+        Sync.push();
+        toast('✅ Foto angehängt');
+        if (_map) _map.closePopup();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
 /* ── BOOT ────────────────────────────────────────────────────────────── */
 (function boot() {
   if (localStorage.getItem('lagekarte_dark') === '1') {
     _isDark = true; document.documentElement.classList.add('dark');
   }
   window._delLayer = (id) => Layers.deleteById(id);
+  
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker registered'))
+      .catch(err => console.warn('Service Worker registration failed:', err));
+      
+    window.addEventListener('online', () => {
+       toast('✅ Wieder online');
+       if (_mode === 'admin' && _roomCode) {
+           const queued = localStorage.getItem('lagekarte_offline_queue_' + _roomCode);
+           if (queued) {
+               toast('🔄 Lade Offline-Änderungen hoch...');
+               Sync.push();
+           }
+       }
+    });
+    window.addEventListener('offline', () => {
+       toast('⚠️ Offline-Modus aktiv - Änderungen werden lokal gespeichert');
+    });
+  }
 })();
 </script>
 </body>
 </html>
-
-}
