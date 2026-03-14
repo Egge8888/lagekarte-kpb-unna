@@ -77,7 +77,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   border-radius: 28px;
 }
 
-/* Neues, breites Header-Logo Design für das Bild */
 .landing-logo-wrapper {
   display: flex; justify-content: center; align-items: center;
   width: 100%;
@@ -265,7 +264,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── UNIT MARKERS (Leuchtendes Sticker-Design) ───────── */
+/* ── UNIT MARKERS ────────────────────────────────────── */
 .unit-marker-wrap { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
 .unit-icon-img { line-height:1; }
 .unit-label {
@@ -359,7 +358,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .popup-body { padding:12px 16px; background:var(--card); min-width:160px; }
 .popup-title { font-size:14px; font-weight:700; margin-bottom:10px; color:var(--txt); }
 .popup-actions { display:flex; gap:8px; flex-wrap:wrap; }
-.popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+.popup-btn { flex:1; min-width:60px; padding:7px 10px; border-radius:9px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); text-align:center;}
 .popup-btn.del  { background:rgba(255,59,48,.12); color:var(--red); }
 .popup-btn.edit { background:rgba(0,122,255,.12); color:var(--blue); }
 
@@ -457,7 +456,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   #viewer-hint { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
   #route-panel { z-index: 1002; }
   
-  /* Auf Mobile das Logo anpassen */
   .landing-inner { padding: 32px 20px; }
   .landing-logo-img { max-width: 220px; max-height: 120px; }
   .landing-logo { font-size: 56px; }
@@ -474,7 +472,6 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 
 <div id="landing" class="screen">
   <div class="landing-inner">
-    
     <div class="landing-logo-wrapper">
       <img src="logo.jpg" alt="Lagekarte Logo" class="landing-logo-img" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='block';">
       <div id="fallback-logo" class="landing-logo" style="display:none;">🗺️</div>
@@ -700,6 +697,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   </div>
 </div>
 
+<input type="file" id="global-media-input" accept="image/*" style="display:none;" />
 <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1074,7 +1072,6 @@ const Layers = {
       </div>
     ` : '';
     
-    // IMAGE HANDLING (Direkt aus Base64 State)
     let imgHtml = '';
     if (d.image_url) {
         imgHtml = `<div style="margin:8px 0; border-radius:8px; overflow:hidden; border:1px solid var(--sep);">
@@ -1084,18 +1081,27 @@ const Layers = {
         </div>`;
     }
     
+    // UPLOAD BUTTON (Global Trigger)
     const mediaBtn = (isAdmin && isPoint && ['tatort','ereignis','gefahr','absperrung','pin','symbol'].includes(d.type))
       ? `<div style="margin-top:10px;">
-           <label class="popup-btn" style="display:flex;align-items:center;justify-content:center;background:rgba(255,149,0,.15);color:var(--orange);cursor:pointer;margin:0;">
-             <span>📷 Foto anfügen</span>
-             <input type="file" accept="image/*" style="display:none;" onchange="Media.upload(event, '${d.id}')" />
-           </label>
+           <button class="popup-btn" style="width:100%; background:rgba(255,149,0,.15); color:var(--orange);" onclick="window.triggerUpload('${d.id}')">
+             📷 Foto anfügen
+           </button>
          </div>`
       : '';
+      
+    let coordsHtml = '';
+    if (isPoint && window.mgrs) {
+       try {
+           const mgrsStr = window.mgrs.forward([d.lng, d.lat]);
+           coordsHtml = `<div style="font-size:11px; font-weight:600; color:var(--txt2); margin-top: -6px; margin-bottom: 8px; font-family:monospace; letter-spacing:1px; cursor:copy;" onclick="navigator.clipboard.writeText('${mgrsStr}'); toast('📍 Koordinate kopiert');" title="MGRS klicken zum Kopieren">📍 ${mgrsStr}</div>`;
+       } catch(e) {}
+    }
 
     layer.bindPopup(`
       <div class="popup-body">
         <div class="popup-title">${escHtml(titleStr)}</div>
+        ${coordsHtml}
         ${radiusInfo}
         ${imgHtml}
         ${routeBtns}
@@ -1130,6 +1136,7 @@ const LiveGPS = {
   _circle: null,
   _following: false,
   _isLive: false,
+  _lastTrack: 0,
 
   handleBtnClick() {
     if (!navigator.geolocation) { toast('⚠️ GPS wird nicht unterstützt'); return; }
@@ -1224,12 +1231,19 @@ const LiveGPS = {
         }
         
         if (this._isLive && _channel) {
-          (async () => {
-             const payload = { mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: Date.now() };
-             const encPayload = await CryptoHelper.encrypt(payload);
-             _channel.track(encPayload);
-             Pool.refreshLiveList();
-          })();
+          const now = Date.now();
+          // Throttle: Max. alle 3 Sekunden senden, um Supabase Server nicht zu überlasten
+          if (now - this._lastTrack > 3000) {
+             this._lastTrack = now;
+             (async () => {
+                try {
+                    const payload = { mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: now };
+                    const encPayload = await CryptoHelper.encrypt(payload);
+                    _channel.track(encPayload);
+                    Pool.refreshLiveList();
+                } catch(e) { console.warn("GPS sync error", e); }
+             })();
+          }
         }
       },
       err => {
@@ -1256,7 +1270,7 @@ const LiveGPS = {
     
     if (this._isLive) {
         _myRuf = null;
-        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
+        if (_channel) _channel.track({ mode: _mode, ts: Date.now() }); // Ungeschützter Austritt zum Löschen
         Pool.updateLiveList({}); 
     }
     this._isLive = false;
@@ -1273,7 +1287,7 @@ const LiveGPS = {
   }
 };
 
-/* ── SYMBOL PANEL (Neuer Baukasten) ──────────────────────────────────── */
+/* ── SYMBOL PANEL ────────────────────────────────────────────────────── */
 const SymbolPanel = {
   _symbols: [
     { cat: 'Blaulicht & Rettung', items: ['🚓','🚔','🏍️','🚁','🛩️','🚒','🚑','🚤','🏥','⛺️'] },
@@ -1400,7 +1414,7 @@ const Pool = {
     if (_liveGpsLayer) {
       _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
     }
-    if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+    if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
 
     if (isLive) {
       toast(`❌ ${ruf} sendet bereits live GPS!`);
@@ -1608,7 +1622,7 @@ const Tools = {
       const ruf = Tools._pendingRuf;
       let isLive = false;
       if (_liveGpsLayer) _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) isLive = true; });
-      if (_myRuf === ruf && LiveGPS._watchId && LiveGPS._isLive) isLive = true;
+      if (_myRuf === ruf && LiveGPS._watchId && _mode !== 'solo') isLive = true;
       if (isLive) {
         toast(`❌ ${ruf} sendet bereits live GPS!`);
         Tools.deactivate();
@@ -1947,7 +1961,7 @@ const CryptoHelper = {
   _salt: new TextEncoder().encode('LAGEKARTE_KPB_UNNA_SALT_123'),
 
   async init(pinOrCode) {
-    if (!pinOrCode) return;
+    if (!pinOrCode || !window.crypto || !window.crypto.subtle) return;
     try {
       const enc = new TextEncoder();
       const keyMaterial = await crypto.subtle.importKey(
@@ -1961,7 +1975,7 @@ const CryptoHelper = {
   },
 
   async encrypt(data) {
-    if (!this._key) return data; 
+    if (!this._key || !window.crypto || !window.crypto.subtle) return data; 
     try {
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const encData = new TextEncoder().encode(JSON.stringify(data));
@@ -1971,7 +1985,12 @@ const CryptoHelper = {
       combined.set(iv, 0);
       combined.set(new Uint8Array(cipher), iv.length);
       
-      return { _e2ee: btoa(String.fromCharCode.apply(null, combined)) };
+      let binary = '';
+      const len = combined.byteLength;
+      for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(combined[i]);
+      }
+      return { _e2ee: btoa(binary) };
     } catch(e) {
       console.error('Encryption failed', e);
       return data;
@@ -1979,7 +1998,7 @@ const CryptoHelper = {
   },
 
   async decrypt(payload) {
-    if (!this._key || !payload || !payload._e2ee) return payload;
+    if (!this._key || !payload || !payload._e2ee || !window.crypto || !window.crypto.subtle) return payload;
     try {
       const raw = atob(payload._e2ee);
       const combined = new Uint8Array(raw.length);
@@ -1995,6 +2014,54 @@ const CryptoHelper = {
       return payload;
     }
   }
+};
+
+/* ── MEDIA ATTACHMENTS (Lokale Komprimierung & Base64) ───────────────── */
+window.triggerUpload = function(layerId) {
+    const input = document.getElementById('global-media-input');
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        toast('⏳ Optimiere & Lade Foto hoch...');
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+            const MAX = 800; 
+            
+            if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+            else if (h > MAX) { w *= MAX / h; h = MAX; }
+            
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+            let targetData = null;
+            if (_drawn) {
+                _drawn.eachLayer(l => {
+                    if (l._lid === layerId && l._ldata) targetData = l._ldata;
+                });
+            }
+            if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
+
+            targetData.image_url = dataUrl;
+            Layers.render(targetData, false);
+            Sync.push();
+            toast('✅ Foto angehängt');
+            if (_map) _map.closePopup();
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.value = ''; 
+    input.click();
 };
 
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
@@ -2036,14 +2103,16 @@ const Sync = {
 
         for (const id in state) {
           try {
-            const row = state[id][0];
-            if (!row) continue;
+            const rows = state[id];
+            if (!rows || rows.length === 0) continue;
+            const row = rows[0];
             
-            const p = row._e2ee ? await CryptoHelper.decrypt(row) : row;
+            let p = row;
+            if (row._e2ee) p = await CryptoHelper.decrypt(row);
             
-            if (p) {
+            if (p && p.ruf && p.lat && p.lng) {
               count++;
-              if (p.ruf && p.lat && p.lng && p.ruf !== _myRuf) {
+              if (p.ruf !== _myRuf) {
                 currentLive[id] = p;
                 needsStaticCleanup = true;
               }
@@ -2676,79 +2745,12 @@ const RoutePanel = {
   },
 };
 
-/* ── MEDIA ATTACHMENTS (Lokale Komprimierung & Base64) ───────────────── */
-const Media = {
-  upload(event, layerId) {
-    const file = event.target.files[0];
-    if (!file) return;
-    toast('⏳ Optimiere & Lade Foto hoch...');
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        // Skaliere das Bild herunter, damit es als Text in die DB passt
-        const canvas = document.createElement('canvas');
-        let w = img.width;
-        let h = img.height;
-        const MAX = 800; // Maximale Pixel-Breite/Höhe
-        
-        if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
-        else if (h > MAX) { w *= MAX / h; h = MAX; }
-        
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        
-        // Komprimiere als JPG (70% Qualität)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-        let targetData = null;
-        if (_drawn) {
-            _drawn.eachLayer(l => {
-                if (l._lid === layerId && l._ldata) targetData = l._ldata;
-            });
-        }
-        if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
-
-        targetData.image_url = dataUrl;
-        Layers.render(targetData, false);
-        Sync.push();
-        toast('✅ Foto angehängt');
-        if (_map) _map.closePopup();
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
 /* ── BOOT ────────────────────────────────────────────────────────────── */
 (function boot() {
   if (localStorage.getItem('lagekarte_dark') === '1') {
     _isDark = true; document.documentElement.classList.add('dark');
   }
   window._delLayer = (id) => Layers.deleteById(id);
-  
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Service Worker registered'))
-      .catch(err => console.warn('Service Worker registration failed:', err));
-      
-    window.addEventListener('online', () => {
-       toast('✅ Wieder online');
-       if (_mode === 'admin' && _roomCode) {
-           const queued = localStorage.getItem('lagekarte_offline_queue_' + _roomCode);
-           if (queued) {
-               toast('🔄 Lade Offline-Änderungen hoch...');
-               Sync.push();
-           }
-       }
-    });
-    window.addEventListener('offline', () => {
-       toast('⚠️ Offline-Modus aktiv - Änderungen werden lokal gespeichert');
-    });
-  }
 })();
 </script>
 </body>
