@@ -98,6 +98,30 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   box-shadow:var(--shadow);
 }
 #color-bar.hidden { display:none; }
+
+/* ── ROTATION BAR ── */
+#rot-bar {
+  position:absolute; top:8px; left:50%; transform:translateX(-50%);
+  z-index:1500; display:flex; align-items:center; gap:3px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:12px;
+  padding:5px 10px; box-shadow:var(--shadow); white-space:nowrap;
+}
+#rot-bar.hidden { display:none; }
+#rot-bar .rbtn {
+  height:28px; padding:0 7px; border-radius:7px; border:1px solid var(--sep);
+  background:var(--bg); color:var(--txt); font-size:11px; font-weight:700;
+  cursor:pointer; font-family:var(--font); transition:all .1s;
+}
+#rot-bar .rbtn:active { background:var(--blue); color:#fff; border-color:var(--blue); }
+#rot-bar #rot-input {
+  width:58px; height:28px; border-radius:7px; border:1.5px solid var(--sep);
+  background:var(--bg); color:var(--txt); font-size:13px; font-weight:700;
+  text-align:center; font-family:var(--font); padding:0 4px; outline:none;
+}
+#rot-bar #rot-input:focus { border-color:var(--blue); }
+#rot-bar .rsep { width:1px; height:18px; background:var(--sep); margin:0 3px; flex-shrink:0; }
+#rot-bar .rlbl { font-size:12px; color:var(--txt2); font-weight:700; margin-right:4px; }
 .cdot { width:26px; height:26px; border-radius:50%; cursor:pointer;
   border:2.5px solid transparent; transition:all .12s; flex-shrink:0;
   -webkit-tap-highlight-color:transparent; }
@@ -249,6 +273,23 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 
   <div id="snap-layer"></div>
 
+  <!-- ROTATION BAR -->
+  <div id="rot-bar" class="hidden">
+    <span class="rlbl">⟳</span>
+    <button class="rbtn" onclick="S.rotate(-90)">-90°</button>
+    <button class="rbtn" onclick="S.rotate(-45)">-45°</button>
+    <button class="rbtn" onclick="S.rotate(-15)">-15°</button>
+    <button class="rbtn" onclick="S.rotate(-1)">-1°</button>
+    <div class="rsep"></div>
+    <input id="rot-input" type="number" min="0" max="359" step="1" value="0" title="Winkel in Grad" onchange="S.setAngle(+this.value)" />
+    <span style="font-size:11px;color:var(--txt2);margin-left:1px">°</span>
+    <div class="rsep"></div>
+    <button class="rbtn" onclick="S.rotate(1)">+1°</button>
+    <button class="rbtn" onclick="S.rotate(15)">+15°</button>
+    <button class="rbtn" onclick="S.rotate(45)">+45°</button>
+    <button class="rbtn" onclick="S.rotate(90)">+90°</button>
+  </div>
+
   <!-- LEFT TOOLBAR -->
   <div id="toolbar">
     <button class="tbtn active" data-tool="select" onclick="S.setTool('select')" title="Auswählen"><span>👆</span><span class="tlbl">Auswahl</span></button>
@@ -287,7 +328,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
     </div>
     <div class="ptabs">
       <button class="ptab active" onclick="S.showTab('bg')">🖼️<br>Hinter.</button>
-      <button class="ptab" onclick="S.showTab('road')">🚗<br>Straße</button>
+      <button class="ptab" onclick="S.showTab('vu')">🚗<br>VU</button>
       <button class="ptab" onclick="S.showTab('build')">🏠<br>Gebäude</button>
       <button class="ptab" onclick="S.showTab('sym')">🎭<br>Symbole</button>
     </div>
@@ -297,25 +338,14 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       <div class="pcategory">Hintergrund</div>
       <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
       <button class="pbtn" onclick="S.setBg('grid')">📏 Raster (Millimeterpapier)</button>
-      <button class="pbtn" onclick="S.openMapPicker()">🗺️ Kartenausschnitt (NRW)</button>
+      <button class="pbtn" onclick="S.openMapPicker()">🗺️ Kartenausschnitt laden…</button>
       <div class="pcategory">Hintergrundbild</div>
       <button class="pbtn" onclick="S.loadBgImage()">🖼️ Foto/Bild laden</button>
       <input id="bg-file-input" type="file" accept="image/*" style="display:none" onchange="S.onBgFileLoaded(event)"/>
     </div>
 
-    <!-- TAB: Straße -->
-    <div id="tab-road" class="pscroll" style="display:none">
-      <div class="pcategory">Baukasten Straße</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addRoad('straight')"   title="Gerade">🛣️</div>
-        <div class="pitem" onclick="S.addRoad('curve90')"    title="Kurve 90°">↪️</div>
-        <div class="pitem" onclick="S.addRoad('curve45')"    title="Kurve 45°">📐</div>
-        <div class="pitem" onclick="S.addRoad('tjunction')"  title="T-Kreuzung">┳</div>
-        <div class="pitem" onclick="S.addRoad('crossing')"   title="Kreuzung">➕</div>
-        <div class="pitem" onclick="S.addRoad('roundabout')" title="Kreisverkehr">🔄</div>
-        <div class="pitem" onclick="S.addRoad('parking')"    title="Parkplatz">🅿️</div>
-        <div class="pitem" onclick="S.addRoad('oneway')"     title="Einbahnstraße">↕️</div>
-      </div>
+    <!-- TAB: VU (Unfall) -->
+    <div id="tab-vu" class="pscroll" style="display:none">
       <div class="pcategory">Verkehrszeichen</div>
       <div class="pgrid">
         <div class="pitem" onclick="S.addSign('stop')"         title="Stop">🛑</div>
@@ -482,7 +512,19 @@ const S = {
   _startY:        0,
   _tempShape:     null,
   _miniMap:       null,
-  _textPending:   null,  // {lat,lng} or center flag
+  _textPending:   null,
+  _activeTileKey: 'osm',
+  _activeTileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+  /* Available tile layers (all support CORS via fetch) */
+  MAP_TILES: {
+    osm:      { label:'🗺 OpenStreetMap',      url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',                                                                   max:19, attr:'© OpenStreetMap' },
+    topo:     { label:'⛰ Topografie',           url:'https://tile.opentopomap.org/{z}/{x}/{y}.png',                                                                    max:17, attr:'© OpenTopoMap' },
+    satellite:{ label:'📡 Satellit (ESRI)',      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',                   max:18, attr:'© ESRI' },
+    esritopo: { label:'🗾 Topo-Karte (ESRI)',    url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',                  max:18, attr:'© ESRI' },
+    carto:    { label:'🌫 Grau (CartoDB)',        url:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',                                                      max:20, attr:'© CartoDB' },
+    dark:     { label:'🌙 Dunkel (CartoDB)',      url:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',                                                       max:20, attr:'© CartoDB' },
+  },
 
   /* ──────────────────────────────────────────────────────── */
   init() {
@@ -512,11 +554,12 @@ const S = {
     this.canvas.on('object:modified', () => this._saveHistory());
     this.canvas.on('path:created',    () => this._saveHistory());
 
-    // Snap node updates
-    ['selection:created','selection:updated','selection:cleared',
-     'object:moving','object:rotating','mouse:wheel'].forEach(ev =>
-      this.canvas.on(ev, () => this._renderSnap())
+    // Snap node updates + rotation bar
+    ['selection:created','selection:updated','object:moving','object:rotating','mouse:wheel'].forEach(ev =>
+      this.canvas.on(ev, () => { this._renderSnap(); this._updateRotBar(); })
     );
+    this.canvas.on('selection:cleared', () => { this._renderSnap(); this._hideRotBar(); });
+    this.canvas.on('object:modified', () => { this._updateRotBar(); });
 
     // Resize
     window.addEventListener('resize', () => this._resize());
@@ -528,6 +571,10 @@ const S = {
         this.deleteSelected();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); }
+      // Rotation shortcuts: Q/E = ±1°, Shift+Q/E = ±15°, R = reset
+      if (e.key === 'q' || e.key === 'Q') { e.preventDefault(); this.rotate(e.shiftKey ? -15 : -1); }
+      if (e.key === 'e' || e.key === 'E') { e.preventDefault(); this.rotate(e.shiftKey ? 15 : 1); }
+      if (e.key === 'r' || e.key === 'R') { e.preventDefault(); this.setAngle(0); }
     });
 
     // KTU grids
@@ -1317,17 +1364,33 @@ const S = {
           center: [51.5344, 7.6889], zoom: 15,
           zoomControl: true, attributionControl: true,
         });
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution:'© OpenStreetMap', maxZoom:19,
-        }).addTo(this._miniMap);
-        const dtk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dtk', {
-          layers:'nw_dtk_sw', format:'image/png', transparent:true, maxZoom:22,
-          attribution:'© Geobasis NRW',
+
+        // Build Leaflet layers from MAP_TILES config
+        const leafletLayers = {};
+        let defaultLayer = null;
+        Object.entries(this.MAP_TILES).forEach(([key, cfg]) => {
+          const lyr = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max });
+          leafletLayers[cfg.label] = lyr;
+          if (key === this._activeTileKey) {
+            lyr.addTo(this._miniMap);
+            defaultLayer = lyr;
+          }
         });
-        L.control.layers({
-          '🗺 OpenStreetMap': this._miniMap._layers[Object.keys(this._miniMap._layers)[0]],
-          '⬛ Topogr. NRW (S/W)': dtk,
-        }, {}, { position:'topright' }).addTo(this._miniMap);
+        if (!defaultLayer) {
+          Object.values(leafletLayers)[0].addTo(this._miniMap);
+        }
+
+        L.control.layers(leafletLayers, {}, { position:'topright' }).addTo(this._miniMap);
+
+        // Track which layer is active so applyMapBg() uses the right tiles
+        this._miniMap.on('baselayerchange', e => {
+          const found = Object.entries(this.MAP_TILES).find(([, cfg]) => cfg.label === e.name);
+          if (found) {
+            this._activeTileKey = found[0];
+            this._activeTileUrl = found[1].url;
+          }
+        });
+
         setTimeout(() => this._miniMap.invalidateSize(), 100);
       }, 50);
     } else {
@@ -1375,11 +1438,12 @@ const S = {
     ctx.fillStyle = '#f0efe7';
     ctx.fillRect(0, 0, W, H);
 
-    // OSM tiles support CORS (Access-Control-Allow-Origin: *)
+    // Fetch tiles using the active layer's URL template
+    const tpl = this._activeTileUrl || this.MAP_TILES.osm.url;
     const jobs = [];
     for (let ty = nwTile.ty - 1; ty <= seTile.ty + 1; ty++) {
       for (let tx = nwTile.tx - 1; tx <= seTile.tx + 1; tx++) {
-        const url = `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+        const url = tpl.replace('{z}', zoom).replace('{x}', tx).replace('{y}', ty);
         const cx  = (tx * TILE - nwPx.x) * scaleX;
         const cy  = (ty * TILE - nwPx.y) * scaleY;
         const cw  = TILE * scaleX;
@@ -1451,13 +1515,45 @@ const S = {
   },
 
   showTab(tab) {
-    ['bg','road','build','sym'].forEach(t => {
+    ['bg','vu','build','sym'].forEach(t => {
       const el = document.getElementById(`tab-${t}`);
       if (el) el.style.display = (t === tab) ? '' : 'none';
     });
     document.querySelectorAll('.ptab').forEach((btn, i) => {
-      btn.classList.toggle('active', ['bg','road','build','sym'][i] === tab);
+      btn.classList.toggle('active', ['bg','vu','build','sym'][i] === tab);
     });
+  },
+
+  /* ── ROTATION ── */
+  rotate(delta) {
+    const obj = this.canvas.getActiveObject();
+    if (!obj) return;
+    const cur = obj.angle || 0;
+    obj.rotate(((cur + delta) % 360 + 360) % 360);
+    this.canvas.requestRenderAll();
+    this._updateRotBar();
+    this._saveHistory();
+  },
+
+  setAngle(deg) {
+    const obj = this.canvas.getActiveObject();
+    if (!obj) return;
+    obj.rotate(((deg % 360) + 360) % 360);
+    this.canvas.requestRenderAll();
+    this._updateRotBar();
+    this._saveHistory();
+  },
+
+  _updateRotBar() {
+    const obj = this.canvas.getActiveObject();
+    if (!obj) { this._hideRotBar(); return; }
+    document.getElementById('rot-bar').classList.remove('hidden');
+    const angle = Math.round(((obj.angle || 0) % 360 + 360) % 360);
+    document.getElementById('rot-input').value = angle;
+  },
+
+  _hideRotBar() {
+    document.getElementById('rot-bar').classList.add('hidden');
   },
 
   deleteSelected() {
