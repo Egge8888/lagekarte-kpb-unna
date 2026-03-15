@@ -671,8 +671,8 @@ const S = {
     esritopo: { label:'🗾 Topo-Karte',            url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',                                  max:18, attr:'© ESRI' },
     carto:    { label:'🌫 Grau',                  url:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',                                                                        max:20, attr:'© CartoDB' },
     dark:     { label:'🌙 Dunkel',                url:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',                                                                         max:20, attr:'© CartoDB' },
-    nrw_dop:  { label:'📸 NRW Luftbild',          url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/{z}/{x}/{y}.jpeg',                                             max:16, attr:'© Geobasis NRW', crossOrigin:true },
-    nrw_dtk:  { label:'🗾 NRW Topokarte',         url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dtk/tiles/nw_dtk_col/EPSG_3857_16/{z}/{x}/{y}.png',                                          max:16, attr:'© Geobasis NRW', crossOrigin:true },
+    nrw_dop:  { label:'📸 NRW Luftbild',          url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/{z}/{x}/{y}',                                                max:16, attr:'© Geobasis NRW', crossOrigin:true, wmtsOffset:-5 },
+    nrw_dtk:  { label:'🗾 NRW Topokarte',         url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dtk/tiles/nw_dtk_col/EPSG_3857_16/{z}/{x}/{y}.png',                                          max:16, attr:'© Geobasis NRW', crossOrigin:true, wmtsOffset:-5 },
   },
 
   /* ──────────────────────────────────────────────────────── */
@@ -1871,7 +1871,7 @@ const S = {
           zoomControl: true, attributionControl: true,
         });
         const cfg = this.MAP_TILES[this._activeTileKey] || this.MAP_TILES.osm;
-        this._currentLeafletLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max, crossOrigin: cfg.crossOrigin || false });
+        this._currentLeafletLayer = this._makeLeafletLayer(cfg);
         this._currentLeafletLayer.addTo(this._miniMap);
         setTimeout(() => this._miniMap.invalidateSize(), 100);
       }, 50);
@@ -1879,6 +1879,22 @@ const S = {
       setTimeout(() => this._miniMap.invalidateSize(), 50);
     }
     this._closePanelMobile();
+  },
+
+  /* Creates a Leaflet tile layer, handling WMTS zoom-offset for NRW services */
+  _makeLeafletLayer(cfg) {
+    const opts = { attribution: cfg.attr, maxZoom: cfg.max, crossOrigin: cfg.crossOrigin || false };
+    if (cfg.wmtsOffset != null) {
+      const off = cfg.wmtsOffset;
+      const NRWLayer = L.TileLayer.extend({
+        getTileUrl(c) {
+          const z = String(c.z + off).padStart(2, '0');
+          return this._url.replace('{z}', z).replace('{x}', c.x).replace('{y}', c.y);
+        },
+      });
+      return new NRWLayer(cfg.url, opts);
+    }
+    return L.tileLayer(cfg.url, opts);
   },
 
   _buildLayerBar() {
@@ -1899,7 +1915,7 @@ const S = {
     this._activeTileKey = key;
     this._activeTileUrl = cfg.url;
     if (this._currentLeafletLayer) this._miniMap.removeLayer(this._currentLeafletLayer);
-    this._currentLeafletLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max, crossOrigin: cfg.crossOrigin || false });
+    this._currentLeafletLayer = this._makeLeafletLayer(cfg);
     this._currentLeafletLayer.addTo(this._miniMap);
     
     document.querySelectorAll('.mlbtn').forEach(b => b.classList.remove('active'));
@@ -1947,10 +1963,14 @@ const S = {
 
     
     const tpl = this._activeTileUrl || this.MAP_TILES.osm.url;
+    const activeCfg = this.MAP_TILES[this._activeTileKey] || this.MAP_TILES.osm;
+    const zStr = activeCfg.wmtsOffset != null
+      ? String(zoom + activeCfg.wmtsOffset).padStart(2, '0')
+      : String(zoom);
     const jobs = [];
     for (let ty = nwTile.ty - 1; ty <= seTile.ty + 1; ty++) {
       for (let tx = nwTile.tx - 1; tx <= seTile.tx + 1; tx++) {
-        const url = tpl.replace('{z}', zoom).replace('{x}', tx).replace('{y}', ty);
+        const url = tpl.replace('{z}', zStr).replace('{x}', tx).replace('{y}', ty);
         const cx  = (tx * TILE - nwPx.x) * scaleX;
         const cy  = (ty * TILE - nwPx.y) * scaleY;
         const cw  = TILE * scaleX;
