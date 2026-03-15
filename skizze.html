@@ -98,6 +98,24 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   box-shadow:var(--shadow);
 }
 #color-bar.hidden { display:none; }
+.cdot { width:26px; height:26px; border-radius:50%; cursor:pointer;
+  border:2.5px solid transparent; transition:all .12s; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent; }
+.cdot.sel { border-color:var(--txt); transform:scale(1.2); }
+.cdot:active { transform:scale(.88); }
+#thick-slider {
+  -webkit-appearance:none; appearance:none;
+  width:26px; height:80px; writing-mode:vertical-rl;
+  direction:rtl; cursor:pointer; background:transparent; margin-bottom: 5px;
+}
+#thick-slider::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--blue); }
+#thick-slider::-webkit-slider-runnable-track { background:var(--sep); border-radius:3px; width:6px; }
+.ls-btn {
+  background:transparent; border:1px solid var(--sep); border-radius:6px;
+  color:var(--txt); font-weight:900; font-size:12px; cursor:pointer; padding:3px 0;
+  flex:1; margin:0 2px; transition: all 0.1s;
+}
+.ls-btn.sel { background:var(--blue); color:#fff; border-color:var(--blue); }
 
 /* ── ROTATION BAR ── */
 #rot-bar {
@@ -122,18 +140,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 #rot-bar #rot-input:focus { border-color:var(--blue); }
 #rot-bar .rsep { width:1px; height:18px; background:var(--sep); margin:0 3px; flex-shrink:0; }
 #rot-bar .rlbl { font-size:12px; color:var(--txt2); font-weight:700; margin-right:4px; }
-.cdot { width:26px; height:26px; border-radius:50%; cursor:pointer;
-  border:2.5px solid transparent; transition:all .12s; flex-shrink:0;
-  -webkit-tap-highlight-color:transparent; }
-.cdot.sel { border-color:var(--txt); transform:scale(1.2); }
-.cdot:active { transform:scale(.88); }
-#thick-slider {
-  -webkit-appearance:none; appearance:none;
-  width:26px; height:80px; writing-mode:vertical-rl;
-  direction:rtl; cursor:pointer; background:transparent;
-}
-#thick-slider::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--blue); }
-#thick-slider::-webkit-slider-runnable-track { background:var(--sep); border-radius:3px; width:6px; }
 
 /* ── SIDE PANEL ── */
 #side-panel {
@@ -256,7 +262,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
     bottom:calc(72px + max(14px, env(safe-area-inset-bottom)));
     transform:none; flex-direction:row; flex-wrap:wrap; max-width:calc(100vw - 16px);
   }
-  #thick-slider { writing-mode:horizontal-tb; direction:ltr; width:80px; height:26px; }
+  #thick-slider { writing-mode:horizontal-tb; direction:ltr; width:80px; height:26px; margin-bottom:0; margin-right:5px;}
   #thick-slider::-webkit-slider-runnable-track { width:unset; height:6px; }
   #side-panel { top:60px; right:8px; max-height:calc(100vh - 140px); width:calc(100vw - 16px); }
 }
@@ -267,7 +273,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 </head>
 <body>
 
-<!-- HEADER -->
 <div id="header">
   <span class="hbadge">✏️ Skizze</span>
   <div class="hsp"></div>
@@ -277,7 +282,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   <button class="hbtn" onclick="window.location.href='index.html'" title="Zurück zur Karte">✖</button>
 </div>
 
-<!-- WORKSPACE -->
 <div id="workspace">
   <div id="canvas-wrapper">
     <canvas id="skizzeCanvas"></canvas>
@@ -285,8 +289,10 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 
   <div id="snap-layer"></div>
 
-  <!-- ROTATION BAR -->
   <div id="rot-bar" class="hidden">
+    <button class="rbtn" onclick="S.layerUp()" title="In den Vordergrund">⏫</button>
+    <button class="rbtn" onclick="S.layerDown()" title="In den Hintergrund">⏬</button>
+    <div class="rsep"></div>
     <span class="rlbl">⟳</span>
     <button class="rbtn" onclick="S.rotate(-90)">-90°</button>
     <button class="rbtn" onclick="S.rotate(-45)">-45°</button>
@@ -302,37 +308,45 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
     <button class="rbtn" onclick="S.rotate(90)">+90°</button>
   </div>
 
-  <!-- LEFT TOOLBAR -->
   <div id="toolbar">
+    <button class="tbtn" data-tool="pan" onclick="S.setTool('pan')" title="Karte verschieben"><span>✋</span><span class="tlbl">Hand</span></button>
     <button class="tbtn active" data-tool="select" onclick="S.setTool('select')" title="Auswählen"><span>👆</span><span class="tlbl">Auswahl</span></button>
-    <button class="tbtn" data-tool="draw"   onclick="S.setTool('draw')"   title="Freihand"><span>🖊️</span><span class="tlbl">Stift</span></button>
     <div class="tdiv"></div>
+    <button class="tbtn" data-tool="draw"   onclick="S.setTool('draw')"   title="Freihand"><span>🖊️</span><span class="tlbl">Stift</span></button>
     <button class="tbtn" data-tool="line"   onclick="S.setTool('line')"   title="Linie"><span>📏</span><span class="tlbl">Linie</span></button>
     <button class="tbtn" data-tool="arrow"  onclick="S.setTool('arrow')"  title="Pfeil"><span>➡️</span><span class="tlbl">Pfeil</span></button>
+    <button class="tbtn" data-tool="measure" onclick="S.setTool('measure')" title="Bemaßung"><span>📐</span><span class="tlbl">Messen</span></button>
+    <div class="tdiv"></div>
     <button class="tbtn" data-tool="rect"   onclick="S.setTool('rect')"   title="Rechteck"><span>⬜</span><span class="tlbl">Rect</span></button>
     <button class="tbtn" data-tool="circle" onclick="S.setTool('circle')" title="Kreis"><span>⭕</span><span class="tlbl">Kreis</span></button>
     <button class="tbtn" data-tool="text"   onclick="S.addText()"         title="Text"><span>📝</span><span class="tlbl">Text</span></button>
     <div class="tdiv"></div>
     <button class="tbtn" id="panel-toggle-btn" onclick="S.togglePanel()" title="Stempel & Vorlagen"><span>🎭</span><span class="tlbl">Vorlagen</span></button>
     <div class="tdiv"></div>
+    <button class="tbtn" data-tool="eraser" onclick="S.setTool('eraser')" title="Radiergummi"><span>🧽</span><span class="tlbl">Radierer</span></button>
     <button class="tbtn" onclick="S.deleteSelected()" title="Auswahl löschen"><span>🗑️</span><span class="tlbl">Löschen</span></button>
     <button class="tbtn" onclick="S.clearAll()" title="Alles löschen" style="color:var(--red)"><span>💣</span><span class="tlbl" style="color:var(--red)">Reset</span></button>
   </div>
 
-  <!-- COLOR BAR -->
   <div id="color-bar" class="hidden">
-    <div class="cdot sel"  style="background:#222222" data-c="#222222"  onclick="S.setColor('#222222',this)"></div>
-    <div class="cdot"      style="background:#FF3B30" data-c="#FF3B30"  onclick="S.setColor('#FF3B30',this)"></div>
-    <div class="cdot"      style="background:#FF9500" data-c="#FF9500"  onclick="S.setColor('#FF9500',this)"></div>
-    <div class="cdot"      style="background:#FFCC00" data-c="#FFCC00"  onclick="S.setColor('#FFCC00',this)"></div>
-    <div class="cdot"      style="background:#34C759" data-c="#34C759"  onclick="S.setColor('#34C759',this)"></div>
-    <div class="cdot"      style="background:#007AFF" data-c="#007AFF"  onclick="S.setColor('#007AFF',this)"></div>
-    <div class="cdot"      style="background:#AF52DE" data-c="#AF52DE"  onclick="S.setColor('#AF52DE',this)"></div>
-    <div class="cdot"      style="background:#FFFFFF;border:2px solid #ccc" data-c="#FFFFFF" onclick="S.setColor('#FFFFFF',this)"></div>
+    <div style="display:flex; flex-direction:column; gap:5px;">
+      <div class="cdot sel"  style="background:#222222" data-c="#222222"  onclick="S.setColor('#222222',this)"></div>
+      <div class="cdot"      style="background:#FF3B30" data-c="#FF3B30"  onclick="S.setColor('#FF3B30',this)"></div>
+      <div class="cdot"      style="background:#FF9500" data-c="#FF9500"  onclick="S.setColor('#FF9500',this)"></div>
+      <div class="cdot"      style="background:#FFCC00" data-c="#FFCC00"  onclick="S.setColor('#FFCC00',this)"></div>
+      <div class="cdot"      style="background:#34C759" data-c="#34C759"  onclick="S.setColor('#34C759',this)"></div>
+      <div class="cdot"      style="background:#007AFF" data-c="#007AFF"  onclick="S.setColor('#007AFF',this)"></div>
+      <div class="cdot"      style="background:#AF52DE" data-c="#AF52DE"  onclick="S.setColor('#AF52DE',this)"></div>
+      <div class="cdot"      style="background:#FFFFFF;border:2px solid #ccc" data-c="#FFFFFF" onclick="S.setColor('#FFFFFF',this)"></div>
+    </div>
     <input id="thick-slider" type="range" min="1" max="20" value="3" oninput="S.setThickness(this.value)" title="Strichstärke"/>
+    <div style="display:flex; justify-content:space-between; margin-top:4px; border-top:1px solid var(--sep); padding-top:6px;">
+       <button class="ls-btn sel" onclick="S.setLineStyle('solid', this)" title="Durchgezogen">━</button>
+       <button class="ls-btn" onclick="S.setLineStyle('dashed', this)" title="Gestrichelt (Schleuderspur)">---</button>
+       <button class="ls-btn" onclick="S.setLineStyle('dotted', this)" title="Gepunktet (ABS-Spur)">···</button>
+    </div>
   </div>
 
-  <!-- SIDE PANEL -->
   <div id="side-panel" class="hidden">
     <div class="phdr">
       <span class="ptitle">Werkzeuge & Vorlagen</span>
@@ -345,7 +359,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       <button class="ptab" onclick="S.showTab('sym')">🎭<br>Symbole</button>
     </div>
 
-    <!-- TAB: Hintergrund -->
     <div id="tab-bg" class="pscroll">
       <div class="pcategory">Hintergrund</div>
       <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
@@ -356,7 +369,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       <input id="bg-file-input" type="file" accept="image/*" style="display:none" onchange="S.onBgFileLoaded(event)"/>
     </div>
 
-    <!-- TAB: VU (Unfall) -->
     <div id="tab-vu" class="pscroll" style="display:none">
       <div class="pcategory">Verkehrszeichen</div>
       <div class="pgrid">
@@ -382,11 +394,10 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
         <div class="pitem" onclick="S.addVehicle('fahrrad')"    title="Fahrrad">🚲</div>
         <div class="pitem" onclick="S.addStamp('🚶')"           title="Fußgänger">🚶</div>
       </div>
-      <div class="pcategory">VU – Spuren & KTU</div>
+      <div class="pcategory">VU – Spuren & Schäden</div>
       <div class="pgrid" id="ktu-grid"></div>
     </div>
 
-    <!-- TAB: Gebäude -->
     <div id="tab-build" class="pscroll" style="display:none">
       <div class="pcategory">Grundriss – Wände</div>
       <div class="pgrid">
@@ -431,16 +442,15 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       </div>
     </div>
 
-    <!-- TAB: Symbole -->
     <div id="tab-sym" class="pscroll" style="display:none">
-      <div class="pcategory">Taktische Marker</div>
+      <div class="pcategory">Orientierung & Markierung</div>
       <div class="pgrid">
+        <div class="pitem" onclick="S.addNorthArrow()" title="Nordpfeil">🧭</div>
         <div class="pitem" onclick="S.addStamp('🔴')"  title="Tatort">🔴</div>
         <div class="pitem" onclick="S.addStamp('🟣')"  title="Ereignisort">🟣</div>
         <div class="pitem" onclick="S.addStamp('⚠️')"  title="Gefahr">⚠️</div>
         <div class="pitem" onclick="S.addStamp('📍')"  title="Stecknadel">📍</div>
         <div class="pitem" onclick="S.addStamp('🚨')"  title="Alarm">🚨</div>
-        <div class="pitem" onclick="S.addStamp('🔦')"  title="Kontrolle">🔦</div>
       </div>
       <div class="pcategory">Einsatzkräfte</div>
       <div class="pgrid">
@@ -461,13 +471,10 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       </div>
       <div class="pcategory">Nummerierte KTU-Tafeln</div>
       <div class="pgrid" id="ktu-grid2"></div>
-      <div class="pcategory">Maßangabe</div>
-      <button class="pbtn" onclick="S.addMeasureLabel()">📐 Maßlinie hinzufügen</button>
     </div>
   </div>
 </div>
 
-<!-- MAP PICKER MODAL -->
 <div id="map-modal" class="hidden">
   <div id="map-modal-inner">
     <div id="map-modal-header">
@@ -483,7 +490,6 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   </div>
 </div>
 
-<!-- TEXT INPUT MODAL -->
 <div id="text-modal" class="hidden">
   <div id="text-modal-inner">
     <div style="font-size:15px;font-weight:800;margin-bottom:4px;">📝 Text eingeben</div>
@@ -507,7 +513,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 <script>
 'use strict';
 /* ══════════════════════════════════════════════════════════
-   TAKTISCHE SKIZZE v2.0 – KPB Unna
+   TAKTISCHE SKIZZE v2.1 – KPB Unna
    Verkehrsunfall & Tatort Zeichenwerkzeug
    ══════════════════════════════════════════════════════════ */
 
@@ -517,10 +523,12 @@ const S = {
   color:     '#222222',
   thickness: 3,
   isDark:    false,
+  _lineStyle: 'solid',
   _undoStack:     [],
   _redoStack:     [],
   _activeSocket:  null,
   _drawing:       false,
+  _isDragging:    false,
   _startX:        0,
   _startY:        0,
   _tempShape:     null,
@@ -529,7 +537,7 @@ const S = {
   _activeTileKey: 'osm',
   _activeTileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 
-  /* Available tile layers (all support CORS via fetch) */
+  /* Available tile layers */
   MAP_TILES: {
     osm:      { label:'🗺 OpenStreetMap',        url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',                                                                                    max:19, attr:'© OpenStreetMap' },
     topo:     { label:'⛰ Topografie',             url:'https://tile.opentopomap.org/{z}/{x}/{y}.png',                                                                                     max:17, attr:'© OpenTopoMap' },
@@ -542,7 +550,6 @@ const S = {
 
   /* ──────────────────────────────────────────────────────── */
   init() {
-    // Dark mode from localStorage
     if (localStorage.getItem('lagekarte_dark') === '1') {
       this.isDark = true;
       document.documentElement.classList.add('dark');
@@ -557,7 +564,6 @@ const S = {
       preserveObjectStacking: true,
     });
 
-    // Setup brush
     this.canvas.freeDrawingBrush.color = this.color;
     this.canvas.freeDrawingBrush.width = this.thickness;
 
@@ -568,39 +574,44 @@ const S = {
     this.canvas.on('object:modified', () => this._saveHistory());
     this.canvas.on('path:created',    () => this._saveHistory());
 
-    // Snap node updates + rotation bar
-    ['selection:created','selection:updated','object:moving','object:rotating','mouse:wheel'].forEach(ev =>
+    // Zooming (Mausrad)
+    this.canvas.on('mouse:wheel', function(opt) {
+      var delta = opt.e.deltaY;
+      var zoom = this.getZoom();
+      zoom *= 0.999 ** delta;
+      if (zoom > 10) zoom = 10;
+      if (zoom < 0.1) zoom = 0.1;
+      this.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+    });
+
+    ['selection:created','selection:updated','object:moving','object:rotating'].forEach(ev =>
       this.canvas.on(ev, () => { this._renderSnap(); this._updateRotBar(); })
     );
     this.canvas.on('selection:cleared', () => { this._renderSnap(); this._hideRotBar(); });
     this.canvas.on('object:modified', () => { this._updateRotBar(); });
 
-    // Resize
     window.addEventListener('resize', () => this._resize());
 
-    // Keyboard
     document.addEventListener('keydown', e => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && !this.canvas.isDrawingMode) {
         this.deleteSelected();
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); }
-      // Rotation shortcuts: Q/E = ±1°, Shift+Q/E = ±15°, R = reset
       if (e.key === 'q' || e.key === 'Q') { e.preventDefault(); this.rotate(e.shiftKey ? -15 : -1); }
       if (e.key === 'e' || e.key === 'E') { e.preventDefault(); this.rotate(e.shiftKey ? 15 : 1); }
       if (e.key === 'r' || e.key === 'R') { e.preventDefault(); this.setAngle(0); }
     });
 
-    // KTU grids
     this._buildKTUGrid('ktu-grid');
     this._buildKTUGrid('ktu-grid2');
 
-    // Draw initial background
     this._drawBg();
     this._saveHistory();
   },
 
-  /* ── RESIZE ── */
   _resize() {
     const wrap = document.getElementById('canvas-wrapper');
     const w = wrap.clientWidth;
@@ -619,20 +630,28 @@ const S = {
     if (btn) btn.classList.add('active');
 
     this.canvas.isDrawingMode = (t === 'draw');
+    
+    // Manage Selection & Events
     const isSelect = (t === 'select');
     this.canvas.selection = isSelect;
-    this.canvas.forEachObject(o => o.selectable = isSelect);
+    this.canvas.forEachObject(o => {
+      o.selectable = isSelect;
+      o.evented = isSelect || t === 'eraser'; 
+    });
 
     if (t === 'draw') {
       this.canvas.freeDrawingBrush.color = this.color;
       this.canvas.freeDrawingBrush.width = this.thickness;
+      this._applyLineStyle();
     }
 
-    // Show color bar for drawing tools
-    const needsColor = ['draw','line','arrow','rect','circle'].includes(t);
+    const needsColor = ['draw','line','arrow','rect','circle','measure'].includes(t);
     document.getElementById('color-bar').classList.toggle('hidden', !needsColor);
 
     if (t !== 'select') this._clearSnap();
+    if (t === 'pan') this.canvas.defaultCursor = 'grab';
+    else if (t === 'eraser') this.canvas.defaultCursor = 'cell';
+    else this.canvas.defaultCursor = 'default';
   },
 
   setColor(c, el) {
@@ -656,19 +675,77 @@ const S = {
       obj.set({ strokeWidth: this.thickness });
       this.canvas.renderAll();
     }
+    this._applyLineStyle();
   },
 
-  /* ── MOUSE EVENTS (shape drawing) ── */
+  setLineStyle(style, el) {
+    this._lineStyle = style;
+    document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('sel'));
+    if(el) el.classList.add('sel');
+    this._applyLineStyle();
+
+    const obj = this.canvas.getActiveObject();
+    if (obj && obj.type !== 'i-text' && obj.type !== 'text') {
+      obj.set({ strokeDashArray: this._getDashArray() });
+      this.canvas.renderAll();
+      this._saveHistory();
+    }
+  },
+
+  _getDashArray() {
+    if (this._lineStyle === 'dashed') return [this.thickness * 4, this.thickness * 4];
+    if (this._lineStyle === 'dotted') return [this.thickness, this.thickness * 2];
+    return null; // solid
+  },
+
+  _applyLineStyle() {
+    this.canvas.freeDrawingBrush.strokeDashArray = this._getDashArray();
+  },
+
+  /* ── LAYERS (Z-Index) ── */
+  layerUp() {
+    const obj = this.canvas.getActiveObject();
+    if (obj) { this.canvas.bringForward(obj); this._saveHistory(); }
+  },
+
+  layerDown() {
+    const obj = this.canvas.getActiveObject();
+    if (obj) { this.canvas.sendBackwards(obj); this._saveHistory(); }
+  },
+
+  /* ── MOUSE EVENTS (drawing & panning) ── */
   _onDown(o) {
+    if (this.tool === 'pan') {
+      this._isDragging = true;
+      const evt = o.e.touches ? o.e.touches[0] : o.e;
+      this._startX = evt.clientX;
+      this._startY = evt.clientY;
+      this.canvas.defaultCursor = 'grabbing';
+      return;
+    }
+    
+    if (this.tool === 'eraser') {
+      this._drawing = true;
+      if (o.target && o.target !== this._tempShape) {
+        this.canvas.remove(o.target);
+        this._saveHistory();
+      }
+      return;
+    }
+
     if (['select','draw','text'].includes(this.tool)) return;
+    
     this._drawing = true;
     const p = this.canvas.getPointer(o.e);
     this._startX = p.x; this._startY = p.y;
 
-    const opts = { stroke: this.color, strokeWidth: this.thickness,
-      fill: 'transparent', selectable: false, evented: false };
+    const opts = { 
+      stroke: this.color, strokeWidth: this.thickness,
+      fill: 'transparent', selectable: false, evented: false,
+      strokeDashArray: this._getDashArray()
+    };
 
-    if (this.tool === 'line' || this.tool === 'arrow') {
+    if (this.tool === 'line' || this.tool === 'arrow' || this.tool === 'measure') {
       this._tempShape = new fabric.Line([p.x,p.y,p.x,p.y], { ...opts, fill: this.color });
     } else if (this.tool === 'rect') {
       this._tempShape = new fabric.Rect({ left: p.x, top: p.y, width: 0, height: 0, ...opts });
@@ -680,11 +757,31 @@ const S = {
   },
 
   _onMove(o) {
+    if (this._isDragging && this.tool === 'pan') {
+      const evt = o.e.touches ? o.e.touches[0] : o.e;
+      let vpt = this.canvas.viewportTransform;
+      vpt[4] += evt.clientX - this._startX;
+      vpt[5] += evt.clientY - this._startY;
+      this.canvas.requestRenderAll();
+      this._startX = evt.clientX;
+      this._startY = evt.clientY;
+      return;
+    }
+
+    if (this._drawing && this.tool === 'eraser') {
+      if (o.target && o.target !== this._tempShape) {
+        this.canvas.remove(o.target);
+        this._saveHistory();
+      }
+      return;
+    }
+
     if (!this._drawing || !this._tempShape) return;
+    
     const p = this.canvas.getPointer(o.e);
     const dx = p.x - this._startX, dy = p.y - this._startY;
 
-    if (this.tool === 'line' || this.tool === 'arrow') {
+    if (this.tool === 'line' || this.tool === 'arrow' || this.tool === 'measure') {
       this._tempShape.set({ x2: p.x, y2: p.y });
     } else if (this.tool === 'rect') {
       this._tempShape.set({
@@ -700,14 +797,26 @@ const S = {
   },
 
   _onUp(o) {
+    if (this._isDragging) {
+      this._isDragging = false;
+      this.canvas.defaultCursor = 'grab';
+      return;
+    }
+    
+    if (this.tool === 'eraser') {
+      this._drawing = false;
+      return;
+    }
+
     if (!this._drawing) return;
     this._drawing = false;
+    
+    if (!this._tempShape) return;
+
     const p = this.canvas.getPointer(o.e);
     const dx = p.x - this._startX, dy = p.y - this._startY;
 
-    if (!this._tempShape) return;
-
-    // Discard tiny shapes (accidental clicks)
+    // Discard tiny shapes
     if (Math.abs(dx) < 4 && Math.abs(dy) < 4 && this.tool !== 'line') {
       this.canvas.remove(this._tempShape);
       this._tempShape = null;
@@ -729,7 +838,33 @@ const S = {
       this.canvas.remove(this._tempShape);
       this.canvas.add(grp);
       this._tempShape = null;
-    } else {
+    } 
+    else if (this.tool === 'measure') {
+      const len = Math.sqrt(dx*dx + dy*dy);
+      if (len < 15) { this.canvas.remove(this._tempShape); this._tempShape = null; return; }
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      
+      const val = prompt('Länge / Maß eingeben (z.B. 4,50 m):', '');
+      if (!val) { this.canvas.remove(this._tempShape); this._tempShape = null; return; }
+
+      const head1 = new fabric.Triangle({ width: 12, height: 16, fill: this.color, left: this._startX, top: this._startY, originX: 'center', originY: 'center', angle: angle - 90 });
+      const head2 = new fabric.Triangle({ width: 12, height: 16, fill: this.color, left: p.x, top: p.y, originX: 'center', originY: 'center', angle: angle + 90 });
+      
+      const textRot = (angle > 90 || angle < -90) ? angle + 180 : angle;
+      const txt = new fabric.Text(val, { 
+        fontSize: 16, fontWeight: 'bold', fill: this.color, 
+        textBackgroundColor: this.isDark ? '#1C1C1E' : '#FFFFFF', 
+        originX: 'center', originY: 'center', 
+        left: this._startX + dx/2, top: this._startY + dy/2, 
+        angle: textRot, fontFamily: 'sans-serif'
+      });
+
+      const grp = new fabric.Group([this._tempShape, head1, head2, txt], { selectable: true, evented: true });
+      this.canvas.remove(this._tempShape);
+      this.canvas.add(grp);
+      this._tempShape = null;
+    }
+    else {
       this._tempShape.set({ selectable: true, evented: true });
       this._tempShape.setCoords();
       this._tempShape = null;
@@ -901,6 +1036,22 @@ const S = {
     this._closePanelMobile();
   },
 
+  /* ── NORTH ARROW ── */
+  addNorthArrow() {
+    const stroke = this.isDark ? '#CCCCCC' : '#333333';
+    const circle = new fabric.Circle({radius: 20, fill: 'transparent', stroke: stroke, strokeWidth: 2, originX: 'center', originY: 'center'});
+    const arrow = new fabric.Triangle({width: 14, height: 24, fill: '#FF3B30', originX: 'center', originY: 'center', top: -16});
+    const text = new fabric.Text('N', {fontSize: 16, fontWeight: 'bold', fill: stroke, originX: 'center', originY: 'center', top: 6, fontFamily: 'sans-serif'});
+    const grp = new fabric.Group([circle, arrow, text], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX: 'center', originY: 'center', snapAngle: 15
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
   /* ── TRAFFIC SIGNS ── */
   addSign(type) {
     let els = [];
@@ -1037,14 +1188,10 @@ const S = {
   addDoor() {
     const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
     const dw = 80, wt = 16;
-    // Frame posts
     const f1 = new fabric.Rect({ width:6, height:wt, fill:wC, stroke:wC, strokeWidth:1, left:-dw/2-3, top:-wt/2 });
     const f2 = new fabric.Rect({ width:6, height:wt, fill:wC, stroke:wC, strokeWidth:1, left: dw/2-3, top:-wt/2 });
-    // Floor gap (white/transparent area)
     const gap = new fabric.Rect({ width:dw, height:wt, fill: this.isDark ? '#1C1C1E' : '#FFFFFF', strokeWidth:0, left:-dw/2, top:-wt/2 });
-    // Door leaf (line)
     const leaf = new fabric.Line([0, 0, 0, -dw], { stroke:wC, strokeWidth:2, left:-dw/2, top:-wt/2 });
-    // Swing arc (quarter circle)
     const arc = new fabric.Circle({
       radius: dw, left: -dw/2, top: -wt/2,
       startAngle: -Math.PI/2, endAngle: 0,
@@ -1103,7 +1250,6 @@ const S = {
       els.push(new fabric.Line([-60+i*20, -40, -60+i*20, 40], { stroke:wC, strokeWidth:1.5 }));
     }
     els.push(new fabric.Rect({ width:120, height:80, fill:'transparent', stroke:wC, strokeWidth:2, left:-60, top:-40 }));
-    // Direction arrow
     els.push(new fabric.Line([-50, 0, 40, 0], { stroke:wC, strokeWidth:2 }));
     els.push(new fabric.Triangle({ width:12, height:12, fill:wC, left:40, top:0, originX:'center', originY:'center', angle:90 }));
     const grp = new fabric.Group(els, {
@@ -1269,19 +1415,14 @@ const S = {
       d.onclick = () => this.addKTU(i);
       container.appendChild(d);
     }
-    ['🩸','🔫','🔪','👤','🦶','💊','📱'].forEach(e => {
+    ['🩸','🔫','🔪','👤','🦶','💊','📱','❌'].forEach(e => {
       const d = document.createElement('div');
       d.className = 'pitem';
       d.textContent = e;
+      d.title = e === '❌' ? 'Anstoßbereich / Schaden' : '';
       d.onclick = () => this.addStamp(e);
       container.appendChild(d);
     });
-  },
-
-  /* ── MEASURE LABEL ── */
-  addMeasureLabel() {
-    this._toast('Linie zeichnen, dann Beschriftung kommt automatisch');
-    this.setTool('line');
   },
 
   /* ── TEXT ── */
@@ -1357,7 +1498,7 @@ const S = {
       ctx.lineWidth = 1;
       for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
       for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-      // Major grid every 100px
+      
       ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
       ctx.lineWidth = 1;
       for (let x = 0; x < W; x += 100) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
@@ -1410,7 +1551,7 @@ const S = {
     if (this._currentLeafletLayer) this._miniMap.removeLayer(this._currentLeafletLayer);
     this._currentLeafletLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max });
     this._currentLeafletLayer.addTo(this._miniMap);
-    // Update button states
+    
     document.querySelectorAll('.mlbtn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
   },
@@ -1429,7 +1570,7 @@ const S = {
     const TILE = 256;
     const n    = Math.pow(2, zoom);
 
-    // lat/lng → tile index
+    
     const toTile = (lat, lng) => ({
       tx: Math.floor((lng + 180) / 360 * n),
       ty: Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n),
@@ -1438,7 +1579,7 @@ const S = {
     const nwTile = toTile(bounds.getNorth(), bounds.getWest());
     const seTile = toTile(bounds.getSouth(), bounds.getEast());
 
-    // World-pixel coords of the viewport NW corner at this zoom (Leaflet)
+    
     const nwPx  = map.project(bounds.getNorthWest(), zoom);
     const sePx  = map.project(bounds.getSouthEast(), zoom);
     const spanX = sePx.x - nwPx.x;
@@ -1446,7 +1587,7 @@ const S = {
     const scaleX = W / spanX;
     const scaleY = H / spanY;
 
-    // Compose tiles on an offscreen canvas
+    
     const offscreen = document.createElement('canvas');
     offscreen.width  = W;
     offscreen.height = H;
@@ -1454,7 +1595,7 @@ const S = {
     ctx.fillStyle = '#f0efe7';
     ctx.fillRect(0, 0, W, H);
 
-    // Fetch tiles using the active layer's URL template
+    
     const tpl = this._activeTileUrl || this.MAP_TILES.osm.url;
     const jobs = [];
     for (let ty = nwTile.ty - 1; ty <= seTile.ty + 1; ty++) {
@@ -1512,14 +1653,8 @@ const S = {
     const prev = this._undoStack[this._undoStack.length - 1];
     this.canvas.loadFromJSON(prev, () => {
       this.canvas.renderAll();
-      this._restoreSockets();
       this._drawBg();
     });
-  },
-
-  _restoreSockets() {
-    // After loadFromJSON, _sockets are lost — mark groups by position (best-effort)
-    // No-op for now; snap system works on newly created objects
   },
 
   /* ── UI HELPERS ── */
