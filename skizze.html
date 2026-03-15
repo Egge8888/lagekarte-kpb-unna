@@ -1338,40 +1338,80 @@ const S = {
 
   async applyMapBg() {
     if (!this._miniMap) return;
-    const b  = this._miniMap.getBounds();
-    const W  = this.canvas.width;
-    const H  = this.canvas.height;
-
-    this._toast('⏳ Lade Kartenausschnitt…');
-
-    // Use NRW topographic WMS for clean background (no CORS issues via img tag)
-    const wmsUrl = `https://www.wms.nrw.de/geobasis/wms_nw_dtk?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap`
-      + `&LAYERS=nw_dtk_sw&SRS=EPSG:4326`
-      + `&BBOX=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`
-      + `&WIDTH=${W}&HEIGHT=${H}&FORMAT=image/png`;
-
-    fabric.Image.fromURL(wmsUrl, img => {
-      if (!img || !img.width) {
-        this._toast('⚠️ Karte konnte nicht geladen werden. Verwende OSM-Screenshot.');
-        // Fallback: use OSM
-        const osmUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${this._miniMap.getCenter().lat},${this._miniMap.getCenter().lng}&zoom=${this._miniMap.getZoom()}&size=${W}x${H}&maptype=osmarenderer`;
-        fabric.Image.fromURL(osmUrl, img2 => {
-          if (!img2 || !img2.width) { this._toast('❌ Kartenbild nicht verfügbar'); return; }
-          img2.set({ left:0, top:0, originX:'left', originY:'top', selectable:false, evented:false });
-          img2.scaleToWidth(W);
-          this.canvas.setBackgroundImage(img2, this.canvas.renderAll.bind(this.canvas));
-          this._toast('✅ Kartenausschnitt geladen');
-        }, { crossOrigin:'anonymous' });
-        return;
-      }
-      img.set({ left:0, top:0, originX:'left', originY:'top', selectable:false, evented:false });
-      img.scaleToWidth(W);
-      if (img.getScaledHeight() < H) img.scaleToHeight(H);
-      this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
-      this._toast('✅ Kartenausschnitt geladen');
-    }, { crossOrigin:'anonymous' });
+    const map    = this._miniMap;
+    const bounds = map.getBounds();
+    const zoom   = Math.round(map.getZoom());
+    const W      = this.canvas.width;
+    const H      = this.canvas.height;
 
     this.closeMapPicker();
+    this._toast('⏳ Lade Kartenausschnitt…');
+
+    const TILE = 256;
+    const n    = Math.pow(2, zoom);
+
+    // lat/lng → tile index
+    const toTile = (lat, lng) => ({
+      tx: Math.floor((lng + 180) / 360 * n),
+      ty: Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n),
+    });
+
+    const nwTile = toTile(bounds.getNorth(), bounds.getWest());
+    const seTile = toTile(bounds.getSouth(), bounds.getEast());
+
+    // World-pixel coords of the viewport NW corner at this zoom (Leaflet)
+    const nwPx  = map.project(bounds.getNorthWest(), zoom);
+    const sePx  = map.project(bounds.getSouthEast(), zoom);
+    const spanX = sePx.x - nwPx.x;
+    const spanY = sePx.y - nwPx.y;
+    const scaleX = W / spanX;
+    const scaleY = H / spanY;
+
+    // Compose tiles on an offscreen canvas
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = W;
+    offscreen.height = H;
+    const ctx = offscreen.getContext('2d');
+    ctx.fillStyle = '#f0efe7';
+    ctx.fillRect(0, 0, W, H);
+
+    // OSM tiles support CORS (Access-Control-Allow-Origin: *)
+    const jobs = [];
+    for (let ty = nwTile.ty - 1; ty <= seTile.ty + 1; ty++) {
+      for (let tx = nwTile.tx - 1; tx <= seTile.tx + 1; tx++) {
+        const url = `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+        const cx  = (tx * TILE - nwPx.x) * scaleX;
+        const cy  = (ty * TILE - nwPx.y) * scaleY;
+        const cw  = TILE * scaleX;
+        const ch  = TILE * scaleY;
+        jobs.push(
+          fetch(url)
+            .then(r => r.blob())
+            .then(blob => new Promise(res => {
+              const img   = new Image();
+              const objUrl = URL.createObjectURL(blob);
+              img.onload  = () => { ctx.drawImage(img, cx, cy, cw, ch); URL.revokeObjectURL(objUrl); res(); };
+              img.onerror = () => { URL.revokeObjectURL(objUrl); res(); };
+              img.src     = objUrl;
+            }))
+            .catch(() => {})
+        );
+      }
+    }
+
+    try {
+      await Promise.all(jobs);
+      const dataURL = offscreen.toDataURL('image/jpeg', 0.9);
+      fabric.Image.fromURL(dataURL, img => {
+        img.set({ left: 0, top: 0, originX: 'left', originY: 'top',
+          selectable: false, evented: false });
+        this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
+        this._toast('✅ Kartenausschnitt geladen');
+      });
+    } catch (e) {
+      this._toast('❌ Fehler beim Laden des Kartenausschnitts');
+      console.error(e);
+    }
   },
 
   closeMapPicker() {
