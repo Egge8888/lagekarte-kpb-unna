@@ -806,12 +806,30 @@ function initMap() {
     opacity: 0.6, attribution: '© DWD',
   });
 
+  // NRW WMTS (tim-online.nrw.de) – höhere Auflösung, mehr Zoomstufen
+  const _NRWLayer = L.TileLayer.extend({
+    getTileUrl(c) {
+      const z = String(c.z - 5).padStart(2, '0');
+      return this._url.replace('{z}', z).replace('{x}', c.x).replace('{y}', c.y);
+    },
+  });
+  const timDop = new _NRWLayer(
+    'https://www.wmts.nrw.de/geobasis/wmts_nw_dop/tiles/nw_dop/EPSG_3857_16/{z}/{x}/{y}',
+    { attribution: '© Geobasis NRW', maxZoom: 21, crossOrigin: true }
+  );
+  const timDtk = new _NRWLayer(
+    'https://www.wmts.nrw.de/geobasis/wmts_nw_dtk/tiles/nw_dtk_col/EPSG_3857_16/{z}/{x}/{y}.png',
+    { attribution: '© Geobasis NRW', maxZoom: 18, crossOrigin: true }
+  );
+
   osm.addTo(_map);
   L.control.layers({
     '🗺 OpenStreetMap (Standard)': osm,
-    '🛩 Luftbild NRW (DOP)':       dop,
+    '🛩 Luftbild NRW (WMS)':       dop,
+    '📡 NRW Luftbild HD (WMTS)':   timDop,
     '📋 Amtl. Basiskarte NRW':     abk,
     '⬛ Topograph. Karte S/W':     dtk,
+    '🗾 NRW Topokarte (WMTS)':     timDtk,
   }, {
     '🌩 DWD Unwetterwarnungen': dwdWarn
   }, { position: 'topright' }).addTo(_map);

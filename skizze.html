@@ -1924,11 +1924,17 @@ const S = {
 
   async applyMapBg() {
     if (!this._miniMap) return;
-    const map    = this._miniMap;
-    const bounds = map.getBounds();
-    const zoom   = Math.round(map.getZoom());
-    const W      = this.canvas.width;
-    const H      = this.canvas.height;
+    const map     = this._miniMap;
+    const zoom    = Math.round(map.getZoom());
+    const bounds  = map.getBounds();
+    const mapSize = map.getSize();               // Mini-Map CSS-Pixelgröße
+
+    // Physische Canvas-Auflösung (Retina/HiDPI-fähig)
+    const dpr = window.devicePixelRatio || 1;
+    const W   = this.canvas.getWidth();          // logische CSS-Pixel
+    const H   = this.canvas.getHeight();
+    const PW  = Math.round(W * dpr);             // physische Pixel
+    const PH  = Math.round(H * dpr);
 
     this.closeMapPicker();
     this._toast('⏳ Lade Kartenausschnitt…');
@@ -1936,7 +1942,6 @@ const S = {
     const TILE = 256;
     const n    = Math.pow(2, zoom);
 
-    
     const toTile = (lat, lng) => ({
       tx: Math.floor((lng + 180) / 360 * n),
       ty: Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n),
@@ -1944,42 +1949,42 @@ const S = {
 
     const nwTile = toTile(bounds.getNorth(), bounds.getWest());
     const seTile = toTile(bounds.getSouth(), bounds.getEast());
+    const nwPx   = map.project(bounds.getNorthWest(), zoom);
 
-    
-    const nwPx  = map.project(bounds.getNorthWest(), zoom);
-    const sePx  = map.project(bounds.getSouthEast(), zoom);
-    const spanX = sePx.x - nwPx.x;
-    const spanY = sePx.y - nwPx.y;
-    const scaleX = W / spanX;
-    const scaleY = H / spanY;
+    // Einheitliche Skalierung (Cover): füllt Canvas ohne Verzerrung
+    const sx    = PW / mapSize.x;
+    const sy    = PH / mapSize.y;
+    const scale = Math.max(sx, sy);
+    const offX  = (PW - mapSize.x * scale) / 2;  // zentrieren
+    const offY  = (PH - mapSize.y * scale) / 2;
 
-    
+    // Offscreen-Canvas in physischer Auflösung → kein Retina-Unschärfe-Upscaling
     const offscreen = document.createElement('canvas');
-    offscreen.width  = W;
-    offscreen.height = H;
+    offscreen.width  = PW;
+    offscreen.height = PH;
     const ctx = offscreen.getContext('2d');
     ctx.fillStyle = '#f0efe7';
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, PW, PH);
 
-    
-    const tpl = this._activeTileUrl || this.MAP_TILES.osm.url;
+    const tpl       = this._activeTileUrl || this.MAP_TILES.osm.url;
     const activeCfg = this.MAP_TILES[this._activeTileKey] || this.MAP_TILES.osm;
-    const zStr = activeCfg.wmtsOffset != null
+    const zStr      = activeCfg.wmtsOffset != null
       ? String(zoom + activeCfg.wmtsOffset).padStart(2, '0')
       : String(zoom);
+
     const jobs = [];
     for (let ty = nwTile.ty - 1; ty <= seTile.ty + 1; ty++) {
       for (let tx = nwTile.tx - 1; tx <= seTile.tx + 1; tx++) {
         const url = tpl.replace('{z}', zStr).replace('{x}', tx).replace('{y}', ty);
-        const cx  = (tx * TILE - nwPx.x) * scaleX;
-        const cy  = (ty * TILE - nwPx.y) * scaleY;
-        const cw  = TILE * scaleX;
-        const ch  = TILE * scaleY;
+        const cx  = (tx * TILE - nwPx.x) * scale + offX;
+        const cy  = (ty * TILE - nwPx.y) * scale + offY;
+        const cw  = TILE * scale;
+        const ch  = TILE * scale;
         jobs.push(
           fetch(url)
             .then(r => r.blob())
             .then(blob => new Promise(res => {
-              const img   = new Image();
+              const img    = new Image();
               const objUrl = URL.createObjectURL(blob);
               img.onload  = () => { ctx.drawImage(img, cx, cy, cw, ch); URL.revokeObjectURL(objUrl); res(); };
               img.onerror = () => { URL.revokeObjectURL(objUrl); res(); };
@@ -1992,10 +1997,15 @@ const S = {
 
     try {
       await Promise.all(jobs);
-      const dataURL = offscreen.toDataURL('image/jpeg', 0.9);
+      const dataURL = offscreen.toDataURL('image/jpeg', 0.92);
       fabric.Image.fromURL(dataURL, img => {
-        img.set({ left: 0, top: 0, originX: 'left', originY: 'top',
-          selectable: false, evented: false });
+        // Bild von physischer auf logische Größe zurückskalieren (1/dpr)
+        img.set({
+          left: 0, top: 0, originX: 'left', originY: 'top',
+          scaleX: W / img.width,
+          scaleY: H / img.height,
+          selectable: false, evented: false,
+        });
         this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
         this._toast('✅ Kartenausschnitt geladen');
       });
