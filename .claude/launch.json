@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "Lagekarte",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4200", "--directory", "/Users/daniel/Desktop/Lagekarte"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "4200", "/Users/daniel/Desktop/Lagekarte"],
       "port": 4200
     }
   ]

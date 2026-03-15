@@ -8,1018 +8,1476 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Skizze"/>
-<link rel="apple-touch-icon" href="./icon.svg"/>
-<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-/* ════════════════════════════════════════════════════════
-   DESIGN SYSTEM – iOS inspired (Mirrors index.html)
-   ════════════════════════════════════════════════════════ */
 :root {
   --blue:#007AFF; --red:#FF3B30; --green:#34C759; --orange:#FF9500;
-  --yellow:#FFCC00; --purple:#AF52DE; --teal:#30B0C7; --gray:#8E8E93;
+  --yellow:#FFCC00; --purple:#AF52DE; --gray:#8E8E93;
   --bg:#F2F2F7; --card:#FFFFFF; --txt:#000000; --txt2:#3C3C43;
-  --sep:rgba(60,60,67,.18); --glass:rgba(255,255,255,.85);
-  --shadow:0 4px 24px rgba(0,0,0,.10);
-  --r:16px; --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  --sep:rgba(60,60,67,.18); --glass:rgba(255,255,255,.88);
+  --shadow:0 4px 24px rgba(0,0,0,.12);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
 }
 .dark {
   --bg:#1C1C1E; --card:#2C2C2E; --txt:#FFFFFF; --txt2:rgba(235,235,245,.6);
   --sep:rgba(84,84,88,.55); --glass:rgba(44,44,46,.92);
   --shadow:0 4px 24px rgba(0,0,0,.4);
 }
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-html, body { height:100%; font-family:var(--font); background:var(--bg); color:var(--txt); overflow:hidden; display: flex; flex-direction: column; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; font-family:var(--font); background:var(--bg); color:var(--txt); overflow:hidden; display:flex; flex-direction:column; }
 
-/* ── HEADER ──────────────────────────────────────────── */
+/* ── HEADER ── */
 #header {
-  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  display:flex; align-items:center; gap:8px; padding:0 14px;
   background:var(--glass); backdrop-filter:blur(20px);
   border-bottom:1px solid var(--sep); z-index:200;
   flex-shrink:0; height:52px;
 }
-.header-badge { font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.5px; background:rgba(255,204,0,.15); color:var(--orange); }
-.header-spacer { flex:1; }
-.header-btn { width:36px; height:36px; border-radius:10px; border:none; background:var(--card); color:var(--txt); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent; }
-.header-btn:active { transform:scale(.93); }
+.hbadge { font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;
+  text-transform:uppercase; letter-spacing:.5px;
+  background:rgba(255,204,0,.15); color:var(--orange); }
+.hsp { flex:1; }
+.hbtn { height:36px; border-radius:10px; border:1px solid var(--sep);
+  background:var(--card); color:var(--txt); font-size:14px; font-weight:600;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  gap:5px; padding:0 12px; font-family:var(--font);
+  -webkit-tap-highlight-color:transparent; }
+.hbtn:active { transform:scale(.95); }
+.hbtn.blue { background:rgba(0,122,255,.1); color:var(--blue); border-color:rgba(0,122,255,.3); }
 
-/* ── LAYOUT ──────────────────────────────────────────── */
-#workspace {
-  flex: 1;
-  display: flex;
-  position: relative;
-  overflow: hidden;
-}
+/* ── WORKSPACE ── */
+#workspace { flex:1; position:relative; overflow:hidden; }
 
-/* ── TOOLBAR ─────────────────────────────────────────── */
-#toolbar {
-  position:absolute; left:12px; top:50%; transform:translateY(-50%);
-  z-index:1000; display:flex; flex-direction:column; gap:4px;
-  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:18px; padding:8px 6px;
-  box-shadow:0 4px 24px rgba(0,0,0,.2);
-  max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
-  scrollbar-width: none;
-}
-#toolbar::-webkit-scrollbar { display: none; }
-.dark #toolbar { background:rgba(44,44,46,.97); }
+/* ── CANVAS ── */
+#skizzeCanvas { display:block; }
+#canvas-wrapper { position:absolute; inset:0; }
 
-.tool-btn {
-  width:52px; height:50px; border-radius:12px; border:none;
-  background:transparent; cursor:pointer; font-size:22px;
-  display:flex; align-items:center; justify-content:center;
-  position:relative; transition:all .12s; -webkit-tap-highlight-color:transparent;
-  flex-direction:column; gap:1px; flex-shrink:0;
-}
-.tool-btn:active { transform:scale(.9); }
-.tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
-.tool-btn.active .tool-label { color:#fff; }
-.tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
-.tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
-
-/* ── COLOR PICKER ────────────────────────────────────── */
-#color-picker {
-  position:absolute; left:82px; top:50%; transform:translateY(-50%);
-  z-index:1001; background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:14px; padding:10px;
-  box-shadow:0 4px 24px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:6px;
-}
-.dark #color-picker { background:rgba(44,44,46,.97); }
-#color-picker.hidden { display:none; }
-.color-dot { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent; transition:all .12s; -webkit-tap-highlight-color:transparent; }
-.color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
-.color-dot:active { transform:scale(.9); }
-
-/* ── SIDE PANEL (Stamps & Templates) ──────────────────── */
-#side-panel {
-  position:absolute; right:12px; top:12px; z-index:1000; width:min(280px, calc(100vw - 70px));
-  max-height:calc(100vh - 80px); background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
-  border:1px solid var(--sep); border-radius:18px; padding:12px; box-shadow:0 4px 24px rgba(0,0,0,.2);
-  display:flex; flex-direction:column; overflow-y:auto; transition: transform 0.3s;
-}
-.dark #side-panel { background:rgba(44,44,46,.97); }
-#side-panel.hidden { transform: translateX(120%); display:flex; }
-.panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-shrink:0; }
-.panel-title { font-size:15px; font-weight:800; color:var(--txt); }
-.panel-close-btn { background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; padding:0 4px; line-height:1; }
-
-.stamp-category { font-size:11px; font-weight:800; color:var(--txt2); text-transform:uppercase; margin-top:10px; margin-bottom:6px; letter-spacing:0.5px; }
-.stamp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(42px, 1fr)); gap:6px; }
-.stamp-item { font-size:28px; text-align:center; cursor:pointer; padding:6px 0; border-radius:10px; background:var(--bg); border:1.5px solid transparent; transition:all .1s; line-height:1; }
-.stamp-item:active { transform:scale(0.85); }
-.stamp-item:hover { border-color:var(--blue); background:rgba(0,122,255,0.1); }
-
-/* ── CANVAS WRAPPER ──────────────────────────────────── */
-.canvas-container {
-  flex: 1;
-  width: 100%; height: 100%;
-  background-color: #fff; /* Skizze always starts white */
-}
-.dark .canvas-container {
-  background-color: #1a1a1a;
-}
-#canvas-wrapper { width:100%; height:100%; overflow:hidden; }
-
-#snap-nodes-layer {
-  position: absolute; pointer-events: none;
-  top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
-}
+/* ── SNAP LAYER ── */
+#snap-layer { position:absolute; inset:0; pointer-events:none; z-index:50; }
 .snap-node {
-  position: absolute; pointer-events: auto;
-  width: 24px; height: 24px;
-  margin-left: -12px; margin-top: -12px;
-  background: #007AFF; color: white;
-  border-radius: 50%; text-align: center; line-height: 24px;
-  font-weight: bold; font-size: 16px; cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-  transition: transform 0.2s, background 0.2s;
+  position:absolute; pointer-events:auto;
+  width:26px; height:26px; margin-left:-13px; margin-top:-13px;
+  background:var(--blue); color:#fff; border-radius:50%;
+  text-align:center; line-height:26px; font-weight:900; font-size:16px;
+  cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.4);
+  transition:transform .15s, background .15s; user-select:none;
 }
-.snap-node:hover { transform: scale(1.2); }
-.snap-node.active { background: #34C759; transform: scale(1.2); }
+.snap-node:hover { transform:scale(1.25); }
+.snap-node.active { background:var(--green); transform:scale(1.2); }
 
-/* ── RESPONSIVE ──────────────────────────────────────── */
-@media (max-width: 767px) {
+/* ── TOOLBAR ── */
+#toolbar {
+  position:absolute; left:12px; top:50%; transform:translateY(calc(-50% + 26px));
+  z-index:1000; display:flex; flex-direction:column; gap:3px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:7px 5px;
+  box-shadow:var(--shadow);
+  max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
+  scrollbar-width:none;
+}
+#toolbar::-webkit-scrollbar { display:none; }
+.tbtn {
+  width:50px; height:48px; border-radius:11px; border:none;
+  background:transparent; cursor:pointer; font-size:20px;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:1px; transition:all .12s;
+  -webkit-tap-highlight-color:transparent; flex-shrink:0;
+}
+.tbtn:active { transform:scale(.9); }
+.tbtn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
+.tbtn.active .tlbl { color:#fff; }
+.tlbl { font-size:8px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tdiv { width:34px; height:1px; background:var(--sep); margin:2px auto; }
+
+/* ── COLOR BAR ── */
+#color-bar {
+  position:absolute; left:74px; top:50%; transform:translateY(calc(-50% + 26px));
+  z-index:1001; display:flex; flex-direction:column; gap:5px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:14px; padding:10px 8px;
+  box-shadow:var(--shadow);
+}
+#color-bar.hidden { display:none; }
+.cdot { width:26px; height:26px; border-radius:50%; cursor:pointer;
+  border:2.5px solid transparent; transition:all .12s; flex-shrink:0;
+  -webkit-tap-highlight-color:transparent; }
+.cdot.sel { border-color:var(--txt); transform:scale(1.2); }
+.cdot:active { transform:scale(.88); }
+#thick-slider {
+  -webkit-appearance:none; appearance:none;
+  width:26px; height:80px; writing-mode:vertical-rl;
+  direction:rtl; cursor:pointer; background:transparent;
+}
+#thick-slider::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--blue); }
+#thick-slider::-webkit-slider-runnable-track { background:var(--sep); border-radius:3px; width:6px; }
+
+/* ── SIDE PANEL ── */
+#side-panel {
+  position:absolute; right:12px; top:64px; z-index:1000;
+  width:min(290px, calc(100vw - 76px));
+  max-height:calc(100vh - 80px);
+  background:var(--glass); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column;
+  overflow:hidden; transition:transform .3s, opacity .3s;
+}
+#side-panel.hidden { transform:translateX(110%); opacity:0; pointer-events:none; }
+.ptabs { display:flex; border-bottom:1px solid var(--sep); flex-shrink:0; }
+.ptab {
+  flex:1; padding:10px 4px; font-size:10px; font-weight:700; text-align:center;
+  cursor:pointer; color:var(--txt2); border:none; background:transparent;
+  font-family:var(--font); text-transform:uppercase; letter-spacing:.3px;
+  transition:all .15s; -webkit-tap-highlight-color:transparent;
+}
+.ptab.active { color:var(--blue); border-bottom:2px solid var(--blue); margin-bottom:-1px; }
+.pscroll { flex:1; overflow-y:auto; padding:10px; scrollbar-width:thin; }
+.pcategory { font-size:10px; font-weight:800; color:var(--txt2); text-transform:uppercase;
+  margin:10px 0 6px; letter-spacing:.5px; }
+.pcategory:first-child { margin-top:2px; }
+.pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(40px,1fr)); gap:5px; margin-bottom:4px; }
+.pitem {
+  font-size:26px; text-align:center; cursor:pointer; padding:5px 2px;
+  border-radius:9px; background:var(--bg); border:1.5px solid transparent;
+  transition:all .1s; line-height:1; -webkit-tap-highlight-color:transparent;
+}
+.pitem:active { transform:scale(.85); }
+.pitem:hover { border-color:var(--blue); background:rgba(0,122,255,.1); }
+.pitem.sm { font-size:14px; font-weight:800; color:var(--yellow);
+  text-shadow:0 0 2px #000; display:flex; align-items:center; justify-content:center; height:40px; }
+.pbtn {
+  width:100%; padding:10px; border-radius:10px; border:1.5px solid var(--sep);
+  background:var(--bg); color:var(--txt); font-family:var(--font);
+  font-size:13px; font-weight:600; cursor:pointer; margin-bottom:5px;
+  text-align:left; display:flex; align-items:center; gap:8px;
+  -webkit-tap-highlight-color:transparent;
+}
+.pbtn:active { background:rgba(0,122,255,.1); border-color:var(--blue); }
+.phdr { display:flex; align-items:center; justify-content:space-between; padding:12px 12px 0; flex-shrink:0; }
+.ptitle { font-size:14px; font-weight:800; }
+.pclose { background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; line-height:1; }
+
+/* ── MAP MODAL ── */
+#map-modal {
+  position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.6);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px); padding:16px;
+}
+#map-modal.hidden { display:none; }
+#map-modal-inner {
+  background:var(--card); border-radius:22px; width:100%; max-width:520px;
+  max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 16px 48px rgba(0,0,0,.4);
+}
+#map-modal-header { padding:16px 20px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--sep); flex-shrink:0; }
+#leaflet-picker { flex:1; min-height:320px; }
+#map-modal-footer { padding:14px 16px; display:flex; gap:10px; border-top:1px solid var(--sep); flex-shrink:0; }
+#map-modal-footer button { flex:1; padding:12px; border-radius:12px; border:none; font-family:var(--font); font-size:14px; font-weight:700; cursor:pointer; }
+#map-apply-btn { background:var(--blue); color:#fff; }
+#map-cancel-btn { background:var(--bg); color:var(--txt); border:1.5px solid var(--sep); }
+
+/* ── TEXT MODAL ── */
+#text-modal {
+  position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.55);
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(6px); padding:16px;
+}
+#text-modal.hidden { display:none; }
+#text-modal-inner {
+  background:var(--card); border-radius:20px; width:100%; max-width:400px;
+  padding:22px; box-shadow:0 8px 32px rgba(0,0,0,.3);
+}
+#text-input {
+  width:100%; margin:12px 0 6px; padding:10px 12px; border-radius:10px;
+  border:1.5px solid var(--sep); font-size:16px; font-family:var(--font);
+  background:var(--bg); color:var(--txt); outline:none;
+}
+#text-input:focus { border-color:var(--blue); }
+#text-modal-btns { display:flex; gap:10px; margin-top:14px; }
+#text-modal-btns button { flex:1; padding:11px; border-radius:11px; border:none; font-family:var(--font); font-size:14px; font-weight:700; cursor:pointer; }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; top:60px; left:50%; transform:translateX(-50%) translateY(-8px);
+  z-index:9999; padding:10px 18px; border-radius:18px; font-size:13px; font-weight:600;
+  color:#fff; pointer-events:none; opacity:0; transition:all .25s; white-space:nowrap;
+  backdrop-filter:blur(10px); box-shadow:0 4px 16px rgba(0,0,0,.25);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── RESPONSIVE MOBILE ── */
+@media (max-width:767px) {
   #toolbar {
-    left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
-    width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
-    border-radius: 16px 16px 0 0; padding: 8px 8px max(16px, env(safe-area-inset-bottom));
+    left:0; right:0; top:auto; bottom:0; transform:none;
+    flex-direction:row; width:100%; max-height:none; overflow-x:auto; overflow-y:hidden;
+    border-radius:16px 16px 0 0;
+    padding:7px 8px max(14px, env(safe-area-inset-bottom));
+    scrollbar-width:none; -webkit-overflow-scrolling:touch;
   }
-  .tool-btn { width: 50px; height: 50px; font-size: 24px; flex-shrink: 0; }
-  .tool-divider { width: 1px; height: 32px; margin: auto 4px; }
-  #color-picker { left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom))); transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px); }
-  #side-panel { top: 12px; max-height: calc(100vh - 120px); }
+  .tbtn { width:48px; height:48px; flex-shrink:0; }
+  .tdiv { width:1px; height:32px; margin:auto 3px; }
+  #color-bar {
+    left:8px; top:auto;
+    bottom:calc(72px + max(14px, env(safe-area-inset-bottom)));
+    transform:none; flex-direction:row; flex-wrap:wrap; max-width:calc(100vw - 16px);
+  }
+  #thick-slider { writing-mode:horizontal-tb; direction:ltr; width:80px; height:26px; }
+  #thick-slider::-webkit-slider-runnable-track { width:unset; height:6px; }
+  #side-panel { top:60px; right:8px; max-height:calc(100vh - 140px); width:calc(100vw - 16px); }
+}
+@media print {
+  #header,#toolbar,#color-bar,#side-panel,#toast { display:none !important; }
 }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div id="header">
-  <span class="header-badge">✏️ Skizze</span>
-  <div class="header-spacer"></div>
-  <button class="header-btn" onclick="Skizze.toggleDark()" title="Darkmode">🌙</button>
-  <button class="header-btn" onclick="Skizze.exportPNG()" title="Exportieren" style="width:auto; padding:0 12px; font-size:12px; font-weight:700; color:var(--blue); border-color:rgba(0,122,255,0.3); background:rgba(0,122,255,0.1);">💾 Speichern</button>
-  <button class="header-btn" onclick="window.location.href='index.html'" title="Zurück zur Karte">✖  <!-- Arbeitsbereich -->
-  <div class="skizze-main">
-    <div class="skizze-workspace" id="canvas-wrapper">
-      <canvas id="skizzeCanvas"></canvas>
-      <div id="snap-nodes-layer"></div>
-    </div>
-    
-    <!-- Sidebar Rechts (Vorlagen) -->
-    <button class="tool-btn active" data-tool="select" onclick="Skizze.setTool('select')" title="Auswählen"><span>👆</span><span class="tool-label">Auswahl</span></button>
-    <button class="tool-btn" data-tool="draw" onclick="Skizze.setTool('draw')" title="Zeichnen"><span>🖊️</span><span class="tool-label">Stift</span></button>
-    
-    <div class="tool-divider"></div>
-    
-    <button class="tool-btn" data-tool="line" onclick="Skizze.setTool('line')" title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
-    <button class="tool-btn" data-tool="arrow" onclick="Skizze.setTool('arrow')" title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
-    <button class="tool-btn" data-tool="rect" onclick="Skizze.setTool('rect')" title="Viereck"><span>⬜</span><span class="tool-label">Viereck</span></button>
-    <button class="tool-btn" data-tool="circle" onclick="Skizze.setTool('circle')" title="Kreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
-    <button class="tool-btn" data-tool="text" onclick="Skizze.addText()" title="Text"><span>📝</span><span class="tool-label">Text</span></button>
-    
-    <div class="tool-divider"></div>
+  <span class="hbadge">✏️ Skizze</span>
+  <div class="hsp"></div>
+  <button class="hbtn" onclick="S.undo()" title="Rückgängig">↩ Undo</button>
+  <button class="hbtn blue" onclick="S.exportPNG()" title="Als PNG speichern">💾 Speichern</button>
+  <button class="hbtn" onclick="S.toggleDark()" title="Dark Mode">🌙</button>
+  <button class="hbtn" onclick="window.location.href='index.html'" title="Zurück zur Karte">✖</button>
+</div>
 
-    <button class="tool-btn" onclick="Skizze.toggleStamps()" title="Stempel & Vorlagen"><span>🎭</span><span class="tool-label">Vorlagen</span></button>
-    <button class="tool-btn" onclick="Skizze.deleteSelected()" title="Auswahl löschen"><span>🗑️</span><span class="tool-label">Löschen</span></button>
-    <button class="tool-btn" onclick="Skizze.clearAll()" title="Alles löschen" style="color:var(--red)"><span>💣</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
+<!-- WORKSPACE -->
+<div id="workspace">
+  <div id="canvas-wrapper">
+    <canvas id="skizzeCanvas"></canvas>
   </div>
 
-  <div id="color-picker" class="hidden">
-    <div class="color-dot selected" style="background:#000000" data-color="#000000" onclick="Skizze.setColor('#000000',this)"></div>
-    <div class="color-dot" style="background:#FF3B30" data-color="#FF3B30" onclick="Skizze.setColor('#FF3B30',this)"></div>
-    <div class="color-dot" style="background:#FF9500" data-color="#FF9500" onclick="Skizze.setColor('#FF9500',this)"></div>
-    <div class="color-dot" style="background:#34C759" data-color="#34C759" onclick="Skizze.setColor('#34C759',this)"></div>
-    <div class="color-dot" style="background:#007AFF" data-color="#007AFF" onclick="Skizze.setColor('#007AFF',this)"></div>
-    <div class="color-dot" style="background:#FFFFFF" data-color="#FFFFFF" onclick="Skizze.setColor('#FFFFFF',this)"></div>
+  <div id="snap-layer"></div>
+
+  <!-- LEFT TOOLBAR -->
+  <div id="toolbar">
+    <button class="tbtn active" data-tool="select" onclick="S.setTool('select')" title="Auswählen"><span>👆</span><span class="tlbl">Auswahl</span></button>
+    <button class="tbtn" data-tool="draw"   onclick="S.setTool('draw')"   title="Freihand"><span>🖊️</span><span class="tlbl">Stift</span></button>
+    <div class="tdiv"></div>
+    <button class="tbtn" data-tool="line"   onclick="S.setTool('line')"   title="Linie"><span>📏</span><span class="tlbl">Linie</span></button>
+    <button class="tbtn" data-tool="arrow"  onclick="S.setTool('arrow')"  title="Pfeil"><span>➡️</span><span class="tlbl">Pfeil</span></button>
+    <button class="tbtn" data-tool="rect"   onclick="S.setTool('rect')"   title="Rechteck"><span>⬜</span><span class="tlbl">Rect</span></button>
+    <button class="tbtn" data-tool="circle" onclick="S.setTool('circle')" title="Kreis"><span>⭕</span><span class="tlbl">Kreis</span></button>
+    <button class="tbtn" data-tool="text"   onclick="S.addText()"         title="Text"><span>📝</span><span class="tlbl">Text</span></button>
+    <div class="tdiv"></div>
+    <button class="tbtn" id="panel-toggle-btn" onclick="S.togglePanel()" title="Stempel & Vorlagen"><span>🎭</span><span class="tlbl">Vorlagen</span></button>
+    <div class="tdiv"></div>
+    <button class="tbtn" onclick="S.deleteSelected()" title="Auswahl löschen"><span>🗑️</span><span class="tlbl">Löschen</span></button>
+    <button class="tbtn" onclick="S.clearAll()" title="Alles löschen" style="color:var(--red)"><span>💣</span><span class="tlbl" style="color:var(--red)">Reset</span></button>
   </div>
 
+  <!-- COLOR BAR -->
+  <div id="color-bar" class="hidden">
+    <div class="cdot sel"  style="background:#222222" data-c="#222222"  onclick="S.setColor('#222222',this)"></div>
+    <div class="cdot"      style="background:#FF3B30" data-c="#FF3B30"  onclick="S.setColor('#FF3B30',this)"></div>
+    <div class="cdot"      style="background:#FF9500" data-c="#FF9500"  onclick="S.setColor('#FF9500',this)"></div>
+    <div class="cdot"      style="background:#FFCC00" data-c="#FFCC00"  onclick="S.setColor('#FFCC00',this)"></div>
+    <div class="cdot"      style="background:#34C759" data-c="#34C759"  onclick="S.setColor('#34C759',this)"></div>
+    <div class="cdot"      style="background:#007AFF" data-c="#007AFF"  onclick="S.setColor('#007AFF',this)"></div>
+    <div class="cdot"      style="background:#AF52DE" data-c="#AF52DE"  onclick="S.setColor('#AF52DE',this)"></div>
+    <div class="cdot"      style="background:#FFFFFF;border:2px solid #ccc" data-c="#FFFFFF" onclick="S.setColor('#FFFFFF',this)"></div>
+    <input id="thick-slider" type="range" min="1" max="20" value="3" oninput="S.setThickness(this.value)" title="Strichstärke"/>
+  </div>
+
+  <!-- SIDE PANEL -->
   <div id="side-panel" class="hidden">
-    <div class="panel-header">
-      <span class="panel-title">Hintergründe & Stempel</span>
-      <button class="panel-close-btn" onclick="Skizze.toggleStamps()">✕</button>
+    <div class="phdr">
+      <span class="ptitle">Werkzeuge & Vorlagen</span>
+      <button class="pclose" onclick="S.togglePanel()">✕</button>
     </div>
-    
-    <div class="stamp-category">Hintergrund</div>
-    <div class="stamp-grid">
-      <div class="stamp-item" onclick="Skizze.setBackground('blank')" title="Weiß">⬜</div>
-      <div class="stamp-item" onclick="Skizze.setBackground('grid_10')" title="Millimeterpapier">📏</div>
-    </div>
-    
-    <div class="stamp-category">Baukasten Straße</div>
-    <div class="stamp-grid">
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('straight')" title="Gerade">🛣️</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('curve_90')" title="Kurve 90°">↪️</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('curve_45')" title="Kurve 45°">📐</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('tjunction')" title="T-Kreuzung">┳</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('crossing')" title="Kreuzung">➕</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('roundabout')" title="Kreisverkehr">🔄</div>
-      <div class="stamp-item" onclick="Skizze.addRoadSegment('parking')" title="Parkplatz">🅿️</div>
+    <div class="ptabs">
+      <button class="ptab active" onclick="S.showTab('bg')">🖼️<br>Hinter.</button>
+      <button class="ptab" onclick="S.showTab('road')">🚗<br>Straße</button>
+      <button class="ptab" onclick="S.showTab('build')">🏠<br>Gebäude</button>
+      <button class="ptab" onclick="S.showTab('sym')">🎭<br>Symbole</button>
     </div>
 
-    <div class="stamp-category">Verkehr & Infrastruktur</div>
-    <div class="stamp-grid">
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('stop')" title="Stoppschild">🛑</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('yield')" title="Vorfahrt gewähren">▽</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('priority')" title="Vorfahrtsstraße">🔶</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('traffic_light')" title="Ampel">🚥</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('crosswalk')" title="Zebrastreifen">🦓</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('barrier')" title="Bahnschranke">🚧</div>
-      <div class="stamp-item" onclick="Skizze.addInfrastructure('station')" title="Bahnhof">🚉</div>
+    <!-- TAB: Hintergrund -->
+    <div id="tab-bg" class="pscroll">
+      <div class="pcategory">Hintergrund</div>
+      <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
+      <button class="pbtn" onclick="S.setBg('grid')">📏 Raster (Millimeterpapier)</button>
+      <button class="pbtn" onclick="S.openMapPicker()">🗺️ Kartenausschnitt (NRW)</button>
+      <div class="pcategory">Hintergrundbild</div>
+      <button class="pbtn" onclick="S.loadBgImage()">🖼️ Foto/Bild laden</button>
+      <input id="bg-file-input" type="file" accept="image/*" style="display:none" onchange="S.onBgFileLoaded(event)"/>
     </div>
 
-    <div class="stamp-category">Baukasten Gebäude</div>
-    <div class="stamp-grid">
-      <div class="stamp-item" onclick="Skizze.addRoomSegment('wall')" title="Wand">🧱</div>
-      <div class="stamp-item" onclick="Skizze.addRoomSegment('door')" title="Tür">🚪</div>
-      <div class="stamp-item" onclick="Skizze.addRoomSegment('window')" title="Fenster">🪟</div>
+    <!-- TAB: Straße -->
+    <div id="tab-road" class="pscroll" style="display:none">
+      <div class="pcategory">Baukasten Straße</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addRoad('straight')"   title="Gerade">🛣️</div>
+        <div class="pitem" onclick="S.addRoad('curve90')"    title="Kurve 90°">↪️</div>
+        <div class="pitem" onclick="S.addRoad('curve45')"    title="Kurve 45°">📐</div>
+        <div class="pitem" onclick="S.addRoad('tjunction')"  title="T-Kreuzung">┳</div>
+        <div class="pitem" onclick="S.addRoad('crossing')"   title="Kreuzung">➕</div>
+        <div class="pitem" onclick="S.addRoad('roundabout')" title="Kreisverkehr">🔄</div>
+        <div class="pitem" onclick="S.addRoad('parking')"    title="Parkplatz">🅿️</div>
+        <div class="pitem" onclick="S.addRoad('oneway')"     title="Einbahnstraße">↕️</div>
+      </div>
+      <div class="pcategory">Verkehrszeichen</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addSign('stop')"         title="Stop">🛑</div>
+        <div class="pitem" onclick="S.addSign('yield')"        title="Vorfahrt gew.">▽</div>
+        <div class="pitem" onclick="S.addSign('priority')"     title="Vorfahrtsstraße">🔶</div>
+        <div class="pitem" onclick="S.addSign('tlight')"       title="Ampel">🚥</div>
+        <div class="pitem" onclick="S.addSign('crosswalk')"    title="Zebrastreifen">🦓</div>
+        <div class="pitem" onclick="S.addSign('speedlimit30')" title="Tempo 30">🔵</div>
+        <div class="pitem" onclick="S.addSign('nopark')"       title="Halteverbot">🚫</div>
+        <div class="pitem" onclick="S.addSign('barrier')"      title="Schranke">🚧</div>
+      </div>
+      <div class="pcategory">VU – Fahrzeuge (Vogelperspektive)</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addVehicle('pkw_blue')"   title="PKW Blau">🟦</div>
+        <div class="pitem" onclick="S.addVehicle('pkw_red')"    title="PKW Rot">🟥</div>
+        <div class="pitem" onclick="S.addVehicle('pkw_white')"  title="PKW Weiß">⬜</div>
+        <div class="pitem" onclick="S.addVehicle('pkw_grey')"   title="PKW Grau">▪️</div>
+        <div class="pitem" onclick="S.addVehicle('polizei')"    title="Streifenwagen">🚓</div>
+        <div class="pitem" onclick="S.addVehicle('rtw')"        title="RTW">🚑</div>
+        <div class="pitem" onclick="S.addVehicle('lkw')"        title="LKW">🚚</div>
+        <div class="pitem" onclick="S.addVehicle('motorrad')"   title="Motorrad">🏍️</div>
+        <div class="pitem" onclick="S.addVehicle('fahrrad')"    title="Fahrrad">🚲</div>
+        <div class="pitem" onclick="S.addStamp('🚶')"           title="Fußgänger">🚶</div>
+      </div>
+      <div class="pcategory">VU – Spuren & KTU</div>
+      <div class="pgrid" id="ktu-grid"></div>
     </div>
 
-    <div class="stamp-category">VU - Fahrzeuge</div>
-    <div class="stamp-grid">
-      <div class="stamp-item" onclick="Skizze.addStamp('car_blue')" title="Auto Blau">🚙</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('car_red')" title="Auto Rot">🚗</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('car_police')" title="Streifenwagen">🚓</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('fire_truck')" title="Feuerwehr">🚒</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('ambulance')" title="RTW">🚑</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('truck')" title="LKW">🚚</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('motorcycle')" title="Motorrad">🏍️</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('bicycle')" title="Fahrrad">🚲</div>
-      <div class="stamp-item" onclick="Skizze.addStamp('🚶')" title="Fußgänger">🚶</div>
+    <!-- TAB: Gebäude -->
+    <div id="tab-build" class="pscroll" style="display:none">
+      <div class="pcategory">Grundriss – Wände</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addWall(200)"  title="Wand 200px">🧱</div>
+        <div class="pitem" onclick="S.addWall(100)"  title="Wand 100px">▬</div>
+        <div class="pitem" onclick="S.addDoor()"     title="Tür">🚪</div>
+        <div class="pitem" onclick="S.addWindow()"   title="Fenster">🪟</div>
+        <div class="pitem" onclick="S.addRoom()"     title="Raum">⬜</div>
+        <div class="pitem" onclick="S.addStairs()"   title="Treppe">📶</div>
+      </div>
+      <div class="pcategory">Möbel – Wohnzimmer</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addFurniture('sofa')"     title="Sofa">🛋️</div>
+        <div class="pitem" onclick="S.addFurniture('table')"    title="Tisch">🪑</div>
+        <div class="pitem" onclick="S.addFurniture('chair')"    title="Stuhl">🪑</div>
+        <div class="pitem" onclick="S.addFurniture('tv')"       title="TV">📺</div>
+      </div>
+      <div class="pcategory">Möbel – Schlafzimmer</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addFurniture('bed_d')"    title="Doppelbett">🛏️</div>
+        <div class="pitem" onclick="S.addFurniture('bed_s')"    title="Einzelbett">🛏️</div>
+        <div class="pitem" onclick="S.addFurniture('wardrobe')" title="Schrank">🪞</div>
+      </div>
+      <div class="pcategory">Möbel – Bad & Küche</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addFurniture('wc')"       title="Toilette">🚽</div>
+        <div class="pitem" onclick="S.addFurniture('bath')"     title="Badewanne">🛁</div>
+        <div class="pitem" onclick="S.addFurniture('sink')"     title="Waschbecken">🪣</div>
+        <div class="pitem" onclick="S.addFurniture('stove')"    title="Herd">🍳</div>
+        <div class="pitem" onclick="S.addFurniture('fridge')"   title="Kühlschrank">🧊</div>
+      </div>
+      <div class="pcategory">Tatort – Personen & Objekte</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addStamp('👤')"     title="Person stehend">👤</div>
+        <div class="pitem" onclick="S.addCorpse()"        title="Person liegend (Leiche)">🔲</div>
+        <div class="pitem" onclick="S.addStamp('🩸')"     title="Blut">🩸</div>
+        <div class="pitem" onclick="S.addStamp('🔫')"     title="Waffe/Schusswaffe">🔫</div>
+        <div class="pitem" onclick="S.addStamp('🔪')"     title="Messer">🔪</div>
+        <div class="pitem" onclick="S.addStamp('💊')"     title="Drogen/Tabletten">💊</div>
+        <div class="pitem" onclick="S.addStamp('📱')"     title="Handy">📱</div>
+        <div class="pitem" onclick="S.addStamp('💼')"     title="Tasche/Koffer">💼</div>
+      </div>
     </div>
 
-    <div class="stamp-category">KTU & Spuren</div>
-    <div class="stamp-grid" id="ktu-grid">
-      <!-- Generated via JS -->
+    <!-- TAB: Symbole -->
+    <div id="tab-sym" class="pscroll" style="display:none">
+      <div class="pcategory">Taktische Marker</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addStamp('🔴')"  title="Tatort">🔴</div>
+        <div class="pitem" onclick="S.addStamp('🟣')"  title="Ereignisort">🟣</div>
+        <div class="pitem" onclick="S.addStamp('⚠️')"  title="Gefahr">⚠️</div>
+        <div class="pitem" onclick="S.addStamp('📍')"  title="Stecknadel">📍</div>
+        <div class="pitem" onclick="S.addStamp('🚨')"  title="Alarm">🚨</div>
+        <div class="pitem" onclick="S.addStamp('🔦')"  title="Kontrolle">🔦</div>
+      </div>
+      <div class="pcategory">Einsatzkräfte</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addStamp('🚓')"  title="Polizei">🚓</div>
+        <div class="pitem" onclick="S.addStamp('🚒')"  title="Feuerwehr">🚒</div>
+        <div class="pitem" onclick="S.addStamp('🚑')"  title="RTW">🚑</div>
+        <div class="pitem" onclick="S.addStamp('🚁')"  title="Hubschrauber">🚁</div>
+        <div class="pitem" onclick="S.addStamp('🐕')"  title="Diensthund">🐕</div>
+      </div>
+      <div class="pcategory">Natur & Infrastruktur</div>
+      <div class="pgrid">
+        <div class="pitem" onclick="S.addStamp('🌳')"  title="Baum">🌳</div>
+        <div class="pitem" onclick="S.addStamp('🏢')"  title="Gebäude">🏢</div>
+        <div class="pitem" onclick="S.addStamp('🏠')"  title="Haus">🏠</div>
+        <div class="pitem" onclick="S.addStamp('⛽')"  title="Tankstelle">⛽</div>
+        <div class="pitem" onclick="S.addStamp('🏥')"  title="Krankenhaus">🏥</div>
+        <div class="pitem" onclick="S.addStamp('🏪')"  title="Geschäft">🏪</div>
+      </div>
+      <div class="pcategory">Nummerierte KTU-Tafeln</div>
+      <div class="pgrid" id="ktu-grid2"></div>
+      <div class="pcategory">Maßangabe</div>
+      <button class="pbtn" onclick="S.addMeasureLabel()">📐 Maßlinie hinzufügen</button>
     </div>
   </div>
 </div>
 
+<!-- MAP PICKER MODAL -->
+<div id="map-modal" class="hidden">
+  <div id="map-modal-inner">
+    <div id="map-modal-header">
+      <span style="font-size:15px;font-weight:800;">🗺️ Kartenausschnitt wählen</span>
+      <span style="font-size:12px;color:var(--txt2)">Ausschnitt navigieren → Übernehmen</span>
+    </div>
+    <div id="leaflet-picker"></div>
+    <div id="map-modal-footer">
+      <button id="map-cancel-btn" onclick="S.closeMapPicker()">Abbrechen</button>
+      <button id="map-apply-btn"  onclick="S.applyMapBg()">✓ Als Hintergrund übernehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEXT INPUT MODAL -->
+<div id="text-modal" class="hidden">
+  <div id="text-modal-inner">
+    <div style="font-size:15px;font-weight:800;margin-bottom:4px;">📝 Text eingeben</div>
+    <div style="font-size:12px;color:var(--txt2)">Enter = Bestätigen</div>
+    <input id="text-input" type="text" placeholder="Text eingeben…"
+           onkeydown="if(event.key==='Enter')S.submitText()"/>
+    <div style="font-size:11px;color:var(--txt2);margin-bottom:2px;">Größe:</div>
+    <input type="range" min="10" max="120" value="28" id="text-size-slider"
+           style="width:100%;margin-bottom:12px;"/>
+    <div id="text-modal-btns">
+      <button onclick="S.closeTextModal()" style="background:var(--bg);color:var(--txt);border:1.5px solid var(--sep);">Abbrechen</button>
+      <button onclick="S.submitText()" style="background:var(--blue);color:#fff;">✓ Platzieren</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script>
 'use strict';
+/* ══════════════════════════════════════════════════════════
+   TAKTISCHE SKIZZE v2.0 – KPB Unna
+   Verkehrsunfall & Tatort Zeichenwerkzeug
+   ══════════════════════════════════════════════════════════ */
 
-const Skizze = {
-  canvas: null,
-  currentTool: 'select',
-  currentColor: '#000000',
-  isDark: false,
-  activeSocket: null,
-  
-  // Interaction states for drawing shapes
-  isDrawingShape: false,
-  startX: 0,
-  startY: 0,
-  currentShape: null,
+const S = {
+  canvas:    null,
+  tool:      'select',
+  color:     '#222222',
+  thickness: 3,
+  isDark:    false,
+  _undoStack:     [],
+  _redoStack:     [],
+  _activeSocket:  null,
+  _drawing:       false,
+  _startX:        0,
+  _startY:        0,
+  _tempShape:     null,
+  _miniMap:       null,
+  _textPending:   null,  // {lat,lng} or center flag
 
+  /* ──────────────────────────────────────────────────────── */
   init() {
-    // Generate KTU Spurentafeln
-    const ktuGrid = document.getElementById('ktu-grid');
-    for(let i=1; i<=15; i++) {
-      let div = document.createElement('div');
-      div.className = 'stamp-item';
-      div.style.fontSize = '18px';
-      div.style.fontWeight = 'bold';
-      div.style.color = '#FFCC00';
-      div.style.textShadow = '0 0 2px #000';
-      div.innerText = `[${i}]`;
-      div.onclick = () => this.addEvidenceMarker(i);
-      ktuGrid.appendChild(div);
+    // Dark mode from localStorage
+    if (localStorage.getItem('lagekarte_dark') === '1') {
+      this.isDark = true;
+      document.documentElement.classList.add('dark');
     }
-    
-    // Add custom KTU stamps
-    const customKtu = [
-      {icon: '🩸', label: 'Blut'},
-      {icon: '🔫', label: 'Waffe'},
-      {icon: '🔪', label: 'Messer'},
-      {icon: '👤', label: 'Person'}
-    ];
-    customKtu.forEach(k => {
-      let div = document.createElement('div');
-      div.className = 'stamp-item';
-      div.innerText = k.icon;
-      div.title = k.label;
-      div.onclick = () => this.addStamp(k.icon);
-      ktuGrid.appendChild(div);
-    });
 
-    // Dark Mode Init
-    const savedDark = localStorage.getItem('lagekarte_dark');
-    if (savedDark === 'true') this.toggleDark(true);
-
-    // Initialize Fabric
-    const wrapper = document.getElementById('canvas-wrapper');
+    const wrap = document.getElementById('canvas-wrapper');
     this.canvas = new fabric.Canvas('skizzeCanvas', {
-      width: wrapper.clientWidth,
-      height: wrapper.clientHeight,
+      width:  wrap.clientWidth,
+      height: wrap.clientHeight,
       isDrawingMode: false,
       selection: true,
-      preserveObjectStacking: true
+      preserveObjectStacking: true,
     });
 
-    // Resize handling
-    window.addEventListener('resize', this.resizeCanvas.bind(this));
-    
-    // Connect node listener
-    this.canvas.on('selection:created', this.renderSnapNodes.bind(this));
-    this.canvas.on('selection:updated', this.renderSnapNodes.bind(this));
-    this.canvas.on('selection:cleared', this.renderSnapNodes.bind(this));
-    this.canvas.on('object:moving', this.renderSnapNodes.bind(this));
-    this.canvas.on('object:rotating', this.renderSnapNodes.bind(this));
-    this.canvas.on('mouse:move', this.renderSnapNodes.bind(this)); // For panning updates
-    this.canvas.on('mouse:wheel', this.renderSnapNodes.bind(this)); // For zoom updates
-
-    this.checkThemeMode();
-    this.setBackground('grid_10'); 
-    // Shape Drawing Events
-    this.canvas.on('mouse:down', this.onMouseDown.bind(this));
-    this.canvas.on('mouse:move', this.onMouseMove.bind(this));
-    this.canvas.on('mouse:up', this.onMouseUp.bind(this));
-
     // Setup brush
-    this.canvas.freeDrawingBrush.color = this.currentColor;
-    this.canvas.freeDrawingBrush.width = 3;
+    this.canvas.freeDrawingBrush.color = this.color;
+    this.canvas.freeDrawingBrush.width = this.thickness;
+
+    // Events
+    this.canvas.on('mouse:down',  e => this._onDown(e));
+    this.canvas.on('mouse:move',  e => this._onMove(e));
+    this.canvas.on('mouse:up',    e => this._onUp(e));
+    this.canvas.on('object:modified', () => this._saveHistory());
+    this.canvas.on('path:created',    () => this._saveHistory());
+
+    // Snap node updates
+    ['selection:created','selection:updated','selection:cleared',
+     'object:moving','object:rotating','mouse:wheel'].forEach(ev =>
+      this.canvas.on(ev, () => this._renderSnap())
+    );
+
+    // Resize
+    window.addEventListener('resize', () => this._resize());
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !this.canvas.isDrawingMode) {
+        this.deleteSelected();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); this.undo(); }
+    });
+
+    // KTU grids
+    this._buildKTUGrid('ktu-grid');
+    this._buildKTUGrid('ktu-grid2');
 
     // Draw initial background
-    this.drawBackground();
+    this._drawBg();
+    this._saveHistory();
   },
 
-  toggleDark(force) {
-    this.isDark = force !== undefined ? force : !this.isDark;
-    if (this.isDark) {
-      document.body.classList.add('dark');
-      if(this.currentColor === '#000000') this.setColor('#FFFFFF', document.querySelector('[data-color="#FFFFFF"]'));
-    } else {
-      document.body.classList.remove('dark');
-      if(this.currentColor === '#FFFFFF') this.setColor('#000000', document.querySelector('[data-color="#000000"]'));
+  /* ── RESIZE ── */
+  _resize() {
+    const wrap = document.getElementById('canvas-wrapper');
+    const w = wrap.clientWidth;
+    const h = wrap.clientHeight;
+    this.canvas.setWidth(w);
+    this.canvas.setHeight(h);
+    this._drawBg();
+    this.canvas.renderAll();
+  },
+
+  /* ── TOOL SYSTEM ── */
+  setTool(t) {
+    this.tool = t;
+    document.querySelectorAll('.tbtn[data-tool]').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.tbtn[data-tool="${t}"]`);
+    if (btn) btn.classList.add('active');
+
+    this.canvas.isDrawingMode = (t === 'draw');
+    const isSelect = (t === 'select');
+    this.canvas.selection = isSelect;
+    this.canvas.forEachObject(o => o.selectable = isSelect);
+
+    if (t === 'draw') {
+      this.canvas.freeDrawingBrush.color = this.color;
+      this.canvas.freeDrawingBrush.width = this.thickness;
     }
-    localStorage.setItem('lagekarte_dark', this.isDark);
-    this.drawBackground();
+
+    // Show color bar for drawing tools
+    const needsColor = ['draw','line','arrow','rect','circle'].includes(t);
+    document.getElementById('color-bar').classList.toggle('hidden', !needsColor);
+
+    if (t !== 'select') this._clearSnap();
   },
 
-   setTool(tool) {
-    this.currentTool = tool;
-    
-    // UI Update
-    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-    let activeBtn = document.querySelector(`.tool-btn[onclick="Skizze.setTool('${tool}')"]`);
-    if(activeBtn) activeBtn.classList.add('active');
-
-    // Canvas Settings
-    this.canvas.isDrawingMode = false;
-    this.canvas.selection = false;
-    this.canvas.forEachObject(o => o.selectable = false);
-
-    if (tool === 'select') {
-      this.canvas.selection = true;
-      this.canvas.forEachObject(o => o.selectable = true);
-      this.renderSnapNodes();
-    } else if (tool === 'draw') {
-      this.canvas.isDrawingMode = true;
-      this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      this.canvas.freeDrawingBrush.color = this.currentColor;
-      this.canvas.freeDrawingBrush.width = 4;
-      this.activeSocket = null;
-      this.renderSnapNodes();
-    } else {
-      this.activeSocket = null;
-      this.renderSnapNodes();
-    }
-  },
-
-  setColor(color, el) {
-    this.currentColor = color;
-    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-    if(el) el.classList.add('selected');
-
-    this.canvas.freeDrawingBrush.color = color;
-    
-    // Update selected object if any
-    const activeObj = this.canvas.getActiveObject();
-    if (activeObj) {
-      if (activeObj.type === 'path' || activeObj.type === 'line' || activeObj.type === 'polyline') {
-        activeObj.set({ stroke: color });
-      } else if (activeObj.type === 'i-text') {
-        activeObj.set({ fill: color });
-      } else {
-        activeObj.set({ stroke: color });
-      }
+  setColor(c, el) {
+    this.color = c;
+    document.querySelectorAll('.cdot').forEach(d => d.classList.remove('sel'));
+    if (el) el.classList.add('sel');
+    this.canvas.freeDrawingBrush.color = c;
+    const obj = this.canvas.getActiveObject();
+    if (obj) {
+      if (obj.type === 'i-text' || obj.type === 'text') obj.set({ fill: c });
+      else obj.set({ stroke: c });
       this.canvas.renderAll();
     }
   },
 
-  /* ── SHAPE DRAWING LOGIC ────────────────────────────── */
-  
-  onMouseDown(o) {
-    if (this.currentTool === 'select' || this.currentTool === 'draw') return;
-    
-    this.isDrawingShape = true;
-    let pointer = this.canvas.getPointer(o.e);
-    this.startX = pointer.x;
-    this.startY = pointer.y;
-
-    if (this.currentTool === 'line' || this.currentTool === 'arrow') {
-      let points = [pointer.x, pointer.y, pointer.x, pointer.y];
-      this.currentShape = new fabric.Line(points, {
-        strokeWidth: 3,
-        fill: this.currentColor,
-        stroke: this.currentColor,
-        originX: 'center',
-        originY: 'center',
-        selectable: false,
-        evented: false
-      });
-      this.canvas.add(this.currentShape);
-    } 
-    else if (this.currentTool === 'rect') {
-      this.currentShape = new fabric.Rect({
-        left: pointer.x,
-        top: pointer.y,
-        originX: 'left',
-        originY: 'top',
-        width: 0,
-        height: 0,
-        fill: 'transparent',
-        stroke: this.currentColor,
-        strokeWidth: 3,
-        selectable: false,
-        evented: false
-      });
-      this.canvas.add(this.currentShape);
-    }
-    else if (this.currentTool === 'circle') {
-      this.currentShape = new fabric.Circle({
-        left: pointer.x,
-        top: pointer.y,
-        originX: 'center',
-        originY: 'center',
-        radius: 0,
-        fill: 'transparent',
-        stroke: this.currentColor,
-        strokeWidth: 3,
-        selectable: false,
-        evented: false
-      });
-      this.canvas.add(this.currentShape);
+  setThickness(v) {
+    this.thickness = parseInt(v);
+    this.canvas.freeDrawingBrush.width = this.thickness;
+    const obj = this.canvas.getActiveObject();
+    if (obj && obj.type !== 'i-text') {
+      obj.set({ strokeWidth: this.thickness });
+      this.canvas.renderAll();
     }
   },
 
-  onMouseMove(o) {
-    if (!this.isDrawingShape || !this.currentShape) return;
-    
-    let pointer = this.canvas.getPointer(o.e);
-    
-    if (this.currentTool === 'line' || this.currentTool === 'arrow') {
-      this.currentShape.set({ x2: pointer.x, y2: pointer.y });
+  /* ── MOUSE EVENTS (shape drawing) ── */
+  _onDown(o) {
+    if (['select','draw','text'].includes(this.tool)) return;
+    this._drawing = true;
+    const p = this.canvas.getPointer(o.e);
+    this._startX = p.x; this._startY = p.y;
+
+    const opts = { stroke: this.color, strokeWidth: this.thickness,
+      fill: 'transparent', selectable: false, evented: false };
+
+    if (this.tool === 'line' || this.tool === 'arrow') {
+      this._tempShape = new fabric.Line([p.x,p.y,p.x,p.y], { ...opts, fill: this.color });
+    } else if (this.tool === 'rect') {
+      this._tempShape = new fabric.Rect({ left: p.x, top: p.y, width: 0, height: 0, ...opts });
+    } else if (this.tool === 'circle') {
+      this._tempShape = new fabric.Ellipse({ left: p.x, top: p.y, rx: 0, ry: 0,
+        originX: 'center', originY: 'center', ...opts });
     }
-    else if (this.currentTool === 'rect') {
-      this.currentShape.set({
-        width: Math.abs(this.startX - pointer.x),
-        height: Math.abs(this.startY - pointer.y)
+    if (this._tempShape) this.canvas.add(this._tempShape);
+  },
+
+  _onMove(o) {
+    if (!this._drawing || !this._tempShape) return;
+    const p = this.canvas.getPointer(o.e);
+    const dx = p.x - this._startX, dy = p.y - this._startY;
+
+    if (this.tool === 'line' || this.tool === 'arrow') {
+      this._tempShape.set({ x2: p.x, y2: p.y });
+    } else if (this.tool === 'rect') {
+      this._tempShape.set({
+        left: Math.min(this._startX, p.x),
+        top:  Math.min(this._startY, p.y),
+        width: Math.abs(dx), height: Math.abs(dy),
       });
-      
-      if(this.startX > pointer.x) this.currentShape.set({ originX: 'right' });
-      else this.currentShape.set({ originX: 'left' });
-      
-      if(this.startY > pointer.y) this.currentShape.set({ originY: 'bottom' });
-      else this.currentShape.set({ originY: 'top' });
-    }
-    else if (this.currentTool === 'circle') {
-      let radius = Math.max(Math.abs(this.startX - pointer.x), Math.abs(this.startY - pointer.y));
-      this.currentShape.set({ radius: radius });
+    } else if (this.tool === 'circle') {
+      this._tempShape.set({ rx: Math.abs(dx)/2, ry: Math.abs(dy)/2,
+        left: this._startX + dx/2, top: this._startY + dy/2 });
     }
     this.canvas.renderAll();
   },
 
-  onMouseUp(o) {
-    if (!this.isDrawingShape) return;
-    this.isDrawingShape = false;
-    
-    if (this.currentShape) {
-      if(this.currentTool === 'arrow') {
-        // Add arrow head
-        let p = this.canvas.getPointer(o.e);
-        let dx = p.x - this.startX;
-        let dy = p.y - this.startY;
-        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        
-        // If line is too short, just remove it
-        if(Math.abs(dx) < 5 && Math.abs(dy) < 5) {
-          this.canvas.remove(this.currentShape);
-          this.currentShape = null;
-          return;
-        }
+  _onUp(o) {
+    if (!this._drawing) return;
+    this._drawing = false;
+    const p = this.canvas.getPointer(o.e);
+    const dx = p.x - this._startX, dy = p.y - this._startY;
 
-        let head = new fabric.Triangle({
-          width: 15, 
-          height: 15, 
-          fill: this.currentColor, 
-          left: p.x, 
-          top: p.y,
-          originX: 'center',
-          originY: 'center',
-          selectable: false,
-          evented: false,
-          angle: angle + 90
-        });
+    if (!this._tempShape) return;
 
-        // Group line and head
-        let group = new fabric.Group([this.currentShape, head], {
-          selectable: true,
-          evented: true
-        });
-        
-        this.canvas.remove(this.currentShape);
-        this.canvas.add(group);
-      } else {
-        this.currentShape.setCoords();
-        this.currentShape.set({ selectable: true, evented: true });
-      }
-    }
-    
-    this.currentShape = null;
-    // Auto switch back to select tool after drawing shape
-    this.setTool('select');
-  },
-
-  /* ── TEXT & STAMPS ───────────────────────────────────── */
-  
-  addInfrastructure(type) {
-    this.setTool('select');
-    let groupElements = [];
-    
-    if (type === 'stop') {
-      let sign = new fabric.Polygon([
-        {x: 10, y: 0}, {x: 30, y: 0}, {x: 40, y: 10}, {x: 40, y: 30},
-        {x: 30, y: 40}, {x: 10, y: 40}, {x: 0, y: 30}, {x: 0, y: 10}
-      ], { fill: '#DA291C', stroke: '#fff', strokeWidth: 2, left: -20, top: -20 });
-      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 20 });
-      let text = new fabric.Text('STOP', { fontSize: 10, fill: '#fff', fontWeight: 'bold', originX: 'center', originY: 'center', left: 0, top: 0 });
-      groupElements = [pole, sign, text];
-    } else if (type === 'yield') {
-      let sign = new fabric.Polygon([ {x: 0, y: 0}, {x: 40, y: 0}, {x: 20, y: 35} ], { fill: '#fff', stroke: '#DA291C', strokeWidth: 6, strokeLineJoin: 'round', left: -20, top: -20 });
-      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 15 });
-      groupElements = [pole, sign];
-    } else if (type === 'priority') {
-      let sign = new fabric.Polygon([ {x: 20, y: 0}, {x: 40, y: 20}, {x: 20, y: 40}, {x: 0, y: 20} ], { fill: '#FFCC00', stroke: '#fff', strokeWidth: 4, left: -20, top: -20 });
-      let border = new fabric.Polygon([ {x: 20, y: 0}, {x: 40, y: 20}, {x: 20, y: 40}, {x: 0, y: 20} ], { fill: '', stroke: '#000', strokeWidth: 1, left: -20, top: -20 });
-      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 20 });
-      groupElements = [pole, sign, border];
-    } else if (type === 'crosswalk') {
-      // Multiple white thick lines for Zebra crossing
-      let bg = new fabric.Rect({ width: 150, height: 40, fill: 'transparent', left: -75, top: -20 });
-      groupElements.push(bg);
-      for(let i=0; i<6; i++) {
-        let stripe = new fabric.Rect({ width: 12, height: 40, fill: '#fff', left: -68 + i*24, top: -20 });
-        groupElements.push(stripe);
-      }
-    } else if (type === 'traffic_light') {
-      let box = new fabric.Rect({ width: 16, height: 40, fill: '#222', rx: 3, ry: 3, left: -8, top: -20 });
-      let r = new fabric.Circle({ radius: 4, fill: '#DA291C', left: -4, top: -16 });
-      let y = new fabric.Circle({ radius: 4, fill: '#FFCC00', left: -4, top: -4 });
-      let g = new fabric.Circle({ radius: 4, fill: '#4CAF50', left: -4, top: 8 });
-      groupElements = [box, r, y, g];
-    } else if (type === 'barrier') {
-      let base = new fabric.Rect({ width: 8, height: 16, fill: '#444', left: -4, top: -8 });
-      let arm = new fabric.Rect({ width: 100, height: 6, fill: '#DA291C', left: 4, top: -3 });
-      // Stripes on arm
-      for(let i=0; i<5; i++) { let stripe = new fabric.Rect({ width: 10, height: 6, fill: '#fff', left: 10 + i*20, top: -3 }); groupElements.push(stripe); }
-      groupElements.unshift(base, arm);
-    } else if (type === 'station') {
-      let base = new fabric.Rect({ width: 120, height: 60, fill: '#A0B0C0', stroke: '#555', strokeWidth: 2, left: -60, top: -30 });
-      let text = new fabric.Text('BAHNHOF', { fontSize: 14, fill: '#111', fontWeight: 'bold', originX: 'center', originY: 'center' });
-      groupElements = [base, text];
+    // Discard tiny shapes (accidental clicks)
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4 && this.tool !== 'line') {
+      this.canvas.remove(this._tempShape);
+      this._tempShape = null;
+      return;
     }
 
-    let stampGroup = new fabric.Group(groupElements, {
-      left: this.canvas.width / 2, top: this.canvas.height / 2,
-      originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
-    });
-    this.canvas.add(stampGroup);
-    this.canvas.setActiveObject(stampGroup);
-    if(window.innerWidth < 768) this.toggleStamps();
-  },
-
-  addText() {
-    this.setTool('select');
-    let text = new fabric.IText('Text...', {
-      left: this.canvas.width / 2,
-      top: this.canvas.height / 2,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      fill: this.currentColor,
-      fontSize: 24,
-      originX: 'center',
-      originY: 'center'
-    });
-    this.canvas.add(text);
-    this.canvas.setActiveObject(text);
-    text.enterEditing();
-    text.selectAll();
-  },
-
-  addStamp(typeOrEmoji) {
-    this.setTool('select');
-    
-    // Top-down Vehicle SVGs (Simple colored blocks with windshields and wheels)
-    const vehicles = {
-      'car_blue':   { color: '#007AFF', w: 40, h: 80 },
-      'car_red':    { color: '#FF3B30', w: 40, h: 80 },
-      'car_police': { color: '#ffffff', stripe: '#007AFF', w: 40, h: 80 },
-      'fire_truck': { color: '#FF3B30', w: 46, h: 110, stripe: '#fff' },
-      'ambulance':  { color: '#ffffff', w: 42, h: 90, stripe: '#FF9500' },
-      'truck':      { color: '#FF9500', w: 48, h: 140 },
-      'motorcycle': { w: 16, h: 36, isBike: true },
-      'bicycle':    { w: 12, h: 32, isBike: true }
-    };
-
-    if (vehicles[typeOrEmoji]) {
-      let v = vehicles[typeOrEmoji];
-      let gElements = [];
-      
-      if(v.isBike) {
-        // Simple bike representation
-        let body = new fabric.Rect({ width: 4, height: v.h-8, fill: '#333', left: -2, top: -v.h/2+4 });
-        let frontWheel = new fabric.Rect({ width: 2, height: 10, fill: '#000', left: -1, top: -v.h/2 });
-        let backWheel = new fabric.Rect({ width: 2, height: 10, fill: '#000', left: -1, top: v.h/2-10 });
-        gElements = [body, frontWheel, backWheel];
-      } else {
-        // Car Body
-        let body = new fabric.Rect({ width: v.w, height: v.h, fill: v.color, stroke: '#333', strokeWidth: 1.5, rx: 4, ry: 4, left: -v.w/2, top: -v.h/2 });
-        gElements.push(body);
-        
-        // Stripes for emergency vehicles
-        if(v.stripe && typeOrEmoji === 'car_police') {
-          let stripe1 = new fabric.Rect({ width: 8, height: v.h, fill: v.stripe, left: -v.w/2+4, top: -v.h/2 });
-          let stripe2 = new fabric.Rect({ width: 8, height: v.h, fill: v.stripe, left: v.w/2-12, top: -v.h/2 });
-          gElements.push(stripe1, stripe2);
-        } else if (v.stripe) {
-          let stripe = new fabric.Rect({ width: v.w, height: 10, fill: v.stripe, left: -v.w/2, top: 0 });
-          gElements.push(stripe);
-        }
-
-        // Windshields (Front & Back)
-        let frontWindow = new fabric.Rect({ width: v.w - 10, height: 14, fill: '#444', left: -v.w/2 + 5, top: -v.h/2 + 14, rx: 2, ry: 2 });
-        let backWindow = new fabric.Rect({ width: v.w - 12, height: 10, fill: '#444', left: -v.w/2 + 6, top: v.h/2 - 18, rx: 2, ry: 2 });
-        gElements.push(frontWindow, backWindow);
-
-        // Headlights & Taillights
-        let hl1 = new fabric.Circle({ radius: 3, fill: '#FFCC00', left: -v.w/2 + 4, top: -v.h/2 + 2 });
-        let hl2 = new fabric.Circle({ radius: 3, fill: '#FFCC00', left: v.w/2 - 10, top: -v.h/2 + 2 });
-        let tl1 = new fabric.Rect({ width: 8, height: 3, fill: '#FF3B30', left: -v.w/2 + 4, top: v.h/2 - 5 });
-        let tl2 = new fabric.Rect({ width: 8, height: 3, fill: '#FF3B30', left: v.w/2 - 12, top: v.h/2 - 5 });
-        gElements.push(hl1, hl2, tl1, tl2);
-
-        // Wheels
-        let wheelW = 4; let wheelH = 14;
-        let w1 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: -v.w/2 - 2, top: -v.h/2 + 16, rx: 1, ry: 1 });
-        let w2 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: v.w/2 - 2, top: -v.h/2 + 16, rx: 1, ry: 1 });
-        let w3 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: -v.w/2 - 2, top: v.h/2 - 24, rx: 1, ry: 1 });
-        let w4 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: v.w/2 - 2, top: v.h/2 - 24, rx: 1, ry: 1 });
-        gElements.push(w1, w2, w3, w4);
-      }
-
-      let vehicleGroup = new fabric.Group(gElements, {
-        left: this.canvas.width / 2, top: this.canvas.height / 2,
-        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+    if (this.tool === 'arrow') {
+      const len = Math.sqrt(dx*dx + dy*dy);
+      if (len < 10) { this.canvas.remove(this._tempShape); this._tempShape = null; return; }
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      const head  = new fabric.Triangle({
+        width: Math.min(18, this.thickness * 5 + 5),
+        height: Math.min(18, this.thickness * 5 + 5),
+        fill: this.color, left: p.x, top: p.y,
+        originX: 'center', originY: 'center',
+        angle: angle + 90, selectable: false, evented: false,
       });
-      this.canvas.add(vehicleGroup);
-      this.canvas.setActiveObject(vehicleGroup);
-
+      const grp = new fabric.Group([this._tempShape, head], { selectable: true, evented: true });
+      this.canvas.remove(this._tempShape);
+      this.canvas.add(grp);
+      this._tempShape = null;
     } else {
-      // Fallback for Emojis (KTU marks etc)
-      let text = new fabric.Text(typeOrEmoji, {
-        left: this.canvas.width / 2, top: this.canvas.height / 2,
-        fontSize: 48, originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
-      });
-      this.canvas.add(text);
-      this.canvas.setActiveObject(text);
+      this._tempShape.set({ selectable: true, evented: true });
+      this._tempShape.setCoords();
+      this._tempShape = null;
     }
-    
-    // On mobile, close sidebar after dropping stamp
-    if(window.innerWidth < 768) this.toggleStamps();
-  },
 
-  addEvidenceMarker(number) {
+    this._saveHistory();
     this.setTool('select');
-    // Group with yellow background and black text
-    let rect = new fabric.Rect({
-      width: 24, height: 24, fill: '#FFCC00', stroke: '#000000', strokeWidth: 1,
-      originX: 'center', originY: 'center'
-    });
-    let text = new fabric.Text(number.toString(), {
-      fontSize: 16, fill: '#000000', fontWeight: 'bold',
-      originX: 'center', originY: 'center'
-    });
-    let group = new fabric.Group([rect, text], {
-      left: this.canvas.width / 2,
-      top: this.canvas.height / 2,
-      originX: 'center', originY: 'center'
-    });
-    this.canvas.add(group);
-    this.canvas.setActiveObject(group);
-    
-    if(window.innerWidth < 768) this.toggleStamps();
   },
 
-  /* ── DYNAMIC BUILDING BLOCKS ─────────────────────────── */
-  
-  /* ── DYNAMIC BUILDING BLOCKS ─────────────────────────── */
-  
-  renderSnapNodes() {
-    let container = document.getElementById('snap-nodes-layer');
-    if (!container) return;
+  /* ── SNAP NODES (Road Pieces) ── */
+  _renderSnap() {
+    const container = document.getElementById('snap-layer');
     container.innerHTML = '';
-    
-    let obj = this.canvas.getActiveObject();
-    if (!obj || !obj.sockets || this.currentTool !== 'select') {
-      // If user deselects, don't clear activeSocket immediately if they are about to click a sidebar UI.
-      // But if there's no activeObject, we can't show nodes.
-      // Wait, to allow "Click node -> Click Sidebar", we must keep the nodes visible OR just remember activeSocket.
-      // If we keep nodes visible even when deselected, we need to track activeSocket's obj.
-      if (!this.activeSocket) return;
-      obj = this.activeSocket.obj; 
-      // If object was deleted, clear activeSocket
-      if (!this.canvas.getObjects().includes(obj)) {
-        this.activeSocket = null;
-        return;
+    const obj = this.canvas.getActiveObject();
+    if (!obj || !obj._sockets || this.tool !== 'select') {
+      if (this._activeSocket && this.canvas.getObjects().includes(this._activeSocket.obj)) {
+        this._renderSnapForObj(this._activeSocket.obj, container);
       }
-    } else if (obj.sockets && (!this.activeSocket || this.activeSocket.obj !== obj)) {
-      // Switched selection to a new road piece, clear old active socket
-      this.activeSocket = null;
+      return;
     }
-    
-    if(!obj || !obj.sockets) return;
+    if (this._activeSocket && this._activeSocket.obj !== obj) this._activeSocket = null;
+    this._renderSnapForObj(obj, container);
+  },
 
-    let matrix = obj.calcTransformMatrix();
-    let vpt = this.canvas.viewportTransform;
-    
-    obj.sockets.forEach((s, idx) => {
-      // Skip rendering if this socket is designated as connected (optional future feature)
-      // if (s.connected) return;
-
-      let worldPt = fabric.util.transformPoint({x: s.x, y: s.y}, matrix);
-      let screenPt = fabric.util.transformPoint(worldPt, vpt);
-      
-      let btn = document.createElement('div');
+  _renderSnapForObj(obj, container) {
+    if (!obj._sockets) return;
+    const mx  = obj.calcTransformMatrix();
+    const vpt = this.canvas.viewportTransform;
+    obj._sockets.forEach((s, i) => {
+      const wp = fabric.util.transformPoint({ x: s.x, y: s.y }, mx);
+      const sp = fabric.util.transformPoint(wp, vpt);
+      const btn = document.createElement('div');
       btn.className = 'snap-node';
-      if (this.activeSocket && this.activeSocket.obj === obj && this.activeSocket.idx === idx) {
+      if (this._activeSocket && this._activeSocket.obj === obj && this._activeSocket.idx === i)
         btn.classList.add('active');
-      }
-      btn.style.left = screenPt.x + 'px';
-      btn.style.top = screenPt.y + 'px';
-      btn.innerHTML = '+';
-      
-      btn.onmousedown = (e) => {
+      btn.style.left = sp.x + 'px';
+      btn.style.top  = sp.y + 'px';
+      btn.textContent = '+';
+      btn.addEventListener('mousedown', e => {
         e.stopPropagation();
-        this.activeSocket = { obj: obj, idx: idx };
-        this.renderSnapNodes();
-      };
-      
+        this._activeSocket = { obj, idx: i };
+        this._renderSnap();
+      });
+      btn.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        this._activeSocket = { obj, idx: i };
+        this._renderSnap();
+      }, { passive: true });
       container.appendChild(btn);
     });
   },
 
-  addRoadSegment(type) {
-    this.setTool('select');
-    const roadColor = '#C8C8C8'; 
-    const markingColor = '#ffffff';
-    let w = 150; 
-    let groupElements = [];
-    let sockets = [];
+  _clearSnap() {
+    document.getElementById('snap-layer').innerHTML = '';
+    this._activeSocket = null;
+  },
 
-    // Transparent pad to enforce exact 300x300 bounding box around (0,0)
-    let baseRect = new fabric.Rect({ width: 300, height: 300, left: -150, top: -150, fill: 'transparent', strokeWidth: 0 });
-    groupElements.push(baseRect);
-    
-    // Strict mathematical curves using Circles to guarantee perfect connections
-    if (type === 'straight') {
-      let asphalt = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
-      let dashedLine = new fabric.Line([-150, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      groupElements.push(asphalt, dashedLine);
-      sockets = [ {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
-    } else if (type === 'curve_90') {
-      let asphalt = new fabric.Circle({ radius: 150, fill: '', stroke: roadColor, strokeWidth: w, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
-      let outEdge = new fabric.Circle({ radius: 225, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
-      let inEdge = new fabric.Circle({ radius: 75, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
-      let marking = new fabric.Circle({ radius: 150, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
-      groupElements.push(asphalt, outEdge, inEdge, marking);
-      sockets = [ {x: -150, y: 0, a: 270}, {x: 0, y: 150, a: 0} ];
-    } else if (type === 'curve_45') {
-      let asphalt = new fabric.Circle({ radius: 300, fill: '', stroke: roadColor, strokeWidth: w, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
-      let outEdge = new fabric.Circle({ radius: 375, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
-      let inEdge = new fabric.Circle({ radius: 225, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
-      let marking = new fabric.Circle({ radius: 300, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
-      groupElements.push(asphalt, outEdge, inEdge, marking);
-      sockets = [ {x: -150, y: 0, a: 270}, {x: 62.13, y: 87.87, a: 45} ];
-    } else if (type === 'tjunction') {
-      let asphaltH = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
-      let asphaltV = new fabric.Rect({ width: w, height: 75, fill: roadColor, left: -w/2, top: w/2, stroke: '#999', strokeWidth: 1 });
-      let seamCover = new fabric.Rect({ width: w-2, height: 5, fill: roadColor, left: -w/2+1, top: w/2-2.5 });
-      let dashedLineH = new fabric.Line([-150, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      let dashedLineV = new fabric.Line([0, w/2, 0, w/2+75], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      groupElements.push(asphaltH, asphaltV, seamCover, dashedLineH, dashedLineV);
-      sockets = [ {x: 0, y: 150, a: 90}, {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
-    } else if (type === 'crossing') {
-      let asphaltH = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
-      let asphaltV = new fabric.Rect({ width: w, height: 300, fill: roadColor, left: -w/2, top: -150, stroke: '#999', strokeWidth: 1 });
-      let seamCover1 = new fabric.Rect({ width: w-2, height: w-2, fill: roadColor, left: -w/2+1, top: -w/2+1 }); 
-      let dashedLineH1 = new fabric.Line([-150, 0, -w/2, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      let dashedLineH2 = new fabric.Line([w/2, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      let dashedLineV1 = new fabric.Line([0, -150, 0, -w/2], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      let dashedLineV2 = new fabric.Line([0, w/2, 0, 150], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
-      groupElements.push(asphaltH, asphaltV, seamCover1, dashedLineH1, dashedLineH2, dashedLineV1, dashedLineV2);
-      sockets = [ {x: 0, y: 150, a: 90}, {x: 0, y: -150, a: 270}, {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
-    } else if (type === 'roundabout') {
-      let asphaltFull = new fabric.Circle({ radius: 150, fill: roadColor, stroke: '#999', strokeWidth: 1, originX: 'center', originY: 'center', left: 0, top: 0 });
-      let islandOuter = new fabric.Circle({ radius: 76, fill: '#666', originX: 'center', originY: 'center', left: 0, top: 0 });
-      let island = new fabric.Circle({ radius: 74, fill: '#4CAF50', originX: 'center', originY: 'center', left: 0, top: 0 });
-      let dashedLine = new fabric.Circle({ radius: 112.5, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], originX: 'center', originY: 'center', left: 0, top: 0 });
-      groupElements.push(asphaltFull, islandOuter, island, dashedLine);
-      sockets = [ {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0}, {x: 0, y: -150, a: 270}, {x: 0, y: 150, a: 90} ];
-    } else if (type === 'parking') {
-      baseRect.set({ width: 400, height: 200, left: -200, top: -100 });
-      let asphaltBg = new fabric.Rect({ width: 400, height: 200, fill: roadColor, stroke: '#999', strokeWidth: 2, left: -200, top: -100 });
-      groupElements.push(asphaltBg);
-      for(let i=1; i<10; i++) { 
-         groupElements.push(new fabric.Line([-200 + i*40, -100], [-200 + i*40, -20], {stroke: '#fff', strokeWidth: 3}));
-         groupElements.push(new fabric.Line([-200 + i*40, 100], [-200 + i*40, 20], {stroke: '#fff', strokeWidth: 3}));
-      }
-      sockets = [ {x: -200, y: 0, a: 180}, {x: 200, y: 0, a: 0}, {x: 0, y: -100, a: 270}, {x: 0, y: 100, a: 90} ];
-    }
-
-    let roadGroup = new fabric.Group(groupElements, {
-      originX: 'center', originY: 'center',
-      snapAngle: 15, snapThreshold: 10,
-      lockScalingX: true, lockScalingY: true
-    });
-    
-    roadGroup.sockets = sockets;
-
-    // Node Connection Math
-    if (this.activeSocket) {
-      let aObj = this.activeSocket.obj;
-      let aSock = aObj.sockets[this.activeSocket.idx];
-      let pM = aObj.calcTransformMatrix();
-      let worldPtA = fabric.util.transformPoint({x: aSock.x, y: aSock.y}, pM);
-      
-      let globalAngleA = (aObj.angle + aSock.a) % 360;
-      let primarySocket = roadGroup.sockets[0];
-      let targetGlobalAngle = (globalAngleA + 180) % 360;
-      roadGroup.angle = (targetGlobalAngle - primarySocket.a + 360) % 360;
-      
-      let rad = roadGroup.angle * Math.PI / 180;
-      let cos = Math.cos(rad);
-      let sin = Math.sin(rad);
-      let pOffsetX = primarySocket.x * cos - primarySocket.y * sin;
-      let pOffsetY = primarySocket.x * sin + primarySocket.y * cos;
-      
-      roadGroup.left = worldPtA.x - pOffsetX;
-      roadGroup.top = worldPtA.y - pOffsetY;
-      
-      this.activeSocket = null;
+  /* ── ROAD PLACEMENT with snap ── */
+  _placeWithSnap(group, primarySocketIdx = 0) {
+    if (this._activeSocket) {
+      const aObj  = this._activeSocket.obj;
+      const aSock = aObj._sockets[this._activeSocket.idx];
+      const aM    = aObj.calcTransformMatrix();
+      const worldA = fabric.util.transformPoint({ x: aSock.x, y: aSock.y }, aM);
+      const globalAngleA = (aObj.angle + aSock.a) % 360;
+      const pSock = group._sockets[primarySocketIdx];
+      group.angle = (((globalAngleA + 180) % 360) - pSock.a + 360) % 360;
+      const rad = group.angle * Math.PI / 180;
+      group.left = worldA.x - (pSock.x * Math.cos(rad) - pSock.y * Math.sin(rad));
+      group.top  = worldA.y - (pSock.x * Math.sin(rad) + pSock.y * Math.cos(rad));
+      this._activeSocket = null;
     } else {
-      roadGroup.left = this.canvas.width / 2;
-      roadGroup.top = this.canvas.height / 2;
+      group.left = this.canvas.width  / 2;
+      group.top  = this.canvas.height / 2;
     }
-
-    let hideCtrl = { mtr: true, tl: false, tr: false, br: false, bl: false, ml: false, mt: false, mr: false, mb: false };
-    if (type === 'parking') hideCtrl = {}; 
-    roadGroup.setControlsVisibility(hideCtrl);
-
-    this.canvas.add(roadGroup);
-    roadGroup.sendToBack();
-    this.canvas.setActiveObject(roadGroup);
-    this.renderSnapNodes();
-    
-    if(window.innerWidth < 768) this.toggleStamps();
+    group.setCoords();
   },
 
-  addRoomSegment(type) {
-    this.setTool('select');
-    const wallStroke = this.isDark ? '#FFFFFF' : '#000000';
-    const wallFill = this.isDark ? '#444444' : '#E0E0E0';
-    let element;
-    
-    if (type === 'wall') {
-      // Professional double-line wall (solid rect with thick stroke)
-      element = new fabric.Rect({
-        width: 200, height: 16, 
-        fill: wallFill, stroke: wallStroke, strokeWidth: 2,
-        left: this.canvas.width / 2, top: this.canvas.height / 2,
-        originX: 'center', originY: 'center',
-        snapAngle: 15, snapThreshold: 10,
-        lockScalingY: true 
-      });
-      element.setControlVisible('mt', false);
-      element.setControlVisible('mb', false);
-    } 
-    else if (type === 'door') {
-      let w = 80; // Door width
-      let wallThickness = 16;
-      let frame1 = new fabric.Rect({ width: 6, height: wallThickness, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: -w/2-3, top: -wallThickness/2 });
-      let frame2 = new fabric.Rect({ width: 6, height: wallThickness, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: w/2-3, top: -wallThickness/2 });
-      
-      let doorLeaf = new fabric.Rect({ width: w, height: 4, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: -w/2, top: -w, angle: 90, originX: 'left', originY: 'top' });
-      
-      let arc = new fabric.Circle({ radius: w, left: -w/2, top: 0, startAngle: 3*Math.PI/2, endAngle: 2*Math.PI, fill: '', stroke: wallStroke, strokeWidth: 1.5, strokeDashArray: [4, 4], originX: 'center', originY: 'center' });
-      
-      element = new fabric.Group([frame1, frame2, doorLeaf, arc], {
-        left: this.canvas.width / 2, top: this.canvas.height / 2,
-        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
-      });
-    }
-    else if (type === 'window') {
-      let w = 100;
-      let wallThickness = 16;
-      let frame1 = new fabric.Rect({ width: w, height: wallThickness, fill: '#ffffff', stroke: wallStroke, strokeWidth: 2, left: -w/2, top: -wallThickness/2 });
-      let glass1 = new fabric.Line([-w/2+2, -2], [w/2-2, -2], { stroke: '#00AACC', strokeWidth: 1.5 });
-      let glass2 = new fabric.Line([-w/2+2, 2], [w/2-2, 2], { stroke: '#00AACC', strokeWidth: 1.5 });
-      
-      element = new fabric.Group([frame1, glass1, glass2], {
-        left: this.canvas.width / 2, top: this.canvas.height / 2,
-        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
-      });
+  /* ── ROAD SEGMENTS ── */
+  addRoad(type) {
+    const RC = '#BEBEBE', MC = '#ffffff', EC = '#888888';
+    const w = 150;
+    const pad = new fabric.Rect({ width: 300, height: 300, left: -150, top: -150, fill: 'transparent', strokeWidth: 0 });
+    let els = [pad], sockets = [];
+
+    if (type === 'straight') {
+      els.push(
+        new fabric.Rect({ width: 300, height: w, fill: RC, stroke: EC, strokeWidth: 1, left: -150, top: -w/2 }),
+        new fabric.Line([-150,0,150,0], { stroke: MC, strokeWidth: 4, strokeDashArray: [15,15] })
+      );
+      sockets = [{ x:-150, y:0, a:180 }, { x:150, y:0, a:0 }];
+    } else if (type === 'curve90') {
+      const cx = -150, cy = 150;
+      els.push(
+        new fabric.Circle({ radius: 150, fill:'', stroke: RC, strokeWidth: w, startAngle:-Math.PI/2, endAngle:0, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius: 225, fill:'', stroke: EC, strokeWidth: 1.5, startAngle:-Math.PI/2, endAngle:0, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius:  75, fill:'', stroke: EC, strokeWidth: 1.5, startAngle:-Math.PI/2, endAngle:0, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius: 150, fill:'', stroke: MC, strokeWidth: 4, strokeDashArray:[15,15], startAngle:-Math.PI/2, endAngle:0, originX:'center', originY:'center', left:cx, top:cy })
+      );
+      sockets = [{ x:-150, y:0, a:270 }, { x:0, y:150, a:0 }];
+    } else if (type === 'curve45') {
+      const cx = -150, cy = 300;
+      els.push(
+        new fabric.Circle({ radius: 300, fill:'', stroke: RC, strokeWidth: w, startAngle:-Math.PI/2, endAngle:-Math.PI*3/4, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius: 375, fill:'', stroke: EC, strokeWidth: 1.5, startAngle:-Math.PI/2, endAngle:-Math.PI*3/4, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius: 225, fill:'', stroke: EC, strokeWidth: 1.5, startAngle:-Math.PI/2, endAngle:-Math.PI*3/4, originX:'center', originY:'center', left:cx, top:cy }),
+        new fabric.Circle({ radius: 300, fill:'', stroke: MC, strokeWidth: 4, strokeDashArray:[15,15], startAngle:-Math.PI/2, endAngle:-Math.PI*3/4, originX:'center', originY:'center', left:cx, top:cy })
+      );
+      sockets = [{ x:-150, y:0, a:270 }, { x:62, y:88, a:45 }];
+    } else if (type === 'tjunction') {
+      els.push(
+        new fabric.Rect({ width:300, height:w, fill:RC, stroke:EC, strokeWidth:1, left:-150, top:-w/2 }),
+        new fabric.Rect({ width:w, height:75, fill:RC, stroke:EC, strokeWidth:1, left:-w/2, top:w/2 }),
+        new fabric.Rect({ width:w-2, height:6, fill:RC, strokeWidth:0, left:-w/2+1, top:w/2-3 }),
+        new fabric.Line([-150,0,150,0], { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] }),
+        new fabric.Line([0,w/2,0,w/2+75], { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] })
+      );
+      sockets = [{ x:0, y:150, a:90 }, { x:-150, y:0, a:180 }, { x:150, y:0, a:0 }];
+    } else if (type === 'crossing') {
+      els.push(
+        new fabric.Rect({ width:300, height:w, fill:RC, stroke:EC, strokeWidth:1, left:-150, top:-w/2 }),
+        new fabric.Rect({ width:w, height:300, fill:RC, stroke:EC, strokeWidth:1, left:-w/2, top:-150 }),
+        new fabric.Rect({ width:w-2, height:w-2, fill:RC, strokeWidth:0, left:-w/2+1, top:-w/2+1 }),
+        new fabric.Line([-150,0,-w/2,0], { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] }),
+        new fabric.Line([w/2,0,150,0],   { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] }),
+        new fabric.Line([0,-150,0,-w/2], { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] }),
+        new fabric.Line([0,w/2,0,150],   { stroke:MC, strokeWidth:4, strokeDashArray:[15,15] })
+      );
+      sockets = [{ x:0, y:150, a:90 }, { x:0, y:-150, a:270 }, { x:-150, y:0, a:180 }, { x:150, y:0, a:0 }];
+    } else if (type === 'roundabout') {
+      els.push(
+        new fabric.Circle({ radius:150, fill:RC, stroke:EC, strokeWidth:1, originX:'center', originY:'center' }),
+        new fabric.Circle({ radius:76,  fill:'#666', strokeWidth:0, originX:'center', originY:'center' }),
+        new fabric.Circle({ radius:74,  fill:'#4CAF50', strokeWidth:0, originX:'center', originY:'center' }),
+        new fabric.Circle({ radius:112, fill:'', stroke:MC, strokeWidth:4, strokeDashArray:[15,15], originX:'center', originY:'center' })
+      );
+      sockets = [{ x:-150, y:0, a:180 }, { x:150, y:0, a:0 }, { x:0, y:-150, a:270 }, { x:0, y:150, a:90 }];
+    } else if (type === 'parking') {
+      const pb = new fabric.Rect({ width:360, height:200, fill:RC, stroke:EC, strokeWidth:2, left:-180, top:-100 });
+      const padP = new fabric.Rect({ width:360, height:200, fill:'transparent', strokeWidth:0, left:-180, top:-100 });
+      els = [padP, pb];
+      for (let i = 1; i < 9; i++) {
+        els.push(new fabric.Line([-180+i*40, -100, -180+i*40, -20], { stroke:'#fff', strokeWidth:2.5 }));
+        els.push(new fabric.Line([-180+i*40,  100, -180+i*40,  20], { stroke:'#fff', strokeWidth:2.5 }));
+      }
+      sockets = [{ x:-180, y:0, a:180 }, { x:180, y:0, a:0 }];
+    } else if (type === 'oneway') {
+      els.push(
+        new fabric.Rect({ width:300, height:w, fill:RC, stroke:EC, strokeWidth:1, left:-150, top:-w/2 }),
+        new fabric.Line([-100,0,80,0], { stroke:MC, strokeWidth:5 }),
+        new fabric.Triangle({ width:24, height:24, fill:MC, left:80, top:0, originX:'center', originY:'center', angle:90 })
+      );
+      sockets = [{ x:-150, y:0, a:180 }, { x:150, y:0, a:0 }];
     }
 
-    this.canvas.add(element);
-    this.canvas.setActiveObject(element);
-    if(window.innerWidth < 768) this.toggleStamps();
+    const grp = new fabric.Group(els, {
+      originX:'center', originY:'center', snapAngle:15,
+      lockScalingX:true, lockScalingY:true,
+    });
+    grp._sockets = sockets;
+    grp.setControlsVisibility({ mtr:true, tl:false, tr:false, br:false, bl:false, ml:false, mt:false, mr:false, mb:false });
+    this._placeWithSnap(grp, 0);
+    this.canvas.add(grp);
+    grp.sendToBack();
+    this._drawBg();  // Keep bg behind
+    this.canvas.setActiveObject(grp);
+    this._renderSnap();
+    this._saveHistory();
+    this._closePanelMobile();
   },
 
-  /* ── BACKGROUNDS ─────────────────────────────────────── */
-  customBgMode: 'blank',
-  
-  setBackground(mode) {
-    this.customBgMode = mode;
-    this.drawBackground();
-    if(window.innerWidth < 768) this.toggleStamps();
+  /* ── TRAFFIC SIGNS ── */
+  addSign(type) {
+    let els = [];
+    const pole = new fabric.Rect({ width:4, height:50, fill:'#888', rx:1, left:-2, top:10 });
+
+    if (type === 'stop') {
+      const oct = new fabric.Polygon(
+        [{x:10,y:0},{x:30,y:0},{x:40,y:10},{x:40,y:30},{x:30,y:40},{x:10,y:40},{x:0,y:30},{x:0,y:10}],
+        { fill:'#DA291C', stroke:'#fff', strokeWidth:2, left:-20, top:-30 }
+      );
+      const txt = new fabric.Text('STOP', { fontSize:9, fill:'#fff', fontWeight:'bold', originX:'center', originY:'center', left:0, top:-10 });
+      els = [pole, oct, txt];
+    } else if (type === 'yield') {
+      const tri = new fabric.Polygon([{x:0,y:0},{x:40,y:0},{x:20,y:34}],
+        { fill:'#fff', stroke:'#DA291C', strokeWidth:5, strokeLineJoin:'round', left:-20, top:-34 });
+      els = [pole, tri];
+    } else if (type === 'priority') {
+      const d = new fabric.Polygon([{x:20,y:0},{x:40,y:20},{x:20,y:40},{x:0,y:20}],
+        { fill:'#FFCC00', stroke:'#000', strokeWidth:2, left:-20, top:-30 });
+      els = [pole, d];
+    } else if (type === 'tlight') {
+      const box = new fabric.Rect({ width:16, height:44, fill:'#222', rx:3, left:-8, top:-34 });
+      const r = new fabric.Circle({ radius:4.5, fill:'#DA291C', left:-4.5, top:-30 });
+      const y = new fabric.Circle({ radius:4.5, fill:'#FFCC00', left:-4.5, top:-17 });
+      const g = new fabric.Circle({ radius:4.5, fill:'#4CAF50', left:-4.5, top:-4 });
+      els = [pole, box, r, y, g];
+    } else if (type === 'crosswalk') {
+      const bg = new fabric.Rect({ width:120, height:40, fill:'#aaa', left:-60, top:-20 });
+      els = [bg];
+      for (let i = 0; i < 5; i++)
+        els.push(new fabric.Rect({ width:14, height:40, fill:'#fff', left:-52+i*22, top:-20 }));
+    } else if (type === 'speedlimit30') {
+      const circ = new fabric.Circle({ radius:22, fill:'#fff', stroke:'#DA291C', strokeWidth:4, originX:'center', originY:'center', top:-30 });
+      const txt  = new fabric.Text('30', { fontSize:16, fill:'#000', fontWeight:'bold', originX:'center', originY:'center', top:-30 });
+      els = [pole, circ, txt];
+    } else if (type === 'nopark') {
+      const circ = new fabric.Circle({ radius:20, fill:'#fff', stroke:'#DA291C', strokeWidth:4, originX:'center', originY:'center', top:-28 });
+      const line = new fabric.Line([-14,-28,14,-28], { stroke:'#DA291C', strokeWidth:4 });
+      els = [pole, circ, line];
+    } else if (type === 'barrier') {
+      const base = new fabric.Rect({ width:8, height:18, fill:'#444', left:-4, top:-8 });
+      const arm  = new fabric.Rect({ width:110, height:8, fill:'#DA291C', left:4, top:-4 });
+      for (let i = 0; i < 5; i++)
+        els.push(new fabric.Rect({ width:11, height:8, fill:'#fff', left:8+i*22, top:-4 }));
+      els.unshift(base, arm);
+    }
+
+    const grp = new fabric.Group(els, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
   },
 
-  drawBackground() {
-    let canvasWidth = this.canvas.getWidth();
-    let canvasHeight = this.canvas.getHeight();
-    
-    let bgCanvas = document.createElement('canvas');
-    bgCanvas.width = canvasWidth;
-    bgCanvas.height = canvasHeight;
-    let ctx = bgCanvas.getContext('2d');
-    
-    // Base color
-    ctx.fillStyle = this.isDark ? '#1a1a1a' : '#ffffff';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  /* ── VEHICLES (top-down) ── */
+  addVehicle(type) {
+    const defs = {
+      pkw_blue:  { color:'#007AFF', w:40, h:80 },
+      pkw_red:   { color:'#FF3B30', w:40, h:80 },
+      pkw_white: { color:'#F5F5F5', w:40, h:80 },
+      pkw_grey:  { color:'#8E8E93', w:40, h:80 },
+      polizei:   { color:'#E8E8E8', w:40, h:80, stripe:'#007AFF' },
+      rtw:       { color:'#F5F5F5', w:42, h:90, stripe:'#DA291C' },
+      lkw:       { color:'#FF9500', w:50, h:140 },
+      motorrad:  { isBike:true, color:'#333', w:16, h:38 },
+      fahrrad:   { isBike:true, color:'#666', w:10, h:30 },
+    };
+    const v = defs[type] || defs.pkw_blue;
+    let els = [];
 
-    if (this.customBgMode === 'grid_10') {
-      ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+    if (v.isBike) {
+      els = [
+        new fabric.Rect({ width:4, height:v.h, fill:v.color, left:-2, top:-v.h/2, rx:2 }),
+        new fabric.Rect({ width:v.w, height:3, fill:'#000', left:-v.w/2, top:-v.h/2+2 }),
+        new fabric.Rect({ width:v.w, height:3, fill:'#000', left:-v.w/2, top: v.h/2-5 }),
+      ];
+    } else {
+      const body = new fabric.Rect({ width:v.w, height:v.h, fill:v.color, stroke:'#333', strokeWidth:1.5, rx:4, left:-v.w/2, top:-v.h/2 });
+      els.push(body);
+      if (v.stripe) {
+        if (type === 'polizei') {
+          els.push(new fabric.Rect({ width:9, height:v.h, fill:v.stripe, left:-v.w/2+3, top:-v.h/2 }));
+          els.push(new fabric.Rect({ width:9, height:v.h, fill:v.stripe, left: v.w/2-12, top:-v.h/2 }));
+        } else {
+          els.push(new fabric.Rect({ width:v.w, height:12, fill:v.stripe, left:-v.w/2, top:-4 }));
+        }
+      }
+      // windshields
+      els.push(new fabric.Rect({ width:v.w-10, height:14, fill:'rgba(30,100,180,0.4)', rx:2, left:-v.w/2+5, top:-v.h/2+16 }));
+      els.push(new fabric.Rect({ width:v.w-12, height:10, fill:'rgba(30,100,180,0.4)', rx:2, left:-v.w/2+6, top: v.h/2-20 }));
+      // headlights
+      els.push(new fabric.Circle({ radius:3, fill:'#FFEE99', left:-v.w/2+4, top:-v.h/2+2 }));
+      els.push(new fabric.Circle({ radius:3, fill:'#FFEE99', left: v.w/2-10, top:-v.h/2+2 }));
+      // taillights
+      els.push(new fabric.Rect({ width:8, height:3, fill:'#FF3B30', left:-v.w/2+4, top:v.h/2-5 }));
+      els.push(new fabric.Rect({ width:8, height:3, fill:'#FF3B30', left: v.w/2-12, top:v.h/2-5 }));
+      // wheels
+      [[-v.w/2-2,-v.h/2+14],[v.w/2-2,-v.h/2+14],[-v.w/2-2,v.h/2-22],[v.w/2-2,v.h/2-22]].forEach(([lx,ly]) =>
+        els.push(new fabric.Rect({ width:4, height:14, fill:'#111', rx:1, left:lx, top:ly }))
+      );
+    }
+
+    const grp = new fabric.Group(els, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── BUILDING: WALL ── */
+  addWall(len = 200) {
+    const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const el = new fabric.Rect({
+      width: len, height: 16,
+      fill: wC, stroke: wC, strokeWidth: 1,
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+      lockScalingY: true,
+    });
+    el.setControlsVisibility({ mt:false, mb:false });
+    this.canvas.add(el);
+    this.canvas.setActiveObject(el);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── BUILDING: DOOR ── */
+  addDoor() {
+    const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const dw = 80, wt = 16;
+    // Frame posts
+    const f1 = new fabric.Rect({ width:6, height:wt, fill:wC, stroke:wC, strokeWidth:1, left:-dw/2-3, top:-wt/2 });
+    const f2 = new fabric.Rect({ width:6, height:wt, fill:wC, stroke:wC, strokeWidth:1, left: dw/2-3, top:-wt/2 });
+    // Floor gap (white/transparent area)
+    const gap = new fabric.Rect({ width:dw, height:wt, fill: this.isDark ? '#1C1C1E' : '#FFFFFF', strokeWidth:0, left:-dw/2, top:-wt/2 });
+    // Door leaf (line)
+    const leaf = new fabric.Line([0, 0, 0, -dw], { stroke:wC, strokeWidth:2, left:-dw/2, top:-wt/2 });
+    // Swing arc (quarter circle)
+    const arc = new fabric.Circle({
+      radius: dw, left: -dw/2, top: -wt/2,
+      startAngle: -Math.PI/2, endAngle: 0,
+      fill: '', stroke: wC, strokeWidth: 1.5, strokeDashArray: [5, 4],
+      originX: 'center', originY: 'center',
+    });
+    const grp = new fabric.Group([gap, f1, f2, leaf, arc], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── BUILDING: WINDOW ── */
+  addWindow() {
+    const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const ww = 100, wt = 16;
+    const frame = new fabric.Rect({ width:ww, height:wt, fill:'#E8F4FD', stroke:wC, strokeWidth:2, left:-ww/2, top:-wt/2 });
+    const g1 = new fabric.Line([-ww/2+4, -3, ww/2-4, -3], { stroke:'#5AC8FA', strokeWidth:1.5 });
+    const g2 = new fabric.Line([-ww/2+4,  3, ww/2-4,  3], { stroke:'#5AC8FA', strokeWidth:1.5 });
+    const div = new fabric.Line([0, -wt/2+2, 0, wt/2-2], { stroke:wC, strokeWidth:1.5 });
+    const grp = new fabric.Group([frame, g1, g2, div], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── BUILDING: ROOM (outline) ── */
+  addRoom() {
+    const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const el = new fabric.Rect({
+      width: 200, height: 150,
+      fill: 'transparent', stroke: wC, strokeWidth: 14,
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(el);
+    this.canvas.setActiveObject(el);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── BUILDING: STAIRS ── */
+  addStairs() {
+    const wC = this.isDark ? '#CCCCCC' : '#444';
+    const els = [];
+    const steps = 6;
+    for (let i = 0; i < steps; i++) {
+      els.push(new fabric.Line([-60+i*20, -40, -60+i*20, 40], { stroke:wC, strokeWidth:1.5 }));
+    }
+    els.push(new fabric.Rect({ width:120, height:80, fill:'transparent', stroke:wC, strokeWidth:2, left:-60, top:-40 }));
+    // Direction arrow
+    els.push(new fabric.Line([-50, 0, 40, 0], { stroke:wC, strokeWidth:2 }));
+    els.push(new fabric.Triangle({ width:12, height:12, fill:wC, left:40, top:0, originX:'center', originY:'center', angle:90 }));
+    const grp = new fabric.Group(els, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── FURNITURE ── */
+  addFurniture(type) {
+    const stroke = this.isDark ? '#999' : '#555';
+    let els = [];
+    let cx = this.canvas.width/2, cy = this.canvas.height/2;
+
+    if (type === 'bed_d') {
+      els = [
+        new fabric.Rect({ width:180, height:220, fill:'#F0E6D3', stroke, strokeWidth:2, left:-90, top:-110 }),
+        new fabric.Rect({ width:180, height:40,  fill:'#D4B896', stroke, strokeWidth:1, left:-90, top:-110 }),
+        new fabric.Rect({ width:75,  height:60,  fill:'#E8D5BC', stroke, strokeWidth:1, rx:6, left:-88, top:-68 }),
+        new fabric.Rect({ width:75,  height:60,  fill:'#E8D5BC', stroke, strokeWidth:1, rx:6, left: 13, top:-68 }),
+      ];
+    } else if (type === 'bed_s') {
+      els = [
+        new fabric.Rect({ width:100, height:200, fill:'#F0E6D3', stroke, strokeWidth:2, left:-50, top:-100 }),
+        new fabric.Rect({ width:100, height:36,  fill:'#D4B896', stroke, strokeWidth:1, left:-50, top:-100 }),
+        new fabric.Rect({ width:80,  height:55,  fill:'#E8D5BC', stroke, strokeWidth:1, rx:5, left:-40, top:-62 }),
+      ];
+    } else if (type === 'sofa') {
+      els = [
+        new fabric.Rect({ width:180, height:70, fill:'#B0888A', stroke, strokeWidth:2, rx:6, left:-90, top:-35 }),
+        new fabric.Rect({ width:20, height:70, fill:'#906870', stroke, strokeWidth:1, rx:4, left:-90, top:-35 }),
+        new fabric.Rect({ width:20, height:70, fill:'#906870', stroke, strokeWidth:1, rx:4, left: 70, top:-35 }),
+        new fabric.Rect({ width:140, height:20, fill:'#906870', stroke, strokeWidth:1, rx:4, left:-70, top:-55 }),
+      ];
+    } else if (type === 'table') {
+      els = [
+        new fabric.Rect({ width:140, height:90, fill:'#D4A96A', stroke, strokeWidth:2, rx:4, left:-70, top:-45 }),
+        new fabric.Rect({ width:8, height:8, fill:stroke, strokeWidth:0, left:-70, top:-45 }),
+        new fabric.Rect({ width:8, height:8, fill:stroke, strokeWidth:0, left: 62, top:-45 }),
+        new fabric.Rect({ width:8, height:8, fill:stroke, strokeWidth:0, left:-70, top: 37 }),
+        new fabric.Rect({ width:8, height:8, fill:stroke, strokeWidth:0, left: 62, top: 37 }),
+      ];
+    } else if (type === 'chair') {
+      els = [
+        new fabric.Rect({ width:50, height:50, fill:'#C4924A', stroke, strokeWidth:2, rx:3, left:-25, top:-25 }),
+        new fabric.Rect({ width:50, height:14, fill:'#A07030', stroke, strokeWidth:1, left:-25, top:-25 }),
+      ];
+    } else if (type === 'tv') {
+      els = [
+        new fabric.Rect({ width:130, height:80, fill:'#111', stroke, strokeWidth:2, rx:4, left:-65, top:-40 }),
+        new fabric.Rect({ width:110, height:60, fill:'#333', stroke, strokeWidth:0, left:-55, top:-30 }),
+        new fabric.Rect({ width:6,   height:16, fill:'#888', strokeWidth:0, left:-3, top:40 }),
+        new fabric.Rect({ width:50,  height:4,  fill:'#888', strokeWidth:0, left:-25, top:56 }),
+      ];
+    } else if (type === 'wardrobe') {
+      els = [
+        new fabric.Rect({ width:160, height:60, fill:'#D4B896', stroke, strokeWidth:2, left:-80, top:-30 }),
+        new fabric.Line([0, -30, 0, 30], { stroke, strokeWidth:1.5 }),
+        new fabric.Circle({ radius:4, fill:stroke, strokeWidth:0, originX:'center', originY:'center', left:-20, top:0 }),
+        new fabric.Circle({ radius:4, fill:stroke, strokeWidth:0, originX:'center', originY:'center', left: 20, top:0 }),
+      ];
+    } else if (type === 'wc') {
+      els = [
+        new fabric.Rect({ width:44, height:20, fill:'#EEE', stroke, strokeWidth:1.5, rx:2, left:-22, top:-36 }),
+        new fabric.Ellipse({ rx:22, ry:30, fill:'#F8F8F8', stroke, strokeWidth:1.5, originX:'center', originY:'center', top:4 }),
+        new fabric.Ellipse({ rx:18, ry:24, fill:'#EEE', stroke, strokeWidth:1, originX:'center', originY:'center', top:4 }),
+      ];
+    } else if (type === 'bath') {
+      els = [
+        new fabric.Rect({ width:80, height:160, fill:'#E8F0F8', stroke, strokeWidth:2, rx:30, left:-40, top:-80 }),
+        new fabric.Ellipse({ rx:26, ry:26, fill:'#D0E4F8', stroke, strokeWidth:1.5, originX:'center', originY:'center', top:-55 }),
+      ];
+    } else if (type === 'sink') {
+      els = [
+        new fabric.Rect({ width:60, height:50, fill:'#F0F0F0', stroke, strokeWidth:2, rx:8, left:-30, top:-25 }),
+        new fabric.Circle({ radius:6, fill:'#CCC', stroke, strokeWidth:1, originX:'center', originY:'center', top:-5 }),
+        new fabric.Line([-8,-5,8,-5], { stroke, strokeWidth:2 }),
+        new fabric.Line([0,-14,0,4], { stroke, strokeWidth:2 }),
+      ];
+    } else if (type === 'stove') {
+      els = [
+        new fabric.Rect({ width:80, height:80, fill:'#555', stroke, strokeWidth:2, left:-40, top:-40 }),
+        ...[[-20,-20],[20,-20],[-20,20],[20,20]].map(([lx,ly]) =>
+          new fabric.Circle({ radius:14, fill:'#333', stroke:'#666', strokeWidth:1, originX:'center', originY:'center', left:lx, top:ly })
+        ),
+      ];
+    } else if (type === 'fridge') {
+      els = [
+        new fabric.Rect({ width:60, height:90, fill:'#E8E8E8', stroke, strokeWidth:2, rx:4, left:-30, top:-45 }),
+        new fabric.Line([-30,-10,30,-10], { stroke, strokeWidth:1.5 }),
+        new fabric.Rect({ width:6, height:18, fill:'#AAA', strokeWidth:0, rx:2, left:-3, top:-35 }),
+        new fabric.Rect({ width:6, height:24, fill:'#AAA', strokeWidth:0, rx:2, left:-3, top:6 }),
+      ];
+    }
+
+    const grp = new fabric.Group(els, {
+      left: cx, top: cy, originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── CORPSE (person lying) ── */
+  addCorpse() {
+    const els = [
+      new fabric.Ellipse({ rx:16, ry:16, fill:'#FFCC99', stroke:'#333', strokeWidth:2, originX:'center', originY:'center', top:-55 }),
+      new fabric.Rect({ width:28, height:80, fill:'#FFCC99', stroke:'#333', strokeWidth:2, rx:8, left:-14, top:-45 }),
+      new fabric.Line([-30,-30,-14,5], { stroke:'#FFCC99', strokeWidth:14, strokeLineCap:'round' }),
+      new fabric.Line([ 30,-30, 14,5], { stroke:'#FFCC99', strokeWidth:14, strokeLineCap:'round' }),
+      new fabric.Line([-14,35,-14,70], { stroke:'#FFCC99', strokeWidth:14, strokeLineCap:'round' }),
+      new fabric.Line([ 14,35, 14,70], { stroke:'#FFCC99', strokeWidth:14, strokeLineCap:'round' }),
+    ];
+    const outline = new fabric.Group(els, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(outline);
+    this.canvas.setActiveObject(outline);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── STAMPS (emoji) ── */
+  addStamp(emoji) {
+    const txt = new fabric.Text(emoji, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      fontSize: 48, originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(txt);
+    this.canvas.setActiveObject(txt);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  /* ── KTU EVIDENCE MARKER ── */
+  addKTU(n) {
+    const rect = new fabric.Rect({ width:26, height:26, fill:'#FFCC00', stroke:'#000', strokeWidth:1.5, originX:'center', originY:'center' });
+    const txt  = new fabric.Text(String(n), { fontSize:14, fill:'#000', fontWeight:'bold', originX:'center', originY:'center' });
+    const grp  = new fabric.Group([rect, txt], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center',
+    });
+    this.canvas.add(grp);
+    this.canvas.setActiveObject(grp);
+    this._saveHistory();
+    this._closePanelMobile();
+  },
+
+  _buildKTUGrid(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    for (let i = 1; i <= 20; i++) {
+      const d = document.createElement('div');
+      d.className = 'pitem sm';
+      d.textContent = `[${i}]`;
+      d.title = `Spurentafel ${i}`;
+      d.onclick = () => this.addKTU(i);
+      container.appendChild(d);
+    }
+    ['🩸','🔫','🔪','👤','🦶','💊','📱'].forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'pitem';
+      d.textContent = e;
+      d.onclick = () => this.addStamp(e);
+      container.appendChild(d);
+    });
+  },
+
+  /* ── MEASURE LABEL ── */
+  addMeasureLabel() {
+    this._toast('Linie zeichnen, dann Beschriftung kommt automatisch');
+    this.setTool('line');
+  },
+
+  /* ── TEXT ── */
+  addText() {
+    this._textPending = true;
+    document.getElementById('text-input').value = '';
+    document.getElementById('text-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('text-input').focus(), 120);
+  },
+
+  submitText() {
+    const val = document.getElementById('text-input').value.trim();
+    const size = parseInt(document.getElementById('text-size-slider').value) || 28;
+    this.closeTextModal();
+    if (!val) return;
+    const txt = new fabric.IText(val, {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      fontSize: size, fill: this.color,
+      originX:'center', originY:'center',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    });
+    this.canvas.add(txt);
+    this.canvas.setActiveObject(txt);
+    this._saveHistory();
+    this._textPending = null;
+  },
+
+  closeTextModal() {
+    document.getElementById('text-modal').classList.add('hidden');
+  },
+
+  /* ── BACKGROUND ── */
+  _bgMode: 'grid',
+
+  setBg(mode) {
+    this._bgMode = mode;
+    this._drawBg();
+    this._closePanelMobile();
+  },
+
+  loadBgImage() {
+    document.getElementById('bg-file-input').click();
+  },
+
+  onBgFileLoaded(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      fabric.Image.fromURL(ev.target.result, img => {
+        img.scaleToWidth(this.canvas.width);
+        if (img.getScaledHeight() < this.canvas.height) img.scaleToHeight(this.canvas.height);
+        img.set({ left:0, top:0, originX:'left', originY:'top', selectable:false, evented:false });
+        this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
+        this._toast('✅ Bild geladen');
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+    this._closePanelMobile();
+  },
+
+  _drawBg() {
+    const W = this.canvas.width, H = this.canvas.height;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = W; offscreen.height = H;
+    const ctx = offscreen.getContext('2d');
+    ctx.fillStyle = this.isDark ? '#1C1C1E' : '#FFFFFF';
+    ctx.fillRect(0, 0, W, H);
+
+    if (this._bgMode === 'grid') {
+      ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
       ctx.lineWidth = 1;
-      for(let x=0; x<canvasWidth; x+=20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasHeight); ctx.stroke(); }
-      for(let y=0; y<canvasHeight; y+=20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasWidth,y); ctx.stroke(); }
+      for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+      // Major grid every 100px
+      ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 100) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for (let y = 0; y < H; y += 100) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
     }
 
-    fabric.Image.fromURL(bgCanvas.toDataURL(), (img) => {
+    fabric.Image.fromURL(offscreen.toDataURL(), img => {
       this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
     });
   },
 
-  /* ── UTILS ───────────────────────────────────────────── */
-  
-  deleteSelected() {
-    let activeObjects = this.canvas.getActiveObjects();
-    if (activeObjects.length) {
-      this.canvas.discardActiveObject();
-      activeObjects.forEach(obj => this.canvas.remove(obj));
+  /* ── MAP PICKER ── */
+  openMapPicker() {
+    document.getElementById('map-modal').classList.remove('hidden');
+    if (!this._miniMap) {
+      setTimeout(() => {
+        this._miniMap = L.map('leaflet-picker', {
+          center: [51.5344, 7.6889], zoom: 15,
+          zoomControl: true, attributionControl: true,
+        });
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution:'© OpenStreetMap', maxZoom:19,
+        }).addTo(this._miniMap);
+        const dtk = L.tileLayer.wms('https://www.wms.nrw.de/geobasis/wms_nw_dtk', {
+          layers:'nw_dtk_sw', format:'image/png', transparent:true, maxZoom:22,
+          attribution:'© Geobasis NRW',
+        });
+        L.control.layers({
+          '🗺 OpenStreetMap': this._miniMap._layers[Object.keys(this._miniMap._layers)[0]],
+          '⬛ Topogr. NRW (S/W)': dtk,
+        }, {}, { position:'topright' }).addTo(this._miniMap);
+        setTimeout(() => this._miniMap.invalidateSize(), 100);
+      }, 50);
+    } else {
+      setTimeout(() => this._miniMap.invalidateSize(), 50);
     }
+    this._closePanelMobile();
+  },
+
+  async applyMapBg() {
+    if (!this._miniMap) return;
+    const b  = this._miniMap.getBounds();
+    const W  = this.canvas.width;
+    const H  = this.canvas.height;
+
+    this._toast('⏳ Lade Kartenausschnitt…');
+
+    // Use NRW topographic WMS for clean background (no CORS issues via img tag)
+    const wmsUrl = `https://www.wms.nrw.de/geobasis/wms_nw_dtk?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap`
+      + `&LAYERS=nw_dtk_sw&SRS=EPSG:4326`
+      + `&BBOX=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`
+      + `&WIDTH=${W}&HEIGHT=${H}&FORMAT=image/png`;
+
+    fabric.Image.fromURL(wmsUrl, img => {
+      if (!img || !img.width) {
+        this._toast('⚠️ Karte konnte nicht geladen werden. Verwende OSM-Screenshot.');
+        // Fallback: use OSM
+        const osmUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${this._miniMap.getCenter().lat},${this._miniMap.getCenter().lng}&zoom=${this._miniMap.getZoom()}&size=${W}x${H}&maptype=osmarenderer`;
+        fabric.Image.fromURL(osmUrl, img2 => {
+          if (!img2 || !img2.width) { this._toast('❌ Kartenbild nicht verfügbar'); return; }
+          img2.set({ left:0, top:0, originX:'left', originY:'top', selectable:false, evented:false });
+          img2.scaleToWidth(W);
+          this.canvas.setBackgroundImage(img2, this.canvas.renderAll.bind(this.canvas));
+          this._toast('✅ Kartenausschnitt geladen');
+        }, { crossOrigin:'anonymous' });
+        return;
+      }
+      img.set({ left:0, top:0, originX:'left', originY:'top', selectable:false, evented:false });
+      img.scaleToWidth(W);
+      if (img.getScaledHeight() < H) img.scaleToHeight(H);
+      this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
+      this._toast('✅ Kartenausschnitt geladen');
+    }, { crossOrigin:'anonymous' });
+
+    this.closeMapPicker();
+  },
+
+  closeMapPicker() {
+    document.getElementById('map-modal').classList.add('hidden');
+  },
+
+  /* ── UNDO ── */
+  _saveHistory() {
+    const json = this.canvas.toJSON(['_sockets']);
+    this._undoStack.push(json);
+    if (this._undoStack.length > 30) this._undoStack.shift();
+    this._redoStack = [];
+  },
+
+  undo() {
+    if (this._undoStack.length <= 1) { this._toast('Nichts zum Rückgängigmachen'); return; }
+    this._redoStack.push(this._undoStack.pop());
+    const prev = this._undoStack[this._undoStack.length - 1];
+    this.canvas.loadFromJSON(prev, () => {
+      this.canvas.renderAll();
+      this._restoreSockets();
+      this._drawBg();
+    });
+  },
+
+  _restoreSockets() {
+    // After loadFromJSON, _sockets are lost — mark groups by position (best-effort)
+    // No-op for now; snap system works on newly created objects
+  },
+
+  /* ── UI HELPERS ── */
+  togglePanel() {
+    const panel = document.getElementById('side-panel');
+    const btn   = document.getElementById('panel-toggle-btn');
+    const hidden = panel.classList.toggle('hidden');
+    btn.classList.toggle('active', !hidden);
+  },
+
+  showTab(tab) {
+    ['bg','road','build','sym'].forEach(t => {
+      const el = document.getElementById(`tab-${t}`);
+      if (el) el.style.display = (t === tab) ? '' : 'none';
+    });
+    document.querySelectorAll('.ptab').forEach((btn, i) => {
+      btn.classList.toggle('active', ['bg','road','build','sym'][i] === tab);
+    });
+  },
+
+  deleteSelected() {
+    const objs = this.canvas.getActiveObjects();
+    if (!objs.length) return;
+    this.canvas.discardActiveObject();
+    objs.forEach(o => this.canvas.remove(o));
+    this._saveHistory();
+    this._clearSnap();
   },
 
   clearAll() {
-    if(confirm('Zeichnung wirklich komplett leeren?')) {
-      this.canvas.clear();
-      this.drawBackground();
-    }
-  },
-
-  toggleStamps() {
-    document.getElementById('side-panel').classList.toggle('hidden');
+    if (!confirm('Zeichnung wirklich komplett leeren?')) return;
+    this.canvas.clear();
+    this._undoStack = [];
+    this._drawBg();
+    this._saveHistory();
   },
 
   exportPNG() {
-    // Deselect everything first
     this.canvas.discardActiveObject();
+    this._clearSnap();
     this.canvas.renderAll();
-    
-    let dataURL = this.canvas.toDataURL({
-      format: 'png',
-      quality: 1
-    });
-    
-    let link = document.createElement('a');
-    let date = new Date().toISOString().replace(/[:.]/g, '-');
-    link.download = `Lagekarte_Skizze_${date}.png`;
-    link.href = dataURL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+    const url = this.canvas.toDataURL({ format:'png', quality:1 });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `KPB_Unna_Skizze_${new Date().toISOString().replace(/[:.]/g,'_').slice(0,19)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    this._toast('✅ PNG gespeichert');
+  },
+
+  toggleDark() {
+    this.isDark = !this.isDark;
+    document.documentElement.classList.toggle('dark', this.isDark);
+    localStorage.setItem('lagekarte_dark', this.isDark ? '1' : '0');
+    this._drawBg();
+  },
+
+  _closePanelMobile() {
+    if (window.innerWidth < 768) {
+      document.getElementById('side-panel').classList.add('hidden');
+      document.getElementById('panel-toggle-btn').classList.remove('active');
+    }
+  },
+
+  _toast(msg, dur = 2800) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = msg.startsWith('❌') ? 'rgba(255,59,48,.9)'
+      : msg.startsWith('✅') ? 'rgba(52,199,89,.9)'
+      : 'rgba(0,0,0,.78)';
+    el.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+  },
 };
 
-window.onload = () => Skizze.init();
+window.onload = () => S.init();
 </script>
 </body>
 </html>
