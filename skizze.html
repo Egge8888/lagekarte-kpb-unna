@@ -186,6 +186,22 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 .ptitle { font-size:14px; font-weight:800; }
 .pclose { background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; line-height:1; }
 
+/* ── MODE TOGGLE ── */
+.mode-toggle { display:flex; gap:4px; flex:1; margin-right:6px; }
+.mtbtn {
+  flex:1; padding:5px 4px; border-radius:8px; border:1.5px solid var(--sep);
+  background:var(--bg); color:var(--txt); font-size:11px; font-weight:700;
+  cursor:pointer; font-family:var(--font); transition:all .15s; text-align:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.mtbtn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+.mtbtn.active2 { background:rgba(52,199,89,.15); color:var(--green); border-color:var(--green); }
+#mode-vu, #mode-tatort { display:flex; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
+.tip-box { font-size:11px; color:var(--txt2); padding:6px 8px; line-height:1.5;
+  background:rgba(0,0,0,.04); border-radius:8px; margin-top:4px; }
+.dark .tip-box { background:rgba(255,255,255,.06); }
+.pitem-txt { font-size:16px !important; font-weight:800; color:var(--txt); }
+
 /* ── MAP MODAL ── */
 #map-modal {
   position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.6);
@@ -349,128 +365,236 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
 
   <div id="side-panel" class="hidden">
     <div class="phdr">
-      <span class="ptitle">Werkzeuge & Vorlagen</span>
+      <div class="mode-toggle">
+        <button class="mtbtn active" onclick="S.setMode('vu')">🚗 VU / Lage</button>
+        <button class="mtbtn" onclick="S.setMode('tatort')">🔍 Tatort</button>
+      </div>
       <button class="pclose" onclick="S.togglePanel()">✕</button>
     </div>
-    <div class="ptabs">
-      <button class="ptab active" onclick="S.showTab('bg')">🖼️<br>Hinter.</button>
-      <button class="ptab" onclick="S.showTab('vu')">🚗<br>VU</button>
-      <button class="ptab" onclick="S.showTab('build')">🏠<br>Gebäude</button>
-      <button class="ptab" onclick="S.showTab('sym')">🎭<br>Symbole</button>
+
+    <!-- ══════════ VU / LAGE DRAUSSEN ══════════ -->
+    <div id="mode-vu">
+      <div class="ptabs">
+        <button class="ptab active" onclick="S.showTab('vu-bg')">🗺️<br>Karte</button>
+        <button class="ptab" onclick="S.showTab('vu-fzg')">🚗<br>Fahrzeuge</button>
+        <button class="ptab" onclick="S.showTab('vu-sign')">🚦<br>Zeichen</button>
+        <button class="ptab" onclick="S.showTab('vu-mark')">📍<br>Marker</button>
+      </div>
+
+      <div id="tab-vu-bg" class="pscroll">
+        <div class="pcategory">Hintergrund</div>
+        <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
+        <button class="pbtn" onclick="S.setBg('grid')">📏 Raster</button>
+        <button class="pbtn" onclick="S.openMapPicker()">🗺️ Kartenausschnitt laden…</button>
+        <input id="bg-file-input" type="file" accept="image/*" style="display:none" onchange="S.onBgFileLoaded(event)"/>
+        <div class="pcategory">Eigenes Bild</div>
+        <button class="pbtn" onclick="S.loadBgImage()">🖼️ Foto / Luftbild laden</button>
+        <div class="pcategory">Orientierung</div>
+        <button class="pbtn" onclick="S.addNorthArrow()">🧭 Nordpfeil einfügen</button>
+      </div>
+
+      <div id="tab-vu-fzg" class="pscroll" style="display:none">
+        <div class="pcategory">PKW – Vogelperspektive</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addVehicle('pkw_blue')"   title="PKW Blau">🟦</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_red')"    title="PKW Rot">🟥</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_white')"  title="PKW Weiß">⬜</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_grey')"   title="PKW Grau">▪️</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_yellow')" title="PKW Gelb">🟨</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_green')"  title="PKW Grün">🟩</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_black')"  title="PKW Schwarz">⬛</div>
+          <div class="pitem" onclick="S.addVehicle('pkw_orange')" title="PKW Orange">🟧</div>
+        </div>
+        <div class="pcategory">Sonderfahrzeuge</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addVehicle('polizei')" title="Streifenwagen">🚓</div>
+          <div class="pitem" onclick="S.addVehicle('rtw')"     title="RTW">🚑</div>
+          <div class="pitem" onclick="S.addVehicle('nef')"     title="NEF / Notarzt">🔴</div>
+          <div class="pitem" onclick="S.addVehicle('fw_hlf')"  title="Feuerwehr HLF">🚒</div>
+        </div>
+        <div class="pcategory">Schwere Fahrzeuge</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addVehicle('lkw')"  title="LKW">🚚</div>
+          <div class="pitem" onclick="S.addVehicle('van')"  title="Transporter/Van">🚐</div>
+          <div class="pitem" onclick="S.addVehicle('bus')"  title="Bus">🚌</div>
+        </div>
+        <div class="pcategory">Zweirad & Personen</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addVehicle('motorrad')"    title="Motorrad">🏍️</div>
+          <div class="pitem" onclick="S.addVehicle('fahrrad')"     title="Fahrrad">🚲</div>
+          <div class="pitem" onclick="S.addStamp('🚶')"            title="Fußgänger">🚶</div>
+          <div class="pitem" onclick="S.addVehicle('person_inj')"  title="Verletzter liegend">🔲</div>
+        </div>
+      </div>
+
+      <div id="tab-vu-sign" class="pscroll" style="display:none">
+        <div class="pcategory">Vorrang & Halt</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addSign('stop')"      title="Stop">🛑</div>
+          <div class="pitem" onclick="S.addSign('yield')"     title="Vorfahrt gew.">▽</div>
+          <div class="pitem" onclick="S.addSign('priority')"  title="Vorfahrtsstraße">🔶</div>
+          <div class="pitem" onclick="S.addSign('tlight')"    title="Ampel">🚥</div>
+          <div class="pitem" onclick="S.addSign('crosswalk')" title="Zebrastreifen">🦓</div>
+        </div>
+        <div class="pcategory">Geschwindigkeit</div>
+        <div class="pgrid">
+          <div class="pitem pitem-txt" onclick="S.addSpeedSign(30)"  title="Tempo 30">30</div>
+          <div class="pitem pitem-txt" onclick="S.addSpeedSign(50)"  title="Tempo 50">50</div>
+          <div class="pitem pitem-txt" onclick="S.addSpeedSign(70)"  title="Tempo 70">70</div>
+          <div class="pitem pitem-txt" onclick="S.addSpeedSign(100)" title="Tempo 100">100</div>
+          <div class="pitem pitem-txt" onclick="S.addSpeedSign(120)" title="Tempo 120">120</div>
+        </div>
+        <div class="pcategory">Verbote</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addSign('nopark')"      title="Halteverbot">🚫</div>
+          <div class="pitem" onclick="S.addSign('noentry')"     title="Einfahrt verboten">⛔</div>
+          <div class="pitem" onclick="S.addSign('oneway_sign')" title="Einbahnstraße">↔️</div>
+        </div>
+        <div class="pcategory">Absperrung & Sicherung</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addSign('barrier')" title="Schranke">🚧</div>
+          <div class="pitem" onclick="S.addCone()"          title="Leitkegel">🔺</div>
+          <div class="pitem" onclick="S.addBake()"          title="Absperrbake">🔶</div>
+          <div class="pitem" onclick="S.addStamp('⚠️')"     title="Warnung">⚠️</div>
+        </div>
+      </div>
+
+      <div id="tab-vu-mark" class="pscroll" style="display:none">
+        <div class="pcategory">KTU-Spurentafeln</div>
+        <div class="pgrid" id="ktu-grid-vu"></div>
+        <div class="pcategory">Aufprall & Schaden</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addImpact()"      title="Aufprallstelle">💥</div>
+          <div class="pitem" onclick="S.addStamp('❌')"   title="Kollisionspunkt">❌</div>
+          <div class="pitem" onclick="S.addDropPoint()"   title="Abwurfstelle">◆</div>
+          <div class="pitem" onclick="S.addStamp('🩸')"   title="Blut">🩸</div>
+        </div>
+        <div class="pcategory">Einsatzkräfte & Infrastruktur</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addStamp('🚓')"  title="Polizei">🚓</div>
+          <div class="pitem" onclick="S.addStamp('🚑')"  title="RTW">🚑</div>
+          <div class="pitem" onclick="S.addStamp('🚒')"  title="Feuerwehr">🚒</div>
+          <div class="pitem" onclick="S.addStamp('🚁')"  title="Hubschrauber">🚁</div>
+          <div class="pitem" onclick="S.addStamp('🐕')"  title="Diensthund">🐕</div>
+          <div class="pitem" onclick="S.addStamp('📍')"  title="Ortsmarkierung">📍</div>
+          <div class="pitem" onclick="S.addStamp('🌳')"  title="Baum">🌳</div>
+          <div class="pitem" onclick="S.addStamp('🏠')"  title="Haus">🏠</div>
+          <div class="pitem" onclick="S.addStamp('⛽')"  title="Tankstelle">⛽</div>
+          <div class="pitem" onclick="S.addStamp('🚨')"  title="Alarm">🚨</div>
+        </div>
+        <div class="tip-box">💡 <b>Schleuderspur</b> → Linie-Tool + gestrichelter Stil<br>💡 <b>ABS-Spur</b> → gepunkteter Stil<br>💡 <b>Maßlinie</b> → Messen-Tool in Toolbar</div>
+      </div>
     </div>
 
-    <div id="tab-bg" class="pscroll">
-      <div class="pcategory">Hintergrund</div>
-      <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
-      <button class="pbtn" onclick="S.setBg('grid')">📏 Raster (Millimeterpapier)</button>
-      <button class="pbtn" onclick="S.openMapPicker()">🗺️ Kartenausschnitt laden…</button>
-      <div class="pcategory">Hintergrundbild</div>
-      <button class="pbtn" onclick="S.loadBgImage()">🖼️ Foto/Bild laden</button>
-      <input id="bg-file-input" type="file" accept="image/*" style="display:none" onchange="S.onBgFileLoaded(event)"/>
-    </div>
+    <!-- ══════════ TATORT / INNEN ══════════ -->
+    <div id="mode-tatort" style="display:none">
+      <div class="ptabs">
+        <button class="ptab active" onclick="S.showTab('to-bg')">🖼️<br>Hinter.</button>
+        <button class="ptab" onclick="S.showTab('to-plan')">🏠<br>Grundriss</button>
+        <button class="ptab" onclick="S.showTab('to-room')">🛋️<br>Möbel</button>
+        <button class="ptab" onclick="S.showTab('to-spur')">🔍<br>Spuren</button>
+      </div>
 
-    <div id="tab-vu" class="pscroll" style="display:none">
-      <div class="pcategory">Verkehrszeichen</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addSign('stop')"         title="Stop">🛑</div>
-        <div class="pitem" onclick="S.addSign('yield')"        title="Vorfahrt gew.">▽</div>
-        <div class="pitem" onclick="S.addSign('priority')"     title="Vorfahrtsstraße">🔶</div>
-        <div class="pitem" onclick="S.addSign('tlight')"       title="Ampel">🚥</div>
-        <div class="pitem" onclick="S.addSign('crosswalk')"    title="Zebrastreifen">🦓</div>
-        <div class="pitem" onclick="S.addSign('speedlimit30')" title="Tempo 30">🔵</div>
-        <div class="pitem" onclick="S.addSign('nopark')"       title="Halteverbot">🚫</div>
-        <div class="pitem" onclick="S.addSign('barrier')"      title="Schranke">🚧</div>
+      <div id="tab-to-bg" class="pscroll">
+        <div class="pcategory">Hintergrund</div>
+        <button class="pbtn" onclick="S.setBg('blank')">⬜ Weiß (leer)</button>
+        <button class="pbtn" onclick="S.setBg('grid')">📏 Raster (Millimeterpapier)</button>
+        <div class="pcategory">Eigenes Bild</div>
+        <button class="pbtn" onclick="S.loadBgImage()">🖼️ Grundriss / Foto laden</button>
+        <div class="pcategory">Orientierung</div>
+        <button class="pbtn" onclick="S.addNorthArrow()">🧭 Nordpfeil</button>
       </div>
-      <div class="pcategory">VU – Fahrzeuge (Vogelperspektive)</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addVehicle('pkw_blue')"   title="PKW Blau">🟦</div>
-        <div class="pitem" onclick="S.addVehicle('pkw_red')"    title="PKW Rot">🟥</div>
-        <div class="pitem" onclick="S.addVehicle('pkw_white')"  title="PKW Weiß">⬜</div>
-        <div class="pitem" onclick="S.addVehicle('pkw_grey')"   title="PKW Grau">▪️</div>
-        <div class="pitem" onclick="S.addVehicle('polizei')"    title="Streifenwagen">🚓</div>
-        <div class="pitem" onclick="S.addVehicle('rtw')"        title="RTW">🚑</div>
-        <div class="pitem" onclick="S.addVehicle('lkw')"        title="LKW">🚚</div>
-        <div class="pitem" onclick="S.addVehicle('motorrad')"   title="Motorrad">🏍️</div>
-        <div class="pitem" onclick="S.addVehicle('fahrrad')"    title="Fahrrad">🚲</div>
-        <div class="pitem" onclick="S.addStamp('🚶')"           title="Fußgänger">🚶</div>
-      </div>
-      <div class="pcategory">VU – Spuren & Schäden</div>
-      <div class="pgrid" id="ktu-grid"></div>
-    </div>
 
-    <div id="tab-build" class="pscroll" style="display:none">
-      <div class="pcategory">Grundriss – Wände</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addWall(200)"  title="Wand 200px">🧱</div>
-        <div class="pitem" onclick="S.addWall(100)"  title="Wand 100px">▬</div>
-        <div class="pitem" onclick="S.addDoor()"     title="Tür">🚪</div>
-        <div class="pitem" onclick="S.addWindow()"   title="Fenster">🪟</div>
-        <div class="pitem" onclick="S.addRoom()"     title="Raum">⬜</div>
-        <div class="pitem" onclick="S.addStairs()"   title="Treppe">📶</div>
+      <div id="tab-to-plan" class="pscroll" style="display:none">
+        <div class="pcategory">Wände & Struktur</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addWall(200)"  title="Wand lang (200)">🧱</div>
+          <div class="pitem" onclick="S.addWall(100)"  title="Wand kurz (100)">▬</div>
+          <div class="pitem" onclick="S.addWall(300)"  title="Wand extra lang (300)">━━</div>
+          <div class="pitem" onclick="S.addColumn()"   title="Stütze / Säule">⬛</div>
+        </div>
+        <div class="pcategory">Öffnungen</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addDoor()"    title="Tür (mit Bogen)">🚪</div>
+          <div class="pitem" onclick="S.addWindow()"  title="Fenster">🪟</div>
+        </div>
+        <div class="pcategory">Räume & Treppen</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addRoom()"    title="Raum (Rechteck)">⬜</div>
+          <div class="pitem" onclick="S.addStairs()"  title="Treppe">📶</div>
+        </div>
+        <div class="pcategory">Türstatus (Tatort)</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addDoorState('open')"   title="Tür: offen">🔓</div>
+          <div class="pitem" onclick="S.addDoorState('locked')" title="Tür: verschlossen">🔒</div>
+          <div class="pitem" onclick="S.addDoorState('forced')" title="Tür: aufgebrochen">⚡</div>
+        </div>
       </div>
-      <div class="pcategory">Möbel – Wohnzimmer</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addFurniture('sofa')"     title="Sofa">🛋️</div>
-        <div class="pitem" onclick="S.addFurniture('table')"    title="Tisch">🪑</div>
-        <div class="pitem" onclick="S.addFurniture('chair')"    title="Stuhl">🪑</div>
-        <div class="pitem" onclick="S.addFurniture('tv')"       title="TV">📺</div>
-      </div>
-      <div class="pcategory">Möbel – Schlafzimmer</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addFurniture('bed_d')"    title="Doppelbett">🛏️</div>
-        <div class="pitem" onclick="S.addFurniture('bed_s')"    title="Einzelbett">🛏️</div>
-        <div class="pitem" onclick="S.addFurniture('wardrobe')" title="Schrank">🪞</div>
-      </div>
-      <div class="pcategory">Möbel – Bad & Küche</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addFurniture('wc')"       title="Toilette">🚽</div>
-        <div class="pitem" onclick="S.addFurniture('bath')"     title="Badewanne">🛁</div>
-        <div class="pitem" onclick="S.addFurniture('sink')"     title="Waschbecken">🪣</div>
-        <div class="pitem" onclick="S.addFurniture('stove')"    title="Herd">🍳</div>
-        <div class="pitem" onclick="S.addFurniture('fridge')"   title="Kühlschrank">🧊</div>
-      </div>
-      <div class="pcategory">Tatort – Personen & Objekte</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addStamp('👤')"     title="Person stehend">👤</div>
-        <div class="pitem" onclick="S.addCorpse()"        title="Person liegend (Leiche)">🔲</div>
-        <div class="pitem" onclick="S.addStamp('🩸')"     title="Blut">🩸</div>
-        <div class="pitem" onclick="S.addStamp('🔫')"     title="Waffe/Schusswaffe">🔫</div>
-        <div class="pitem" onclick="S.addStamp('🔪')"     title="Messer">🔪</div>
-        <div class="pitem" onclick="S.addStamp('💊')"     title="Drogen/Tabletten">💊</div>
-        <div class="pitem" onclick="S.addStamp('📱')"     title="Handy">📱</div>
-        <div class="pitem" onclick="S.addStamp('💼')"     title="Tasche/Koffer">💼</div>
-      </div>
-    </div>
 
-    <div id="tab-sym" class="pscroll" style="display:none">
-      <div class="pcategory">Orientierung & Markierung</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addNorthArrow()" title="Nordpfeil">🧭</div>
-        <div class="pitem" onclick="S.addStamp('🔴')"  title="Tatort">🔴</div>
-        <div class="pitem" onclick="S.addStamp('🟣')"  title="Ereignisort">🟣</div>
-        <div class="pitem" onclick="S.addStamp('⚠️')"  title="Gefahr">⚠️</div>
-        <div class="pitem" onclick="S.addStamp('📍')"  title="Stecknadel">📍</div>
-        <div class="pitem" onclick="S.addStamp('🚨')"  title="Alarm">🚨</div>
+      <div id="tab-to-room" class="pscroll" style="display:none">
+        <div class="pcategory">Wohnzimmer</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addFurniture('sofa')"   title="Sofa">🛋️</div>
+          <div class="pitem" onclick="S.addFurniture('chair')"  title="Stuhl">🪑</div>
+          <div class="pitem" onclick="S.addFurniture('table')"  title="Tisch">🪑</div>
+          <div class="pitem" onclick="S.addFurniture('tv')"     title="TV">📺</div>
+        </div>
+        <div class="pcategory">Schlafzimmer</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addFurniture('bed_d')"    title="Doppelbett">🛏️</div>
+          <div class="pitem" onclick="S.addFurniture('bed_s')"    title="Einzelbett">🛏️</div>
+          <div class="pitem" onclick="S.addFurniture('wardrobe')" title="Schrank">🪞</div>
+        </div>
+        <div class="pcategory">Bad & WC</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addFurniture('wc')"      title="Toilette">🚽</div>
+          <div class="pitem" onclick="S.addFurniture('bath')"    title="Badewanne">🛁</div>
+          <div class="pitem" onclick="S.addFurniture('shower')"  title="Dusche">🚿</div>
+          <div class="pitem" onclick="S.addFurniture('sink')"    title="Waschbecken">🪣</div>
+        </div>
+        <div class="pcategory">Küche</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addFurniture('stove')"   title="Herd">🍳</div>
+          <div class="pitem" onclick="S.addFurniture('fridge')"  title="Kühlschrank">🧊</div>
+          <div class="pitem" onclick="S.addFurniture('counter')" title="Arbeitsplatte">▬</div>
+        </div>
       </div>
-      <div class="pcategory">Einsatzkräfte</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addStamp('🚓')"  title="Polizei">🚓</div>
-        <div class="pitem" onclick="S.addStamp('🚒')"  title="Feuerwehr">🚒</div>
-        <div class="pitem" onclick="S.addStamp('🚑')"  title="RTW">🚑</div>
-        <div class="pitem" onclick="S.addStamp('🚁')"  title="Hubschrauber">🚁</div>
-        <div class="pitem" onclick="S.addStamp('🐕')"  title="Diensthund">🐕</div>
+
+      <div id="tab-to-spur" class="pscroll" style="display:none">
+        <div class="pcategory">Personen</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addStamp('👤')"           title="Person stehend">👤</div>
+          <div class="pitem" onclick="S.addCorpse()"              title="Leiche liegend">🔲</div>
+          <div class="pitem" onclick="S.addVehicle('person_inj')" title="Verletzter">🔴</div>
+        </div>
+        <div class="pcategory">Körperspuren</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addBloodPool()"  title="Blutlache">🩸</div>
+          <div class="pitem" onclick="S.addStamp('🩸')"  title="Blutspritzer">🩸</div>
+          <div class="pitem" onclick="S.addStamp('🦶')"  title="Fußabdruck">🦶</div>
+          <div class="pitem" onclick="S.addStamp('✋')"   title="Handabdruck">✋</div>
+        </div>
+        <div class="pcategory">Waffen & Tatmittel</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addStamp('🔫')"   title="Schusswaffe">🔫</div>
+          <div class="pitem" onclick="S.addStamp('🔪')"   title="Messer">🔪</div>
+          <div class="pitem" onclick="S.addCasing()"      title="Patronenhülse">⊙</div>
+          <div class="pitem" onclick="S.addBulletHole()"  title="Einschussloch">◎</div>
+        </div>
+        <div class="pcategory">Beweismittel</div>
+        <div class="pgrid">
+          <div class="pitem" onclick="S.addStamp('📱')"    title="Handy">📱</div>
+          <div class="pitem" onclick="S.addStamp('💼')"    title="Tasche">💼</div>
+          <div class="pitem" onclick="S.addStamp('💊')"    title="Drogen">💊</div>
+          <div class="pitem" onclick="S.addStamp('🚬')"    title="Kippe">🚬</div>
+          <div class="pitem" onclick="S.addStamp('🍾')"    title="Flasche">🍾</div>
+          <div class="pitem" onclick="S.addStamp('👜')"    title="Handtasche">👜</div>
+          <div class="pitem" onclick="S.addStamp('💳')"    title="Ausweis/Karte">💳</div>
+          <div class="pitem" onclick="S.addPhotoPoint()"   title="Fotopunkt">📷</div>
+        </div>
+        <div class="pcategory">KTU-Spurentafeln</div>
+        <div class="pgrid" id="ktu-grid-to"></div>
       </div>
-      <div class="pcategory">Natur & Infrastruktur</div>
-      <div class="pgrid">
-        <div class="pitem" onclick="S.addStamp('🌳')"  title="Baum">🌳</div>
-        <div class="pitem" onclick="S.addStamp('🏢')"  title="Gebäude">🏢</div>
-        <div class="pitem" onclick="S.addStamp('🏠')"  title="Haus">🏠</div>
-        <div class="pitem" onclick="S.addStamp('⛽')"  title="Tankstelle">⛽</div>
-        <div class="pitem" onclick="S.addStamp('🏥')"  title="Krankenhaus">🏥</div>
-        <div class="pitem" onclick="S.addStamp('🏪')"  title="Geschäft">🏪</div>
-      </div>
-      <div class="pcategory">Nummerierte KTU-Tafeln</div>
-      <div class="pgrid" id="ktu-grid2"></div>
     </div>
   </div>
 </div>
@@ -536,6 +660,7 @@ const S = {
   _textPending:   null,
   _activeTileKey: 'osm',
   _activeTileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  _mode: 'vu',
 
   /* Available tile layers */
   MAP_TILES: {
@@ -546,6 +671,8 @@ const S = {
     esritopo: { label:'🗾 Topo-Karte',            url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',                                  max:18, attr:'© ESRI' },
     carto:    { label:'🌫 Grau',                  url:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',                                                                        max:20, attr:'© CartoDB' },
     dark:     { label:'🌙 Dunkel',                url:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',                                                                         max:20, attr:'© CartoDB' },
+    nrw_dop:  { label:'📸 NRW Luftbild',          url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dop/GoogleMapsCompatible/{z}/{y}/{x}.jpeg',                                                  max:20, attr:'© Geobasis NRW' },
+    nrw_dtk:  { label:'🗾 NRW Topokarte',         url:'https://www.wmts.nrw.de/geobasis/wmts_nw_dtk/GoogleMapsCompatible/{z}/{y}/{x}.png',                                                   max:18, attr:'© Geobasis NRW' },
   },
 
   /* ──────────────────────────────────────────────────────── */
@@ -605,9 +732,10 @@ const S = {
       if (e.key === 'r' || e.key === 'R') { e.preventDefault(); this.setAngle(0); }
     });
 
-    this._buildKTUGrid('ktu-grid');
-    this._buildKTUGrid('ktu-grid2');
+    this._buildKTUGrid('ktu-grid-vu');
+    this._buildKTUGrid('ktu-grid-to');
 
+    this.setMode('vu');
     this._drawBg();
     this._saveHistory();
   },
@@ -1091,6 +1219,15 @@ const S = {
       const circ = new fabric.Circle({ radius:20, fill:'#fff', stroke:'#DA291C', strokeWidth:4, originX:'center', originY:'center', top:-28 });
       const line = new fabric.Line([-14,-28,14,-28], { stroke:'#DA291C', strokeWidth:4 });
       els = [pole, circ, line];
+    } else if (type === 'noentry') {
+      const circ = new fabric.Circle({ radius:22, fill:'#DA291C', stroke:'#fff', strokeWidth:3, originX:'center', originY:'center', top:-30 });
+      const bar  = new fabric.Rect({ width:28, height:9, fill:'#fff', rx:2, left:-14, top:-34 });
+      els = [pole, circ, bar];
+    } else if (type === 'oneway_sign') {
+      const box    = new fabric.Rect({ width:72, height:28, fill:'#1A5FBF', rx:3, left:-36, top:-38 });
+      const shaft  = new fabric.Rect({ width:40, height:8, fill:'#fff', left:-34, top:-42 });
+      const arrowH = new fabric.Triangle({ width:18, height:20, fill:'#fff', originX:'center', originY:'center', left:8, top:-38, angle:90 });
+      els = [pole, box, shaft, arrowH];
     } else if (type === 'barrier') {
       const base = new fabric.Rect({ width:8, height:18, fill:'#444', left:-4, top:-8 });
       const arm  = new fabric.Rect({ width:110, height:8, fill:'#DA291C', left:4, top:-4 });
@@ -1111,14 +1248,39 @@ const S = {
 
   /* ── VEHICLES (top-down) ── */
   addVehicle(type) {
+    // Injured/lying person – special case
+    if (type === 'person_inj') {
+      const pe = [
+        new fabric.Ellipse({ rx:14, ry:14, fill:'#FFCC99', stroke:'#555', strokeWidth:1.5, originX:'center', originY:'center', top:-50 }),
+        new fabric.Rect({ width:26, height:72, fill:'#FFCC99', stroke:'#555', strokeWidth:1.5, rx:7, left:-13, top:-40 }),
+        new fabric.Line([-28,-26,-13,4], { stroke:'#FFCC99', strokeWidth:13, strokeLineCap:'round' }),
+        new fabric.Line([ 28,-26, 13,4], { stroke:'#FFCC99', strokeWidth:13, strokeLineCap:'round' }),
+        new fabric.Line([-13,32,-13,60], { stroke:'#FFCC99', strokeWidth:13, strokeLineCap:'round' }),
+        new fabric.Line([ 13,32, 13,60], { stroke:'#FFCC99', strokeWidth:13, strokeLineCap:'round' }),
+        new fabric.Circle({ radius:9, fill:'#FF3B30', stroke:'#fff', strokeWidth:1.5, originX:'center', originY:'center', left:18, top:-36 }),
+        new fabric.Text('+', { fontSize:12, fill:'#fff', fontWeight:'bold', originX:'center', originY:'center', left:18, top:-36, fontFamily:'sans-serif' }),
+      ];
+      const pg = new fabric.Group(pe, { left: this.canvas.width/2, top: this.canvas.height/2, originX:'center', originY:'center', snapAngle:15 });
+      this.canvas.add(pg); this.canvas.setActiveObject(pg);
+      this._saveHistory(); this._closePanelMobile(); return;
+    }
+
     const defs = {
       pkw_blue:  { color:'#007AFF', w:40, h:80 },
       pkw_red:   { color:'#FF3B30', w:40, h:80 },
       pkw_white: { color:'#F5F5F5', w:40, h:80 },
       pkw_grey:  { color:'#8E8E93', w:40, h:80 },
-      polizei:   { color:'#E8E8E8', w:40, h:80, stripe:'#007AFF' },
-      rtw:       { color:'#F5F5F5', w:42, h:90, stripe:'#DA291C' },
+      pkw_yellow:{ color:'#FFCC00', w:40, h:80 },
+      pkw_green: { color:'#34C759', w:40, h:80 },
+      pkw_black: { color:'#333333', w:40, h:80 },
+      pkw_orange:{ color:'#FF9500', w:40, h:80 },
+      polizei:   { color:'#E8E8E8', w:40, h:80,  stripe:'polizei' },
+      rtw:       { color:'#F5F5F5', w:42, h:90,  stripe:'rtw'    },
+      nef:       { color:'#DA291C', w:40, h:85,  stripe:'nef'    },
+      fw_hlf:    { color:'#DA291C', w:50, h:115, stripe:'fw'     },
       lkw:       { color:'#FF9500', w:50, h:140 },
+      van:       { color:'#B0BEC5', w:46, h:100 },
+      bus:       { color:'#FFFDE7', w:54, h:160 },
       motorrad:  { isBike:true, color:'#333', w:16, h:38 },
       fahrrad:   { isBike:true, color:'#666', w:10, h:30 },
     };
@@ -1135,11 +1297,16 @@ const S = {
       const body = new fabric.Rect({ width:v.w, height:v.h, fill:v.color, stroke:'#333', strokeWidth:1.5, rx:4, left:-v.w/2, top:-v.h/2 });
       els.push(body);
       if (v.stripe) {
-        if (type === 'polizei') {
-          els.push(new fabric.Rect({ width:9, height:v.h, fill:v.stripe, left:-v.w/2+3, top:-v.h/2 }));
-          els.push(new fabric.Rect({ width:9, height:v.h, fill:v.stripe, left: v.w/2-12, top:-v.h/2 }));
-        } else {
-          els.push(new fabric.Rect({ width:v.w, height:12, fill:v.stripe, left:-v.w/2, top:-4 }));
+        if (v.stripe === 'polizei') {
+          els.push(new fabric.Rect({ width:9, height:v.h, fill:'#007AFF', left:-v.w/2+3, top:-v.h/2 }));
+          els.push(new fabric.Rect({ width:9, height:v.h, fill:'#007AFF', left: v.w/2-12, top:-v.h/2 }));
+        } else if (v.stripe === 'rtw') {
+          els.push(new fabric.Rect({ width:v.w, height:12, fill:'#DA291C', left:-v.w/2, top:-4 }));
+        } else if (v.stripe === 'nef') {
+          els.push(new fabric.Rect({ width:v.w, height:9, fill:'#FFFFFF', left:-v.w/2, top:-5 }));
+          els.push(new fabric.Rect({ width:9, height:28, fill:'#FFFFFF', left:-5, top:-15 }));
+        } else if (v.stripe === 'fw') {
+          els.push(new fabric.Rect({ width:v.w, height:13, fill:'#FFCC00', left:-v.w/2, top:-7 }));
         }
       }
       // windshields
@@ -1347,6 +1514,20 @@ const S = {
         new fabric.Rect({ width:6, height:18, fill:'#AAA', strokeWidth:0, rx:2, left:-3, top:-35 }),
         new fabric.Rect({ width:6, height:24, fill:'#AAA', strokeWidth:0, rx:2, left:-3, top:6 }),
       ];
+    } else if (type === 'shower') {
+      els = [
+        new fabric.Rect({ width:80, height:80, fill:'#E8F4FD', stroke, strokeWidth:2, left:-40, top:-40 }),
+        new fabric.Rect({ width:80, height:4,  fill:'#5AC8FA', strokeWidth:0, left:-40, top:-40 }),
+        new fabric.Rect({ width:4,  height:80, fill:'#5AC8FA', strokeWidth:0, left:36,  top:-40 }),
+        new fabric.Circle({ radius:5, fill:'#888', stroke, strokeWidth:1, originX:'center', originY:'center', top:18 }),
+      ];
+    } else if (type === 'counter') {
+      els = [
+        new fabric.Rect({ width:160, height:50, fill:'#C8A87A', stroke, strokeWidth:2, rx:2, left:-80, top:-25 }),
+        new fabric.Line([-80,-8, 80,-8], { stroke, strokeWidth:1 }),
+        new fabric.Rect({ width:32, height:22, fill:'#AAAAAA', stroke, strokeWidth:1, rx:2, left:-70, top:-11 }),
+        new fabric.Circle({ radius:4, fill:'#666', strokeWidth:0, originX:'center', originY:'center', left:-54, top:0 }),
+      ];
     }
 
     const grp = new fabric.Group(els, {
@@ -1376,6 +1557,175 @@ const S = {
     this.canvas.setActiveObject(outline);
     this._saveHistory();
     this._closePanelMobile();
+  },
+
+  /* ── LEITKEGEL ── */
+  addCone() {
+    const body   = new fabric.Triangle({ width:22, height:22, fill:'#FF6600', stroke:'#222', strokeWidth:1, originX:'center', originY:'center', top:-6 });
+    const base   = new fabric.Rect({ width:28, height:6, fill:'#FF6600', stroke:'#333', strokeWidth:1, rx:1, left:-14, top:8 });
+    const stripe = new fabric.Rect({ width:14, height:4, fill:'#FFFFFF', left:-7, top:0 });
+    const grp = new fabric.Group([base, body, stripe], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── ABSPERRBAKE ── */
+  addBake() {
+    const frame = new fabric.Rect({ width:62, height:30, fill:'#fff', stroke:'#333', strokeWidth:1.5, left:-31, top:-15 });
+    const s1 = new fabric.Rect({ width:10, height:30, fill:'#DA291C', left:-23, top:-15 });
+    const s2 = new fabric.Rect({ width:10, height:30, fill:'#DA291C', left:  1, top:-15 });
+    const s3 = new fabric.Rect({ width:10, height:30, fill:'#DA291C', left: 19, top:-15 });
+    const grp = new fabric.Group([frame, s1, s2, s3], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── AUFPRALLSTELLE ── */
+  addImpact() {
+    const burst = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      burst.push(new fabric.Line([
+        Math.round(Math.cos(a)*7), Math.round(Math.sin(a)*7),
+        Math.round(Math.cos(a)*21), Math.round(Math.sin(a)*21)
+      ], { stroke:'#FF3B30', strokeWidth:2.5, strokeLineCap:'round' }));
+    }
+    const center = new fabric.Circle({ radius:6, fill:'#FF3B30', stroke:'#fff', strokeWidth:1.5, originX:'center', originY:'center' });
+    const grp = new fabric.Group([...burst, center], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── ABWURFSTELLE ── */
+  addDropPoint() {
+    const diamond = new fabric.Polygon(
+      [{x:0,y:-22},{x:16,y:0},{x:0,y:22},{x:-16,y:0}],
+      { fill:'#FF9500', stroke:'#333', strokeWidth:1.5 }
+    );
+    const txt = new fabric.Text('A', { fontSize:14, fill:'#fff', fontWeight:'bold', originX:'center', originY:'center', fontFamily:'sans-serif' });
+    const grp = new fabric.Group([diamond, txt], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── GESCHWINDIGKEITSZEICHEN ── */
+  addSpeedSign(speed) {
+    const pole = new fabric.Rect({ width:4, height:50, fill:'#888', rx:1, left:-2, top:10 });
+    const circ = new fabric.Circle({ radius:22, fill:'#fff', stroke:'#DA291C', strokeWidth:4, originX:'center', originY:'center', top:-28 });
+    const txt  = new fabric.Text(String(speed), {
+      fontSize: speed >= 100 ? 14 : 16, fill:'#000', fontWeight:'bold',
+      originX:'center', originY:'center', top:-28, fontFamily:'sans-serif',
+    });
+    const grp = new fabric.Group([pole, circ, txt], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── TÜRSTATUS (TATORT) ── */
+  addDoorState(state) {
+    const wC = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const colors = { open:'#34C759', locked:'#FF9500', forced:'#FF3B30' };
+    const labels = { open:'OFFEN', locked:'VERR.', forced:'AUFGEBR.' };
+    const fc  = colors[state] || colors.open;
+    const lbl = labels[state] || '';
+    const dw = 60, wt = 12;
+    const f1  = new fabric.Rect({ width:5, height:wt, fill:wC, left:-dw/2-2, top:-wt/2 });
+    const f2  = new fabric.Rect({ width:5, height:wt, fill:wC, left: dw/2-3,  top:-wt/2 });
+    const gap = new fabric.Rect({ width:dw, height:wt, fill:'transparent', stroke:fc, strokeWidth:2.5, left:-dw/2, top:-wt/2 });
+    const ind = new fabric.Text(lbl, { fontSize:10, fill:fc, fontWeight:'bold', originX:'center', originY:'center', top:-22, fontFamily:'sans-serif' });
+    const grp = new fabric.Group([f1, f2, gap, ind], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── SÄULE / STÜTZE (TATORT) ── */
+  addColumn() {
+    const wC    = this.isDark ? '#CCCCCC' : '#2C2C2E';
+    const inner = this.isDark ? '#3C3C3E' : '#E0E0E0';
+    const outer = new fabric.Rect({ width:22, height:22, fill:wC, stroke:'#000', strokeWidth:1.5, left:-11, top:-11 });
+    const core  = new fabric.Rect({ width:12, height:12, fill:inner, strokeWidth:0, left:-6, top:-6 });
+    const grp = new fabric.Group([outer, core], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:45,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── BLUTLACHE ── */
+  addBloodPool() {
+    const pool = new fabric.Ellipse({
+      rx:30, ry:20, fill:'rgba(160,0,20,0.72)', stroke:'rgba(80,0,10,0.5)', strokeWidth:1.5,
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(pool); this.canvas.setActiveObject(pool);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── PATRONENHÜLSE ── */
+  addCasing() {
+    const body = new fabric.Ellipse({ rx:5, ry:13, fill:'#C8A830', stroke:'#8B6914', strokeWidth:1, originX:'center', originY:'center', top:-2 });
+    const rim  = new fabric.Circle({ radius:7, fill:'transparent', stroke:'#8B6914', strokeWidth:1.5, originX:'center', originY:'center', top:11 });
+    const prim = new fabric.Circle({ radius:2, fill:'#8B6914', strokeWidth:0, originX:'center', originY:'center', top:11 });
+    const grp = new fabric.Group([body, rim, prim], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── EINSCHUSSLOCH ── */
+  addBulletHole() {
+    const outer  = new fabric.Circle({ radius:14, fill:'rgba(50,50,50,0.12)', stroke:'#555', strokeWidth:1, originX:'center', originY:'center' });
+    const cracks = [];
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      cracks.push(new fabric.Line([
+        Math.round(Math.cos(a)*5), Math.round(Math.sin(a)*5),
+        Math.round(Math.cos(a)*13), Math.round(Math.sin(a)*13)
+      ], { stroke:'#555', strokeWidth:1 }));
+    }
+    const inner = new fabric.Circle({ radius:4, fill:'#1C1C1E', stroke:'#000', strokeWidth:1, originX:'center', originY:'center' });
+    const grp = new fabric.Group([outer, ...cracks, inner], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
+  },
+
+  /* ── FOTOPUNKT ── */
+  addPhotoPoint() {
+    const ring = new fabric.Circle({ radius:17, fill:'rgba(0,122,255,0.1)', stroke:'#007AFF', strokeWidth:2, originX:'center', originY:'center' });
+    const camB = new fabric.Rect({ width:22, height:16, fill:'#333', stroke:'#111', strokeWidth:1, rx:2, left:-11, top:-8 });
+    const lens = new fabric.Circle({ radius:5, fill:'#555', stroke:'#222', strokeWidth:1, originX:'center', originY:'center', top:0 });
+    const flash = new fabric.Triangle({ width:8, height:7, fill:'#FFCC00', originX:'center', originY:'center', left:-15, top:-8 });
+    const grp = new fabric.Group([ring, camB, flash, lens], {
+      left: this.canvas.width/2, top: this.canvas.height/2,
+      originX:'center', originY:'center', snapAngle:15,
+    });
+    this.canvas.add(grp); this.canvas.setActiveObject(grp);
+    this._saveHistory(); this._closePanelMobile();
   },
 
   /* ── STAMPS (emoji) ── */
@@ -1665,14 +2015,34 @@ const S = {
     btn.classList.toggle('active', !hidden);
   },
 
+  setMode(mode) {
+    this._mode = mode;
+    const vuEl = document.getElementById('mode-vu');
+    const toEl = document.getElementById('mode-tatort');
+    if (vuEl) vuEl.style.display = (mode === 'vu') ? '' : 'none';
+    if (toEl) toEl.style.display = (mode === 'tatort') ? '' : 'none';
+    document.querySelectorAll('.mtbtn').forEach(btn => {
+      const isVuBtn = btn.textContent.includes('VU');
+      btn.classList.toggle('active', (mode === 'vu') === isVuBtn);
+    });
+    this.showTab(mode === 'vu' ? 'vu-bg' : 'to-bg');
+  },
+
   showTab(tab) {
-    ['bg','vu','build','sym'].forEach(t => {
+    const isTo = tab.startsWith('to-');
+    const tabs = isTo
+      ? ['to-bg','to-plan','to-room','to-spur']
+      : ['vu-bg','vu-fzg','vu-sign','vu-mark'];
+    tabs.forEach(t => {
       const el = document.getElementById(`tab-${t}`);
       if (el) el.style.display = (t === tab) ? '' : 'none';
     });
-    document.querySelectorAll('.ptab').forEach((btn, i) => {
-      btn.classList.toggle('active', ['bg','vu','build','sym'][i] === tab);
-    });
+    const modeEl = document.getElementById(isTo ? 'mode-tatort' : 'mode-vu');
+    if (modeEl) {
+      modeEl.querySelectorAll('.ptab').forEach((btn, i) => {
+        btn.classList.toggle('active', tabs[i] === tab);
+      });
+    }
   },
 
   /* ── ROTATION ── */
