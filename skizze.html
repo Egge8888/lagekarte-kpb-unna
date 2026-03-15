@@ -192,8 +192,20 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
   max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
   box-shadow:0 16px 48px rgba(0,0,0,.4);
 }
-#map-modal-header { padding:16px 20px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--sep); flex-shrink:0; }
-#leaflet-picker { flex:1; min-height:320px; }
+#map-modal-header { padding:14px 16px 10px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--sep); flex-shrink:0; }
+#map-layer-bar {
+  display:flex; gap:6px; padding:8px 12px; overflow-x:auto;
+  border-bottom:1px solid var(--sep); flex-shrink:0; scrollbar-width:none;
+}
+#map-layer-bar::-webkit-scrollbar { display:none; }
+.mlbtn {
+  padding:5px 12px; border-radius:20px; border:1.5px solid var(--sep);
+  background:var(--bg); color:var(--txt); font-size:12px; font-weight:600;
+  cursor:pointer; white-space:nowrap; font-family:var(--font); flex-shrink:0;
+  transition:all .15s; -webkit-tap-highlight-color:transparent;
+}
+.mlbtn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+#leaflet-picker { flex:1; min-height:300px; }
 #map-modal-footer { padding:14px 16px; display:flex; gap:10px; border-top:1px solid var(--sep); flex-shrink:0; }
 #map-modal-footer button { flex:1; padding:12px; border-radius:12px; border:none; font-family:var(--font); font-size:14px; font-weight:700; cursor:pointer; }
 #map-apply-btn { background:var(--blue); color:#fff; }
@@ -462,6 +474,7 @@ html,body { height:100%; font-family:var(--font); background:var(--bg); color:va
       <span style="font-size:15px;font-weight:800;">🗺️ Kartenausschnitt wählen</span>
       <span style="font-size:12px;color:var(--txt2)">Ausschnitt navigieren → Übernehmen</span>
     </div>
+    <div id="map-layer-bar"></div>
     <div id="leaflet-picker"></div>
     <div id="map-modal-footer">
       <button id="map-cancel-btn" onclick="S.closeMapPicker()">Abbrechen</button>
@@ -518,12 +531,13 @@ const S = {
 
   /* Available tile layers (all support CORS via fetch) */
   MAP_TILES: {
-    osm:      { label:'🗺 OpenStreetMap',      url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',                                                                   max:19, attr:'© OpenStreetMap' },
-    topo:     { label:'⛰ Topografie',           url:'https://tile.opentopomap.org/{z}/{x}/{y}.png',                                                                    max:17, attr:'© OpenTopoMap' },
-    satellite:{ label:'📡 Satellit (ESRI)',      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',                   max:18, attr:'© ESRI' },
-    esritopo: { label:'🗾 Topo-Karte (ESRI)',    url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',                  max:18, attr:'© ESRI' },
-    carto:    { label:'🌫 Grau (CartoDB)',        url:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',                                                      max:20, attr:'© CartoDB' },
-    dark:     { label:'🌙 Dunkel (CartoDB)',      url:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',                                                       max:20, attr:'© CartoDB' },
+    osm:      { label:'🗺 OpenStreetMap',        url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',                                                                                    max:19, attr:'© OpenStreetMap' },
+    topo:     { label:'⛰ Topografie',             url:'https://tile.opentopomap.org/{z}/{x}/{y}.png',                                                                                     max:17, attr:'© OpenTopoMap' },
+    satellite:{ label:'📡 Satellit',              url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',                                    max:20, attr:'© ESRI' },
+    clarity:  { label:'🔍 Satellit HD',           url:'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',                               max:22, attr:'© ESRI' },
+    esritopo: { label:'🗾 Topo-Karte',            url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',                                  max:18, attr:'© ESRI' },
+    carto:    { label:'🌫 Grau',                  url:'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',                                                                        max:20, attr:'© CartoDB' },
+    dark:     { label:'🌙 Dunkel',                url:'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',                                                                         max:20, attr:'© CartoDB' },
   },
 
   /* ──────────────────────────────────────────────────────── */
@@ -1358,45 +1372,47 @@ const S = {
   /* ── MAP PICKER ── */
   openMapPicker() {
     document.getElementById('map-modal').classList.remove('hidden');
+    this._buildLayerBar();
     if (!this._miniMap) {
       setTimeout(() => {
         this._miniMap = L.map('leaflet-picker', {
           center: [51.5344, 7.6889], zoom: 15,
           zoomControl: true, attributionControl: true,
         });
-
-        // Build Leaflet layers from MAP_TILES config
-        const leafletLayers = {};
-        let defaultLayer = null;
-        Object.entries(this.MAP_TILES).forEach(([key, cfg]) => {
-          const lyr = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max });
-          leafletLayers[cfg.label] = lyr;
-          if (key === this._activeTileKey) {
-            lyr.addTo(this._miniMap);
-            defaultLayer = lyr;
-          }
-        });
-        if (!defaultLayer) {
-          Object.values(leafletLayers)[0].addTo(this._miniMap);
-        }
-
-        L.control.layers(leafletLayers, {}, { position:'topright' }).addTo(this._miniMap);
-
-        // Track which layer is active so applyMapBg() uses the right tiles
-        this._miniMap.on('baselayerchange', e => {
-          const found = Object.entries(this.MAP_TILES).find(([, cfg]) => cfg.label === e.name);
-          if (found) {
-            this._activeTileKey = found[0];
-            this._activeTileUrl = found[1].url;
-          }
-        });
-
+        const cfg = this.MAP_TILES[this._activeTileKey] || this.MAP_TILES.osm;
+        this._currentLeafletLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max });
+        this._currentLeafletLayer.addTo(this._miniMap);
         setTimeout(() => this._miniMap.invalidateSize(), 100);
       }, 50);
     } else {
       setTimeout(() => this._miniMap.invalidateSize(), 50);
     }
     this._closePanelMobile();
+  },
+
+  _buildLayerBar() {
+    const bar = document.getElementById('map-layer-bar');
+    bar.innerHTML = '';
+    Object.entries(this.MAP_TILES).forEach(([key, cfg]) => {
+      const btn = document.createElement('button');
+      btn.className = 'mlbtn' + (key === this._activeTileKey ? ' active' : '');
+      btn.textContent = cfg.label;
+      btn.onclick = () => this._switchLayer(key);
+      bar.appendChild(btn);
+    });
+  },
+
+  _switchLayer(key) {
+    const cfg = this.MAP_TILES[key];
+    if (!cfg || !this._miniMap) return;
+    this._activeTileKey = key;
+    this._activeTileUrl = cfg.url;
+    if (this._currentLeafletLayer) this._miniMap.removeLayer(this._currentLeafletLayer);
+    this._currentLeafletLayer = L.tileLayer(cfg.url, { attribution: cfg.attr, maxZoom: cfg.max });
+    this._currentLeafletLayer.addTo(this._miniMap);
+    // Update button states
+    document.querySelectorAll('.mlbtn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
   },
 
   async applyMapBg() {
