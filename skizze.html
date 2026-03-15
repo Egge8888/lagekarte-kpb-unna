@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Skizze – KPB Unna</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Skizze"/>
+<link rel="apple-touch-icon" href="./icon.svg"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<style>
+/* ════════════════════════════════════════════════════════
+   DESIGN SYSTEM – iOS inspired (Mirrors index.html)
+   ════════════════════════════════════════════════════════ */
+:root {
+  --blue:#007AFF; --red:#FF3B30; --green:#34C759; --orange:#FF9500;
+  --yellow:#FFCC00; --purple:#AF52DE; --teal:#30B0C7; --gray:#8E8E93;
+  --bg:#F2F2F7; --card:#FFFFFF; --txt:#000000; --txt2:#3C3C43;
+  --sep:rgba(60,60,67,.18); --glass:rgba(255,255,255,.85);
+  --shadow:0 4px 24px rgba(0,0,0,.10);
+  --r:16px; --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+}
+.dark {
+  --bg:#1C1C1E; --card:#2C2C2E; --txt:#FFFFFF; --txt2:rgba(235,235,245,.6);
+  --sep:rgba(84,84,88,.55); --glass:rgba(44,44,46,.92);
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; font-family:var(--font); background:var(--bg); color:var(--txt); overflow:hidden; display: flex; flex-direction: column; }
+
+/* ── HEADER ──────────────────────────────────────────── */
+#header {
+  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--glass); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--sep); z-index:200;
+  flex-shrink:0; height:52px;
+}
+.header-badge { font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.5px; background:rgba(255,204,0,.15); color:var(--orange); }
+.header-spacer { flex:1; }
+.header-btn { width:36px; height:36px; border-radius:10px; border:none; background:var(--card); color:var(--txt); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; border:1px solid var(--sep); flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+.header-btn:active { transform:scale(.93); }
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+#workspace {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── TOOLBAR ─────────────────────────────────────────── */
+#toolbar {
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  z-index:1000; display:flex; flex-direction:column; gap:4px;
+  background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:8px 6px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  max-height:calc(100vh - 80px); overflow-y:auto; overflow-x:hidden;
+  scrollbar-width: none;
+}
+#toolbar::-webkit-scrollbar { display: none; }
+.dark #toolbar { background:rgba(44,44,46,.97); }
+
+.tool-btn {
+  width:52px; height:50px; border-radius:12px; border:none;
+  background:transparent; cursor:pointer; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; transition:all .12s; -webkit-tap-highlight-color:transparent;
+  flex-direction:column; gap:1px; flex-shrink:0;
+}
+.tool-btn:active { transform:scale(.9); }
+.tool-btn.active { background:var(--blue); box-shadow:0 2px 8px rgba(0,122,255,.4); }
+.tool-btn.active .tool-label { color:#fff; }
+.tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
+.tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
+
+/* ── COLOR PICKER ────────────────────────────────────── */
+#color-picker {
+  position:absolute; left:82px; top:50%; transform:translateY(-50%);
+  z-index:1001; background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:14px; padding:10px;
+  box-shadow:0 4px 24px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:6px;
+}
+.dark #color-picker { background:rgba(44,44,46,.97); }
+#color-picker.hidden { display:none; }
+.color-dot { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2.5px solid transparent; transition:all .12s; -webkit-tap-highlight-color:transparent; }
+.color-dot.selected { border-color:var(--txt); transform:scale(1.2); }
+.color-dot:active { transform:scale(.9); }
+
+/* ── SIDE PANEL (Stamps & Templates) ──────────────────── */
+#side-panel {
+  position:absolute; right:12px; top:12px; z-index:1000; width:min(280px, calc(100vw - 70px));
+  max-height:calc(100vh - 80px); background:rgba(255,255,255,.95); backdrop-filter:blur(20px);
+  border:1px solid var(--sep); border-radius:18px; padding:12px; box-shadow:0 4px 24px rgba(0,0,0,.2);
+  display:flex; flex-direction:column; overflow-y:auto; transition: transform 0.3s;
+}
+.dark #side-panel { background:rgba(44,44,46,.97); }
+#side-panel.hidden { transform: translateX(120%); display:flex; }
+.panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-shrink:0; }
+.panel-title { font-size:15px; font-weight:800; color:var(--txt); }
+.panel-close-btn { background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; padding:0 4px; line-height:1; }
+
+.stamp-category { font-size:11px; font-weight:800; color:var(--txt2); text-transform:uppercase; margin-top:10px; margin-bottom:6px; letter-spacing:0.5px; }
+.stamp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(42px, 1fr)); gap:6px; }
+.stamp-item { font-size:28px; text-align:center; cursor:pointer; padding:6px 0; border-radius:10px; background:var(--bg); border:1.5px solid transparent; transition:all .1s; line-height:1; }
+.stamp-item:active { transform:scale(0.85); }
+.stamp-item:hover { border-color:var(--blue); background:rgba(0,122,255,0.1); }
+
+/* ── CANVAS WRAPPER ──────────────────────────────────── */
+.canvas-container {
+  flex: 1;
+  width: 100%; height: 100%;
+  background-color: #fff; /* Skizze always starts white */
+}
+.dark .canvas-container {
+  background-color: #1a1a1a;
+}
+#canvas-wrapper { width:100%; height:100%; overflow:hidden; }
+
+#snap-nodes-layer {
+  position: absolute; pointer-events: none;
+  top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
+}
+.snap-node {
+  position: absolute; pointer-events: auto;
+  width: 24px; height: 24px;
+  margin-left: -12px; margin-top: -12px;
+  background: #007AFF; color: white;
+  border-radius: 50%; text-align: center; line-height: 24px;
+  font-weight: bold; font-size: 16px; cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  transition: transform 0.2s, background 0.2s;
+}
+.snap-node:hover { transform: scale(1.2); }
+.snap-node.active { background: #34C759; transform: scale(1.2); }
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  #toolbar {
+    left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
+    width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
+    border-radius: 16px 16px 0 0; padding: 8px 8px max(16px, env(safe-area-inset-bottom));
+  }
+  .tool-btn { width: 50px; height: 50px; font-size: 24px; flex-shrink: 0; }
+  .tool-divider { width: 1px; height: 32px; margin: auto 4px; }
+  #color-picker { left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom))); transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px); }
+  #side-panel { top: 12px; max-height: calc(100vh - 120px); }
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span class="header-badge">✏️ Skizze</span>
+  <div class="header-spacer"></div>
+  <button class="header-btn" onclick="Skizze.toggleDark()" title="Darkmode">🌙</button>
+  <button class="header-btn" onclick="Skizze.exportPNG()" title="Exportieren" style="width:auto; padding:0 12px; font-size:12px; font-weight:700; color:var(--blue); border-color:rgba(0,122,255,0.3); background:rgba(0,122,255,0.1);">💾 Speichern</button>
+  <button class="header-btn" onclick="window.location.href='index.html'" title="Zurück zur Karte">✖  <!-- Arbeitsbereich -->
+  <div class="skizze-main">
+    <div class="skizze-workspace" id="canvas-wrapper">
+      <canvas id="skizzeCanvas"></canvas>
+      <div id="snap-nodes-layer"></div>
+    </div>
+    
+    <!-- Sidebar Rechts (Vorlagen) -->
+    <button class="tool-btn active" data-tool="select" onclick="Skizze.setTool('select')" title="Auswählen"><span>👆</span><span class="tool-label">Auswahl</span></button>
+    <button class="tool-btn" data-tool="draw" onclick="Skizze.setTool('draw')" title="Zeichnen"><span>🖊️</span><span class="tool-label">Stift</span></button>
+    
+    <div class="tool-divider"></div>
+    
+    <button class="tool-btn" data-tool="line" onclick="Skizze.setTool('line')" title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+    <button class="tool-btn" data-tool="arrow" onclick="Skizze.setTool('arrow')" title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    <button class="tool-btn" data-tool="rect" onclick="Skizze.setTool('rect')" title="Viereck"><span>⬜</span><span class="tool-label">Viereck</span></button>
+    <button class="tool-btn" data-tool="circle" onclick="Skizze.setTool('circle')" title="Kreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
+    <button class="tool-btn" data-tool="text" onclick="Skizze.addText()" title="Text"><span>📝</span><span class="tool-label">Text</span></button>
+    
+    <div class="tool-divider"></div>
+
+    <button class="tool-btn" onclick="Skizze.toggleStamps()" title="Stempel & Vorlagen"><span>🎭</span><span class="tool-label">Vorlagen</span></button>
+    <button class="tool-btn" onclick="Skizze.deleteSelected()" title="Auswahl löschen"><span>🗑️</span><span class="tool-label">Löschen</span></button>
+    <button class="tool-btn" onclick="Skizze.clearAll()" title="Alles löschen" style="color:var(--red)"><span>💣</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
+  </div>
+
+  <div id="color-picker" class="hidden">
+    <div class="color-dot selected" style="background:#000000" data-color="#000000" onclick="Skizze.setColor('#000000',this)"></div>
+    <div class="color-dot" style="background:#FF3B30" data-color="#FF3B30" onclick="Skizze.setColor('#FF3B30',this)"></div>
+    <div class="color-dot" style="background:#FF9500" data-color="#FF9500" onclick="Skizze.setColor('#FF9500',this)"></div>
+    <div class="color-dot" style="background:#34C759" data-color="#34C759" onclick="Skizze.setColor('#34C759',this)"></div>
+    <div class="color-dot" style="background:#007AFF" data-color="#007AFF" onclick="Skizze.setColor('#007AFF',this)"></div>
+    <div class="color-dot" style="background:#FFFFFF" data-color="#FFFFFF" onclick="Skizze.setColor('#FFFFFF',this)"></div>
+  </div>
+
+  <div id="side-panel" class="hidden">
+    <div class="panel-header">
+      <span class="panel-title">Hintergründe & Stempel</span>
+      <button class="panel-close-btn" onclick="Skizze.toggleStamps()">✕</button>
+    </div>
+    
+    <div class="stamp-category">Hintergrund</div>
+    <div class="stamp-grid">
+      <div class="stamp-item" onclick="Skizze.setBackground('blank')" title="Weiß">⬜</div>
+      <div class="stamp-item" onclick="Skizze.setBackground('grid_10')" title="Millimeterpapier">📏</div>
+    </div>
+    
+    <div class="stamp-category">Baukasten Straße</div>
+    <div class="stamp-grid">
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('straight')" title="Gerade">🛣️</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('curve_90')" title="Kurve 90°">↪️</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('curve_45')" title="Kurve 45°">📐</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('tjunction')" title="T-Kreuzung">┳</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('crossing')" title="Kreuzung">➕</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('roundabout')" title="Kreisverkehr">🔄</div>
+      <div class="stamp-item" onclick="Skizze.addRoadSegment('parking')" title="Parkplatz">🅿️</div>
+    </div>
+
+    <div class="stamp-category">Verkehr & Infrastruktur</div>
+    <div class="stamp-grid">
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('stop')" title="Stoppschild">🛑</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('yield')" title="Vorfahrt gewähren">▽</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('priority')" title="Vorfahrtsstraße">🔶</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('traffic_light')" title="Ampel">🚥</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('crosswalk')" title="Zebrastreifen">🦓</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('barrier')" title="Bahnschranke">🚧</div>
+      <div class="stamp-item" onclick="Skizze.addInfrastructure('station')" title="Bahnhof">🚉</div>
+    </div>
+
+    <div class="stamp-category">Baukasten Gebäude</div>
+    <div class="stamp-grid">
+      <div class="stamp-item" onclick="Skizze.addRoomSegment('wall')" title="Wand">🧱</div>
+      <div class="stamp-item" onclick="Skizze.addRoomSegment('door')" title="Tür">🚪</div>
+      <div class="stamp-item" onclick="Skizze.addRoomSegment('window')" title="Fenster">🪟</div>
+    </div>
+
+    <div class="stamp-category">VU - Fahrzeuge</div>
+    <div class="stamp-grid">
+      <div class="stamp-item" onclick="Skizze.addStamp('car_blue')" title="Auto Blau">🚙</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('car_red')" title="Auto Rot">🚗</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('car_police')" title="Streifenwagen">🚓</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('fire_truck')" title="Feuerwehr">🚒</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('ambulance')" title="RTW">🚑</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('truck')" title="LKW">🚚</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('motorcycle')" title="Motorrad">🏍️</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('bicycle')" title="Fahrrad">🚲</div>
+      <div class="stamp-item" onclick="Skizze.addStamp('🚶')" title="Fußgänger">🚶</div>
+    </div>
+
+    <div class="stamp-category">KTU & Spuren</div>
+    <div class="stamp-grid" id="ktu-grid">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script>
+'use strict';
+
+const Skizze = {
+  canvas: null,
+  currentTool: 'select',
+  currentColor: '#000000',
+  isDark: false,
+  activeSocket: null,
+  
+  // Interaction states for drawing shapes
+  isDrawingShape: false,
+  startX: 0,
+  startY: 0,
+  currentShape: null,
+
+  init() {
+    // Generate KTU Spurentafeln
+    const ktuGrid = document.getElementById('ktu-grid');
+    for(let i=1; i<=15; i++) {
+      let div = document.createElement('div');
+      div.className = 'stamp-item';
+      div.style.fontSize = '18px';
+      div.style.fontWeight = 'bold';
+      div.style.color = '#FFCC00';
+      div.style.textShadow = '0 0 2px #000';
+      div.innerText = `[${i}]`;
+      div.onclick = () => this.addEvidenceMarker(i);
+      ktuGrid.appendChild(div);
+    }
+    
+    // Add custom KTU stamps
+    const customKtu = [
+      {icon: '🩸', label: 'Blut'},
+      {icon: '🔫', label: 'Waffe'},
+      {icon: '🔪', label: 'Messer'},
+      {icon: '👤', label: 'Person'}
+    ];
+    customKtu.forEach(k => {
+      let div = document.createElement('div');
+      div.className = 'stamp-item';
+      div.innerText = k.icon;
+      div.title = k.label;
+      div.onclick = () => this.addStamp(k.icon);
+      ktuGrid.appendChild(div);
+    });
+
+    // Dark Mode Init
+    const savedDark = localStorage.getItem('lagekarte_dark');
+    if (savedDark === 'true') this.toggleDark(true);
+
+    // Initialize Fabric
+    const wrapper = document.getElementById('canvas-wrapper');
+    this.canvas = new fabric.Canvas('skizzeCanvas', {
+      width: wrapper.clientWidth,
+      height: wrapper.clientHeight,
+      isDrawingMode: false,
+      selection: true,
+      preserveObjectStacking: true
+    });
+
+    // Resize handling
+    window.addEventListener('resize', this.resizeCanvas.bind(this));
+    
+    // Connect node listener
+    this.canvas.on('selection:created', this.renderSnapNodes.bind(this));
+    this.canvas.on('selection:updated', this.renderSnapNodes.bind(this));
+    this.canvas.on('selection:cleared', this.renderSnapNodes.bind(this));
+    this.canvas.on('object:moving', this.renderSnapNodes.bind(this));
+    this.canvas.on('object:rotating', this.renderSnapNodes.bind(this));
+    this.canvas.on('mouse:move', this.renderSnapNodes.bind(this)); // For panning updates
+    this.canvas.on('mouse:wheel', this.renderSnapNodes.bind(this)); // For zoom updates
+
+    this.checkThemeMode();
+    this.setBackground('grid_10'); 
+    // Shape Drawing Events
+    this.canvas.on('mouse:down', this.onMouseDown.bind(this));
+    this.canvas.on('mouse:move', this.onMouseMove.bind(this));
+    this.canvas.on('mouse:up', this.onMouseUp.bind(this));
+
+    // Setup brush
+    this.canvas.freeDrawingBrush.color = this.currentColor;
+    this.canvas.freeDrawingBrush.width = 3;
+
+    // Draw initial background
+    this.drawBackground();
+  },
+
+  toggleDark(force) {
+    this.isDark = force !== undefined ? force : !this.isDark;
+    if (this.isDark) {
+      document.body.classList.add('dark');
+      if(this.currentColor === '#000000') this.setColor('#FFFFFF', document.querySelector('[data-color="#FFFFFF"]'));
+    } else {
+      document.body.classList.remove('dark');
+      if(this.currentColor === '#FFFFFF') this.setColor('#000000', document.querySelector('[data-color="#000000"]'));
+    }
+    localStorage.setItem('lagekarte_dark', this.isDark);
+    this.drawBackground();
+  },
+
+   setTool(tool) {
+    this.currentTool = tool;
+    
+    // UI Update
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+    let activeBtn = document.querySelector(`.tool-btn[onclick="Skizze.setTool('${tool}')"]`);
+    if(activeBtn) activeBtn.classList.add('active');
+
+    // Canvas Settings
+    this.canvas.isDrawingMode = false;
+    this.canvas.selection = false;
+    this.canvas.forEachObject(o => o.selectable = false);
+
+    if (tool === 'select') {
+      this.canvas.selection = true;
+      this.canvas.forEachObject(o => o.selectable = true);
+      this.renderSnapNodes();
+    } else if (tool === 'draw') {
+      this.canvas.isDrawingMode = true;
+      this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+      this.canvas.freeDrawingBrush.color = this.currentColor;
+      this.canvas.freeDrawingBrush.width = 4;
+      this.activeSocket = null;
+      this.renderSnapNodes();
+    } else {
+      this.activeSocket = null;
+      this.renderSnapNodes();
+    }
+  },
+
+  setColor(color, el) {
+    this.currentColor = color;
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    if(el) el.classList.add('selected');
+
+    this.canvas.freeDrawingBrush.color = color;
+    
+    // Update selected object if any
+    const activeObj = this.canvas.getActiveObject();
+    if (activeObj) {
+      if (activeObj.type === 'path' || activeObj.type === 'line' || activeObj.type === 'polyline') {
+        activeObj.set({ stroke: color });
+      } else if (activeObj.type === 'i-text') {
+        activeObj.set({ fill: color });
+      } else {
+        activeObj.set({ stroke: color });
+      }
+      this.canvas.renderAll();
+    }
+  },
+
+  /* ── SHAPE DRAWING LOGIC ────────────────────────────── */
+  
+  onMouseDown(o) {
+    if (this.currentTool === 'select' || this.currentTool === 'draw') return;
+    
+    this.isDrawingShape = true;
+    let pointer = this.canvas.getPointer(o.e);
+    this.startX = pointer.x;
+    this.startY = pointer.y;
+
+    if (this.currentTool === 'line' || this.currentTool === 'arrow') {
+      let points = [pointer.x, pointer.y, pointer.x, pointer.y];
+      this.currentShape = new fabric.Line(points, {
+        strokeWidth: 3,
+        fill: this.currentColor,
+        stroke: this.currentColor,
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false
+      });
+      this.canvas.add(this.currentShape);
+    } 
+    else if (this.currentTool === 'rect') {
+      this.currentShape = new fabric.Rect({
+        left: pointer.x,
+        top: pointer.y,
+        originX: 'left',
+        originY: 'top',
+        width: 0,
+        height: 0,
+        fill: 'transparent',
+        stroke: this.currentColor,
+        strokeWidth: 3,
+        selectable: false,
+        evented: false
+      });
+      this.canvas.add(this.currentShape);
+    }
+    else if (this.currentTool === 'circle') {
+      this.currentShape = new fabric.Circle({
+        left: pointer.x,
+        top: pointer.y,
+        originX: 'center',
+        originY: 'center',
+        radius: 0,
+        fill: 'transparent',
+        stroke: this.currentColor,
+        strokeWidth: 3,
+        selectable: false,
+        evented: false
+      });
+      this.canvas.add(this.currentShape);
+    }
+  },
+
+  onMouseMove(o) {
+    if (!this.isDrawingShape || !this.currentShape) return;
+    
+    let pointer = this.canvas.getPointer(o.e);
+    
+    if (this.currentTool === 'line' || this.currentTool === 'arrow') {
+      this.currentShape.set({ x2: pointer.x, y2: pointer.y });
+    }
+    else if (this.currentTool === 'rect') {
+      this.currentShape.set({
+        width: Math.abs(this.startX - pointer.x),
+        height: Math.abs(this.startY - pointer.y)
+      });
+      
+      if(this.startX > pointer.x) this.currentShape.set({ originX: 'right' });
+      else this.currentShape.set({ originX: 'left' });
+      
+      if(this.startY > pointer.y) this.currentShape.set({ originY: 'bottom' });
+      else this.currentShape.set({ originY: 'top' });
+    }
+    else if (this.currentTool === 'circle') {
+      let radius = Math.max(Math.abs(this.startX - pointer.x), Math.abs(this.startY - pointer.y));
+      this.currentShape.set({ radius: radius });
+    }
+    this.canvas.renderAll();
+  },
+
+  onMouseUp(o) {
+    if (!this.isDrawingShape) return;
+    this.isDrawingShape = false;
+    
+    if (this.currentShape) {
+      if(this.currentTool === 'arrow') {
+        // Add arrow head
+        let p = this.canvas.getPointer(o.e);
+        let dx = p.x - this.startX;
+        let dy = p.y - this.startY;
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        
+        // If line is too short, just remove it
+        if(Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+          this.canvas.remove(this.currentShape);
+          this.currentShape = null;
+          return;
+        }
+
+        let head = new fabric.Triangle({
+          width: 15, 
+          height: 15, 
+          fill: this.currentColor, 
+          left: p.x, 
+          top: p.y,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false,
+          angle: angle + 90
+        });
+
+        // Group line and head
+        let group = new fabric.Group([this.currentShape, head], {
+          selectable: true,
+          evented: true
+        });
+        
+        this.canvas.remove(this.currentShape);
+        this.canvas.add(group);
+      } else {
+        this.currentShape.setCoords();
+        this.currentShape.set({ selectable: true, evented: true });
+      }
+    }
+    
+    this.currentShape = null;
+    // Auto switch back to select tool after drawing shape
+    this.setTool('select');
+  },
+
+  /* ── TEXT & STAMPS ───────────────────────────────────── */
+  
+  addInfrastructure(type) {
+    this.setTool('select');
+    let groupElements = [];
+    
+    if (type === 'stop') {
+      let sign = new fabric.Polygon([
+        {x: 10, y: 0}, {x: 30, y: 0}, {x: 40, y: 10}, {x: 40, y: 30},
+        {x: 30, y: 40}, {x: 10, y: 40}, {x: 0, y: 30}, {x: 0, y: 10}
+      ], { fill: '#DA291C', stroke: '#fff', strokeWidth: 2, left: -20, top: -20 });
+      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 20 });
+      let text = new fabric.Text('STOP', { fontSize: 10, fill: '#fff', fontWeight: 'bold', originX: 'center', originY: 'center', left: 0, top: 0 });
+      groupElements = [pole, sign, text];
+    } else if (type === 'yield') {
+      let sign = new fabric.Polygon([ {x: 0, y: 0}, {x: 40, y: 0}, {x: 20, y: 35} ], { fill: '#fff', stroke: '#DA291C', strokeWidth: 6, strokeLineJoin: 'round', left: -20, top: -20 });
+      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 15 });
+      groupElements = [pole, sign];
+    } else if (type === 'priority') {
+      let sign = new fabric.Polygon([ {x: 20, y: 0}, {x: 40, y: 20}, {x: 20, y: 40}, {x: 0, y: 20} ], { fill: '#FFCC00', stroke: '#fff', strokeWidth: 4, left: -20, top: -20 });
+      let border = new fabric.Polygon([ {x: 20, y: 0}, {x: 40, y: 20}, {x: 20, y: 40}, {x: 0, y: 20} ], { fill: '', stroke: '#000', strokeWidth: 1, left: -20, top: -20 });
+      let pole = new fabric.Rect({ width: 4, height: 40, fill: '#777', left: -2, top: 20 });
+      groupElements = [pole, sign, border];
+    } else if (type === 'crosswalk') {
+      // Multiple white thick lines for Zebra crossing
+      let bg = new fabric.Rect({ width: 150, height: 40, fill: 'transparent', left: -75, top: -20 });
+      groupElements.push(bg);
+      for(let i=0; i<6; i++) {
+        let stripe = new fabric.Rect({ width: 12, height: 40, fill: '#fff', left: -68 + i*24, top: -20 });
+        groupElements.push(stripe);
+      }
+    } else if (type === 'traffic_light') {
+      let box = new fabric.Rect({ width: 16, height: 40, fill: '#222', rx: 3, ry: 3, left: -8, top: -20 });
+      let r = new fabric.Circle({ radius: 4, fill: '#DA291C', left: -4, top: -16 });
+      let y = new fabric.Circle({ radius: 4, fill: '#FFCC00', left: -4, top: -4 });
+      let g = new fabric.Circle({ radius: 4, fill: '#4CAF50', left: -4, top: 8 });
+      groupElements = [box, r, y, g];
+    } else if (type === 'barrier') {
+      let base = new fabric.Rect({ width: 8, height: 16, fill: '#444', left: -4, top: -8 });
+      let arm = new fabric.Rect({ width: 100, height: 6, fill: '#DA291C', left: 4, top: -3 });
+      // Stripes on arm
+      for(let i=0; i<5; i++) { let stripe = new fabric.Rect({ width: 10, height: 6, fill: '#fff', left: 10 + i*20, top: -3 }); groupElements.push(stripe); }
+      groupElements.unshift(base, arm);
+    } else if (type === 'station') {
+      let base = new fabric.Rect({ width: 120, height: 60, fill: '#A0B0C0', stroke: '#555', strokeWidth: 2, left: -60, top: -30 });
+      let text = new fabric.Text('BAHNHOF', { fontSize: 14, fill: '#111', fontWeight: 'bold', originX: 'center', originY: 'center' });
+      groupElements = [base, text];
+    }
+
+    let stampGroup = new fabric.Group(groupElements, {
+      left: this.canvas.width / 2, top: this.canvas.height / 2,
+      originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+    });
+    this.canvas.add(stampGroup);
+    this.canvas.setActiveObject(stampGroup);
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  addText() {
+    this.setTool('select');
+    let text = new fabric.IText('Text...', {
+      left: this.canvas.width / 2,
+      top: this.canvas.height / 2,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fill: this.currentColor,
+      fontSize: 24,
+      originX: 'center',
+      originY: 'center'
+    });
+    this.canvas.add(text);
+    this.canvas.setActiveObject(text);
+    text.enterEditing();
+    text.selectAll();
+  },
+
+  addStamp(typeOrEmoji) {
+    this.setTool('select');
+    
+    // Top-down Vehicle SVGs (Simple colored blocks with windshields and wheels)
+    const vehicles = {
+      'car_blue':   { color: '#007AFF', w: 40, h: 80 },
+      'car_red':    { color: '#FF3B30', w: 40, h: 80 },
+      'car_police': { color: '#ffffff', stripe: '#007AFF', w: 40, h: 80 },
+      'fire_truck': { color: '#FF3B30', w: 46, h: 110, stripe: '#fff' },
+      'ambulance':  { color: '#ffffff', w: 42, h: 90, stripe: '#FF9500' },
+      'truck':      { color: '#FF9500', w: 48, h: 140 },
+      'motorcycle': { w: 16, h: 36, isBike: true },
+      'bicycle':    { w: 12, h: 32, isBike: true }
+    };
+
+    if (vehicles[typeOrEmoji]) {
+      let v = vehicles[typeOrEmoji];
+      let gElements = [];
+      
+      if(v.isBike) {
+        // Simple bike representation
+        let body = new fabric.Rect({ width: 4, height: v.h-8, fill: '#333', left: -2, top: -v.h/2+4 });
+        let frontWheel = new fabric.Rect({ width: 2, height: 10, fill: '#000', left: -1, top: -v.h/2 });
+        let backWheel = new fabric.Rect({ width: 2, height: 10, fill: '#000', left: -1, top: v.h/2-10 });
+        gElements = [body, frontWheel, backWheel];
+      } else {
+        // Car Body
+        let body = new fabric.Rect({ width: v.w, height: v.h, fill: v.color, stroke: '#333', strokeWidth: 1.5, rx: 4, ry: 4, left: -v.w/2, top: -v.h/2 });
+        gElements.push(body);
+        
+        // Stripes for emergency vehicles
+        if(v.stripe && typeOrEmoji === 'car_police') {
+          let stripe1 = new fabric.Rect({ width: 8, height: v.h, fill: v.stripe, left: -v.w/2+4, top: -v.h/2 });
+          let stripe2 = new fabric.Rect({ width: 8, height: v.h, fill: v.stripe, left: v.w/2-12, top: -v.h/2 });
+          gElements.push(stripe1, stripe2);
+        } else if (v.stripe) {
+          let stripe = new fabric.Rect({ width: v.w, height: 10, fill: v.stripe, left: -v.w/2, top: 0 });
+          gElements.push(stripe);
+        }
+
+        // Windshields (Front & Back)
+        let frontWindow = new fabric.Rect({ width: v.w - 10, height: 14, fill: '#444', left: -v.w/2 + 5, top: -v.h/2 + 14, rx: 2, ry: 2 });
+        let backWindow = new fabric.Rect({ width: v.w - 12, height: 10, fill: '#444', left: -v.w/2 + 6, top: v.h/2 - 18, rx: 2, ry: 2 });
+        gElements.push(frontWindow, backWindow);
+
+        // Headlights & Taillights
+        let hl1 = new fabric.Circle({ radius: 3, fill: '#FFCC00', left: -v.w/2 + 4, top: -v.h/2 + 2 });
+        let hl2 = new fabric.Circle({ radius: 3, fill: '#FFCC00', left: v.w/2 - 10, top: -v.h/2 + 2 });
+        let tl1 = new fabric.Rect({ width: 8, height: 3, fill: '#FF3B30', left: -v.w/2 + 4, top: v.h/2 - 5 });
+        let tl2 = new fabric.Rect({ width: 8, height: 3, fill: '#FF3B30', left: v.w/2 - 12, top: v.h/2 - 5 });
+        gElements.push(hl1, hl2, tl1, tl2);
+
+        // Wheels
+        let wheelW = 4; let wheelH = 14;
+        let w1 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: -v.w/2 - 2, top: -v.h/2 + 16, rx: 1, ry: 1 });
+        let w2 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: v.w/2 - 2, top: -v.h/2 + 16, rx: 1, ry: 1 });
+        let w3 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: -v.w/2 - 2, top: v.h/2 - 24, rx: 1, ry: 1 });
+        let w4 = new fabric.Rect({ width: wheelW, height: wheelH, fill: '#111', left: v.w/2 - 2, top: v.h/2 - 24, rx: 1, ry: 1 });
+        gElements.push(w1, w2, w3, w4);
+      }
+
+      let vehicleGroup = new fabric.Group(gElements, {
+        left: this.canvas.width / 2, top: this.canvas.height / 2,
+        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+      });
+      this.canvas.add(vehicleGroup);
+      this.canvas.setActiveObject(vehicleGroup);
+
+    } else {
+      // Fallback for Emojis (KTU marks etc)
+      let text = new fabric.Text(typeOrEmoji, {
+        left: this.canvas.width / 2, top: this.canvas.height / 2,
+        fontSize: 48, originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+      });
+      this.canvas.add(text);
+      this.canvas.setActiveObject(text);
+    }
+    
+    // On mobile, close sidebar after dropping stamp
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  addEvidenceMarker(number) {
+    this.setTool('select');
+    // Group with yellow background and black text
+    let rect = new fabric.Rect({
+      width: 24, height: 24, fill: '#FFCC00', stroke: '#000000', strokeWidth: 1,
+      originX: 'center', originY: 'center'
+    });
+    let text = new fabric.Text(number.toString(), {
+      fontSize: 16, fill: '#000000', fontWeight: 'bold',
+      originX: 'center', originY: 'center'
+    });
+    let group = new fabric.Group([rect, text], {
+      left: this.canvas.width / 2,
+      top: this.canvas.height / 2,
+      originX: 'center', originY: 'center'
+    });
+    this.canvas.add(group);
+    this.canvas.setActiveObject(group);
+    
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  /* ── DYNAMIC BUILDING BLOCKS ─────────────────────────── */
+  
+  /* ── DYNAMIC BUILDING BLOCKS ─────────────────────────── */
+  
+  renderSnapNodes() {
+    let container = document.getElementById('snap-nodes-layer');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let obj = this.canvas.getActiveObject();
+    if (!obj || !obj.sockets || this.currentTool !== 'select') {
+      // If user deselects, don't clear activeSocket immediately if they are about to click a sidebar UI.
+      // But if there's no activeObject, we can't show nodes.
+      // Wait, to allow "Click node -> Click Sidebar", we must keep the nodes visible OR just remember activeSocket.
+      // If we keep nodes visible even when deselected, we need to track activeSocket's obj.
+      if (!this.activeSocket) return;
+      obj = this.activeSocket.obj; 
+      // If object was deleted, clear activeSocket
+      if (!this.canvas.getObjects().includes(obj)) {
+        this.activeSocket = null;
+        return;
+      }
+    } else if (obj.sockets && (!this.activeSocket || this.activeSocket.obj !== obj)) {
+      // Switched selection to a new road piece, clear old active socket
+      this.activeSocket = null;
+    }
+    
+    if(!obj || !obj.sockets) return;
+
+    let matrix = obj.calcTransformMatrix();
+    let vpt = this.canvas.viewportTransform;
+    
+    obj.sockets.forEach((s, idx) => {
+      // Skip rendering if this socket is designated as connected (optional future feature)
+      // if (s.connected) return;
+
+      let worldPt = fabric.util.transformPoint({x: s.x, y: s.y}, matrix);
+      let screenPt = fabric.util.transformPoint(worldPt, vpt);
+      
+      let btn = document.createElement('div');
+      btn.className = 'snap-node';
+      if (this.activeSocket && this.activeSocket.obj === obj && this.activeSocket.idx === idx) {
+        btn.classList.add('active');
+      }
+      btn.style.left = screenPt.x + 'px';
+      btn.style.top = screenPt.y + 'px';
+      btn.innerHTML = '+';
+      
+      btn.onmousedown = (e) => {
+        e.stopPropagation();
+        this.activeSocket = { obj: obj, idx: idx };
+        this.renderSnapNodes();
+      };
+      
+      container.appendChild(btn);
+    });
+  },
+
+  addRoadSegment(type) {
+    this.setTool('select');
+    const roadColor = '#C8C8C8'; 
+    const markingColor = '#ffffff';
+    let w = 150; 
+    let groupElements = [];
+    let sockets = [];
+
+    // Transparent pad to enforce exact 300x300 bounding box around (0,0)
+    let baseRect = new fabric.Rect({ width: 300, height: 300, left: -150, top: -150, fill: 'transparent', strokeWidth: 0 });
+    groupElements.push(baseRect);
+    
+    // Strict mathematical curves using Circles to guarantee perfect connections
+    if (type === 'straight') {
+      let asphalt = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
+      let dashedLine = new fabric.Line([-150, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      groupElements.push(asphalt, dashedLine);
+      sockets = [ {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
+    } else if (type === 'curve_90') {
+      let asphalt = new fabric.Circle({ radius: 150, fill: '', stroke: roadColor, strokeWidth: w, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
+      let outEdge = new fabric.Circle({ radius: 225, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
+      let inEdge = new fabric.Circle({ radius: 75, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
+      let marking = new fabric.Circle({ radius: 150, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], startAngle: -Math.PI/2, endAngle: 0, originX: 'center', originY: 'center', left: -150, top: 150 });
+      groupElements.push(asphalt, outEdge, inEdge, marking);
+      sockets = [ {x: -150, y: 0, a: 270}, {x: 0, y: 150, a: 0} ];
+    } else if (type === 'curve_45') {
+      let asphalt = new fabric.Circle({ radius: 300, fill: '', stroke: roadColor, strokeWidth: w, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
+      let outEdge = new fabric.Circle({ radius: 375, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
+      let inEdge = new fabric.Circle({ radius: 225, fill: '', stroke: '#999', strokeWidth: 1, startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
+      let marking = new fabric.Circle({ radius: 300, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], startAngle: -Math.PI/2, endAngle: -Math.PI/4, originX: 'center', originY: 'center', left: -150, top: 300 });
+      groupElements.push(asphalt, outEdge, inEdge, marking);
+      sockets = [ {x: -150, y: 0, a: 270}, {x: 62.13, y: 87.87, a: 45} ];
+    } else if (type === 'tjunction') {
+      let asphaltH = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
+      let asphaltV = new fabric.Rect({ width: w, height: 75, fill: roadColor, left: -w/2, top: w/2, stroke: '#999', strokeWidth: 1 });
+      let seamCover = new fabric.Rect({ width: w-2, height: 5, fill: roadColor, left: -w/2+1, top: w/2-2.5 });
+      let dashedLineH = new fabric.Line([-150, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      let dashedLineV = new fabric.Line([0, w/2, 0, w/2+75], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      groupElements.push(asphaltH, asphaltV, seamCover, dashedLineH, dashedLineV);
+      sockets = [ {x: 0, y: 150, a: 90}, {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
+    } else if (type === 'crossing') {
+      let asphaltH = new fabric.Rect({ width: 300, height: w, fill: roadColor, left: -150, top: -w/2, stroke: '#999', strokeWidth: 1 });
+      let asphaltV = new fabric.Rect({ width: w, height: 300, fill: roadColor, left: -w/2, top: -150, stroke: '#999', strokeWidth: 1 });
+      let seamCover1 = new fabric.Rect({ width: w-2, height: w-2, fill: roadColor, left: -w/2+1, top: -w/2+1 }); 
+      let dashedLineH1 = new fabric.Line([-150, 0, -w/2, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      let dashedLineH2 = new fabric.Line([w/2, 0, 150, 0], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      let dashedLineV1 = new fabric.Line([0, -150, 0, -w/2], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      let dashedLineV2 = new fabric.Line([0, w/2, 0, 150], { strokeDashArray: [15, 15], stroke: markingColor, strokeWidth: 4 });
+      groupElements.push(asphaltH, asphaltV, seamCover1, dashedLineH1, dashedLineH2, dashedLineV1, dashedLineV2);
+      sockets = [ {x: 0, y: 150, a: 90}, {x: 0, y: -150, a: 270}, {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0} ];
+    } else if (type === 'roundabout') {
+      let asphaltFull = new fabric.Circle({ radius: 150, fill: roadColor, stroke: '#999', strokeWidth: 1, originX: 'center', originY: 'center', left: 0, top: 0 });
+      let islandOuter = new fabric.Circle({ radius: 76, fill: '#666', originX: 'center', originY: 'center', left: 0, top: 0 });
+      let island = new fabric.Circle({ radius: 74, fill: '#4CAF50', originX: 'center', originY: 'center', left: 0, top: 0 });
+      let dashedLine = new fabric.Circle({ radius: 112.5, fill: '', stroke: markingColor, strokeWidth: 4, strokeDashArray: [15, 15], originX: 'center', originY: 'center', left: 0, top: 0 });
+      groupElements.push(asphaltFull, islandOuter, island, dashedLine);
+      sockets = [ {x: -150, y: 0, a: 180}, {x: 150, y: 0, a: 0}, {x: 0, y: -150, a: 270}, {x: 0, y: 150, a: 90} ];
+    } else if (type === 'parking') {
+      baseRect.set({ width: 400, height: 200, left: -200, top: -100 });
+      let asphaltBg = new fabric.Rect({ width: 400, height: 200, fill: roadColor, stroke: '#999', strokeWidth: 2, left: -200, top: -100 });
+      groupElements.push(asphaltBg);
+      for(let i=1; i<10; i++) { 
+         groupElements.push(new fabric.Line([-200 + i*40, -100], [-200 + i*40, -20], {stroke: '#fff', strokeWidth: 3}));
+         groupElements.push(new fabric.Line([-200 + i*40, 100], [-200 + i*40, 20], {stroke: '#fff', strokeWidth: 3}));
+      }
+      sockets = [ {x: -200, y: 0, a: 180}, {x: 200, y: 0, a: 0}, {x: 0, y: -100, a: 270}, {x: 0, y: 100, a: 90} ];
+    }
+
+    let roadGroup = new fabric.Group(groupElements, {
+      originX: 'center', originY: 'center',
+      snapAngle: 15, snapThreshold: 10,
+      lockScalingX: true, lockScalingY: true
+    });
+    
+    roadGroup.sockets = sockets;
+
+    // Node Connection Math
+    if (this.activeSocket) {
+      let aObj = this.activeSocket.obj;
+      let aSock = aObj.sockets[this.activeSocket.idx];
+      let pM = aObj.calcTransformMatrix();
+      let worldPtA = fabric.util.transformPoint({x: aSock.x, y: aSock.y}, pM);
+      
+      let globalAngleA = (aObj.angle + aSock.a) % 360;
+      let primarySocket = roadGroup.sockets[0];
+      let targetGlobalAngle = (globalAngleA + 180) % 360;
+      roadGroup.angle = (targetGlobalAngle - primarySocket.a + 360) % 360;
+      
+      let rad = roadGroup.angle * Math.PI / 180;
+      let cos = Math.cos(rad);
+      let sin = Math.sin(rad);
+      let pOffsetX = primarySocket.x * cos - primarySocket.y * sin;
+      let pOffsetY = primarySocket.x * sin + primarySocket.y * cos;
+      
+      roadGroup.left = worldPtA.x - pOffsetX;
+      roadGroup.top = worldPtA.y - pOffsetY;
+      
+      this.activeSocket = null;
+    } else {
+      roadGroup.left = this.canvas.width / 2;
+      roadGroup.top = this.canvas.height / 2;
+    }
+
+    let hideCtrl = { mtr: true, tl: false, tr: false, br: false, bl: false, ml: false, mt: false, mr: false, mb: false };
+    if (type === 'parking') hideCtrl = {}; 
+    roadGroup.setControlsVisibility(hideCtrl);
+
+    this.canvas.add(roadGroup);
+    roadGroup.sendToBack();
+    this.canvas.setActiveObject(roadGroup);
+    this.renderSnapNodes();
+    
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  addRoomSegment(type) {
+    this.setTool('select');
+    const wallStroke = this.isDark ? '#FFFFFF' : '#000000';
+    const wallFill = this.isDark ? '#444444' : '#E0E0E0';
+    let element;
+    
+    if (type === 'wall') {
+      // Professional double-line wall (solid rect with thick stroke)
+      element = new fabric.Rect({
+        width: 200, height: 16, 
+        fill: wallFill, stroke: wallStroke, strokeWidth: 2,
+        left: this.canvas.width / 2, top: this.canvas.height / 2,
+        originX: 'center', originY: 'center',
+        snapAngle: 15, snapThreshold: 10,
+        lockScalingY: true 
+      });
+      element.setControlVisible('mt', false);
+      element.setControlVisible('mb', false);
+    } 
+    else if (type === 'door') {
+      let w = 80; // Door width
+      let wallThickness = 16;
+      let frame1 = new fabric.Rect({ width: 6, height: wallThickness, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: -w/2-3, top: -wallThickness/2 });
+      let frame2 = new fabric.Rect({ width: 6, height: wallThickness, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: w/2-3, top: -wallThickness/2 });
+      
+      let doorLeaf = new fabric.Rect({ width: w, height: 4, fill: wallFill, stroke: wallStroke, strokeWidth: 1.5, left: -w/2, top: -w, angle: 90, originX: 'left', originY: 'top' });
+      
+      let arc = new fabric.Circle({ radius: w, left: -w/2, top: 0, startAngle: 3*Math.PI/2, endAngle: 2*Math.PI, fill: '', stroke: wallStroke, strokeWidth: 1.5, strokeDashArray: [4, 4], originX: 'center', originY: 'center' });
+      
+      element = new fabric.Group([frame1, frame2, doorLeaf, arc], {
+        left: this.canvas.width / 2, top: this.canvas.height / 2,
+        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+      });
+    }
+    else if (type === 'window') {
+      let w = 100;
+      let wallThickness = 16;
+      let frame1 = new fabric.Rect({ width: w, height: wallThickness, fill: '#ffffff', stroke: wallStroke, strokeWidth: 2, left: -w/2, top: -wallThickness/2 });
+      let glass1 = new fabric.Line([-w/2+2, -2], [w/2-2, -2], { stroke: '#00AACC', strokeWidth: 1.5 });
+      let glass2 = new fabric.Line([-w/2+2, 2], [w/2-2, 2], { stroke: '#00AACC', strokeWidth: 1.5 });
+      
+      element = new fabric.Group([frame1, glass1, glass2], {
+        left: this.canvas.width / 2, top: this.canvas.height / 2,
+        originX: 'center', originY: 'center', snapAngle: 15, snapThreshold: 10
+      });
+    }
+
+    this.canvas.add(element);
+    this.canvas.setActiveObject(element);
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  /* ── BACKGROUNDS ─────────────────────────────────────── */
+  customBgMode: 'blank',
+  
+  setBackground(mode) {
+    this.customBgMode = mode;
+    this.drawBackground();
+    if(window.innerWidth < 768) this.toggleStamps();
+  },
+
+  drawBackground() {
+    let canvasWidth = this.canvas.getWidth();
+    let canvasHeight = this.canvas.getHeight();
+    
+    let bgCanvas = document.createElement('canvas');
+    bgCanvas.width = canvasWidth;
+    bgCanvas.height = canvasHeight;
+    let ctx = bgCanvas.getContext('2d');
+    
+    // Base color
+    ctx.fillStyle = this.isDark ? '#1a1a1a' : '#ffffff';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    if (this.customBgMode === 'grid_10') {
+      ctx.strokeStyle = this.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = 1;
+      for(let x=0; x<canvasWidth; x+=20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasHeight); ctx.stroke(); }
+      for(let y=0; y<canvasHeight; y+=20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasWidth,y); ctx.stroke(); }
+    }
+
+    fabric.Image.fromURL(bgCanvas.toDataURL(), (img) => {
+      this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
+    });
+  },
+
+  /* ── UTILS ───────────────────────────────────────────── */
+  
+  deleteSelected() {
+    let activeObjects = this.canvas.getActiveObjects();
+    if (activeObjects.length) {
+      this.canvas.discardActiveObject();
+      activeObjects.forEach(obj => this.canvas.remove(obj));
+    }
+  },
+
+  clearAll() {
+    if(confirm('Zeichnung wirklich komplett leeren?')) {
+      this.canvas.clear();
+      this.drawBackground();
+    }
+  },
+
+  toggleStamps() {
+    document.getElementById('side-panel').classList.toggle('hidden');
+  },
+
+  exportPNG() {
+    // Deselect everything first
+    this.canvas.discardActiveObject();
+    this.canvas.renderAll();
+    
+    let dataURL = this.canvas.toDataURL({
+      format: 'png',
+      quality: 1
+    });
+    
+    let link = document.createElement('a');
+    let date = new Date().toISOString().replace(/[:.]/g, '-');
+    link.download = `Lagekarte_Skizze_${date}.png`;
+    link.href = dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+window.onload = () => Skizze.init();
+</script>
+</body>
+</html>
