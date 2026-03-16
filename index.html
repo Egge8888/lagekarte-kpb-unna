@@ -1170,8 +1170,12 @@ const Layers = {
         <button class="photo-share" onclick="event.stopPropagation();window.sharePhoto('${d.id}',${i})">📤</button>
       </div>`).join('');
 
+    const shareAllBtn = photos.length > 1
+      ? `<button class="popup-btn" style="width:100%;margin-top:4px;background:rgba(52,199,89,.12);color:var(--green);" onclick="window.shareAllPhotos('${d.id}')">📤 Alle ${photos.length} Fotos teilen</button>`
+      : '';
+
     const imgHtml = photos.length
-      ? `<div class="photo-gallery-row">${thumbsHtml}</div>` : '';
+      ? `<div class="photo-gallery-row">${thumbsHtml}</div>${shareAllBtn}` : '';
 
     const photoCount = photos.length < MAX_PHOTOS
       ? `<div style="font-size:11px;color:var(--txt2);text-align:center;margin-top:4px;">${photos.length}/${MAX_PHOTOS} Fotos</div>` : '';
@@ -2206,25 +2210,37 @@ window.viewPhoto = function(layerId, idx) {
 
 window.sharePhoto = function(layerId, idx) {
     const photos = _getPhotos(layerId);
-    if (photos[idx]) _sharePhotoData(photos[idx]);
+    if (photos[idx]) _sharePhotoData([photos[idx]]);
 };
 
-async function _sharePhotoData(dataUrl) {
+window.shareAllPhotos = function(layerId) {
+    const photos = _getPhotos(layerId);
+    if (photos.length) _sharePhotoData(photos);
+};
+
+// dataUrls: einzelner String ODER Array von Strings
+async function _sharePhotoData(dataUrls) {
+    const urls = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
     try {
-        const blob = await fetch(dataUrl).then(r => r.blob());
-        const file = new File([blob], 'lagekarte-foto.jpg', { type: 'image/jpeg' });
-        // Web Share API mit Datei: funktioniert auf iOS + Android (Teamwire, Mail etc.)
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: 'Lagekarte Foto' });
+        const files = await Promise.all(urls.map(async (url, i) => {
+            const blob = await fetch(url).then(r => r.blob());
+            return new File([blob], `lagekarte-foto-${i+1}.jpg`, { type: 'image/jpeg' });
+        }));
+        // Web Share API mit Dateien: iOS + Android → Teamwire, Mail etc.
+        if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
+            await navigator.share({ files, title: `Lagekarte – ${files.length} Foto${files.length > 1 ? 's' : ''}` });
             return;
         }
     } catch(e) {
         if (e.name === 'AbortError') return; // Nutzer hat abgebrochen
     }
-    // Desktop-Fallback: Foto als Datei herunterladen
-    const a = document.createElement('a');
-    a.href = dataUrl; a.download = 'lagekarte-foto.jpg'; a.click();
-    toast('💾 Foto gespeichert – jetzt manuell teilen');
+    // Desktop-Fallback: alle Fotos einzeln herunterladen
+    urls.forEach((url, i) => {
+        const a = document.createElement('a');
+        a.href = url; a.download = `lagekarte-foto-${i+1}.jpg`;
+        a.click();
+    });
+    toast(`💾 ${urls.length} Foto${urls.length > 1 ? 's' : ''} gespeichert – jetzt manuell teilen`);
 }
 
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
