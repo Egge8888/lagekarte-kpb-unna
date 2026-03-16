@@ -497,16 +497,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 }
 
 /* ── SCHNELLMARKIERUNG ───────────────────────────────── */
-/* Schnell-Button lebt in der Toolbar – kein floating FAB mehr */
-
-/* Desktop: Schnell/GPS/Suche/Route ans Ende der vertikalen Leiste */
-@media (min-width: 768px) {
-  #quickmark-btn     { order: 50; margin-top: 8px; }
-  #tb-nav-div        { order: 49; }
-  #gps-toggle-btn    { order: 51; }
-  #search-toggle-btn { order: 52; }
-  #route-toggle-btn  { order: 53; }
-}
+/* Schnell/GPS/Suche/Route stehen per HTML-Reihenfolge zuerst –
+   gilt für Mobile (erste sichtbare Buttons) und Desktop (oben in der Leiste) */
 
 #quickmark-overlay {
   position: absolute;
