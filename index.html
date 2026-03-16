@@ -463,14 +463,26 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   #toolbar {
     left: 0; right: 0; top: auto; bottom: 0; transform: none; flex-direction: row;
     width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden;
-    border-radius: 16px 16px 0 0; 
-    padding: 8px 8px max(16px, env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+    padding: 10px 12px max(20px, env(safe-area-inset-bottom));
     scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain; /* verhindert iOS App-Wischen */
+    touch-action: pan-x;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.12);
   }
   #toolbar::-webkit-scrollbar { display: none; }
-  .tool-btn { width: 50px; height: 50px; font-size: 24px; flex-shrink: 0; }
-  .tool-label { font-size: 8px; }
-  .tool-divider { width: 1px; height: 32px; margin: auto 4px; flex-shrink: 0; }
+  .tool-btn { width: 58px; height: 58px; font-size: 26px; flex-shrink: 0; border-radius: 14px; }
+  .tool-label { font-size: 9px; }
+  .tool-divider { width: 1px; height: 36px; margin: auto 6px; flex-shrink: 0; }
+
+  /* FAB über die Toolbar heben */
+  #quickmark-fab {
+    bottom: calc(90px + max(20px, env(safe-area-inset-bottom)));
+    right: 14px;
+    width: 52px; height: 52px;
+  }
+  /* Layer-Control nicht von Toolbar verdecken */
+  .leaflet-top.leaflet-right { top: auto; bottom: calc(90px + max(20px, env(safe-area-inset-bottom))); right: 76px; }
 
   #color-picker { left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom))); transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px); }
   #draw-finish-btn { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
@@ -673,39 +685,42 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div id="map" style="flex:1;"></div>
 
   <div id="toolbar">
+    <!-- Navigation/Ortung zuerst – immer sichtbar -->
+    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
+    <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
+
+    <div class="tool-divider admin-only"></div>
+
+    <!-- Taktische Marker -->
     <button class="tool-btn admin-only" data-tool="tatort"     onclick="Tools.toggle('tatort')"     title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
     <button class="tool-btn admin-only" data-tool="ereignis"   onclick="Tools.toggle('ereignis')"   title="Ereignisort"><span>🟣</span><span class="tool-label">Ereignis</span></button>
     <button class="tool-btn admin-only" data-tool="gefahr"     onclick="Tools.toggle('gefahr')"     title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
     <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
     <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"       title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
     <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"        title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
-    
+
     <div class="tool-divider admin-only"></div>
-    
+
     <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚓</span><span class="tool-label">Kräfte</span></button>
     <button class="tool-btn admin-only" id="symbol-toggle-btn" onclick="SymbolPanel.toggle()" title="Symbole & Icons"><span>🎭</span><span class="tool-label">Symbole</span></button>
-    
+
     <div class="tool-divider admin-only"></div>
-    
+
+    <!-- Zeichenwerkzeuge -->
     <button class="tool-btn admin-only" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
     <button class="tool-btn admin-only" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
     <button class="tool-btn admin-only" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
     <button class="tool-btn admin-only" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
     <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
-    
+
     <div class="tool-divider admin-only"></div>
-    
+
     <button class="tool-btn admin-only" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
     <button class="tool-btn admin-only"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
-    
+
     <div class="tool-divider admin-only"></div>
-    
-    <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
-    <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
-    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
-    
-    <div class="tool-divider admin-only"></div>
-    
+
     <button class="tool-btn admin-only" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
   </div>
 
