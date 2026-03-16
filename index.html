@@ -475,8 +475,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .tool-label { font-size: 9px; }
   .tool-divider { width: 1px; height: 36px; margin: auto 6px; flex-shrink: 0; }
 
-  /* Layer-Control nicht von Toolbar verdecken */
-  .leaflet-top.leaflet-right { top: auto; bottom: calc(90px + max(20px, env(safe-area-inset-bottom))); right: 76px; }
+  /* Layer-Control: oben rechts unter dem Header */
+  .leaflet-top.leaflet-right { top: max(64px, calc(env(safe-area-inset-top) + 54px)); right: 8px; bottom: auto; }
 
   #color-picker { left: 8px; top: auto; bottom: calc(80px + max(16px, env(safe-area-inset-bottom))); transform: none; flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 16px); }
   #draw-finish-btn { bottom: calc(90px + max(16px, env(safe-area-inset-bottom))); }
