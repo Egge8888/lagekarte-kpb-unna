@@ -755,7 +755,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   </div>
 </div>
 
-<input type="file" id="global-media-input" accept="image/*" capture="environment" style="display:none;" />
+<input type="file" id="global-camera-input"  accept="image/*" capture="environment" style="display:none;" />
+<input type="file" id="global-library-input" accept="image/*" multiple          style="display:none;" />
 
 <!-- Vollbild Foto-Viewer -->
 <div id="photo-viewer" class="hidden" onclick="this.classList.add('hidden')">
@@ -1172,13 +1173,14 @@ const Layers = {
     const imgHtml = photos.length
       ? `<div class="photo-gallery-row">${thumbsHtml}</div>` : '';
 
+    const photoCount = photos.length < MAX_PHOTOS
+      ? `<div style="font-size:11px;color:var(--txt2);text-align:center;margin-top:4px;">${photos.length}/${MAX_PHOTOS} Fotos</div>` : '';
     const mediaBtn = (canAddPhoto && photos.length < MAX_PHOTOS)
-      ? `<div style="margin-top:${photos.length ? '4px' : '10px'};">
-           <button class="popup-btn" style="width:100%;background:rgba(255,149,0,.15);color:var(--orange);" onclick="window.triggerUpload('${d.id}')">
-             📷 ${photos.length ? 'Weiteres Foto (' + photos.length + '/' + MAX_PHOTOS + ')' : 'Foto anfügen'}
-           </button>
-         </div>`
-      : '';
+      ? `<div style="margin-top:${photos.length ? '4px' : '10px'};display:flex;gap:6px;">
+           <button class="popup-btn" style="background:rgba(255,149,0,.15);color:var(--orange);" onclick="window.triggerUpload('${d.id}','camera')">📷 Kamera</button>
+           <button class="popup-btn" style="background:rgba(255,149,0,.15);color:var(--orange);" onclick="window.triggerUpload('${d.id}','library')">🖼 Bibliothek</button>
+         </div>${photoCount}`
+      : `<div style="font-size:11px;color:var(--txt2);text-align:center;margin-top:4px;">5/5 Fotos</div>`;
       
     let coordsHtml = '';
     if (isPoint && window.mgrs) {
@@ -2115,52 +2117,66 @@ const CryptoHelper = {
 };
 
 /* ── MEDIA ATTACHMENTS (Lokale Komprimierung & Base64) ───────────────── */
-window.triggerUpload = function(layerId) {
-    const input = document.getElementById('global-media-input');
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        toast('⏳ Optimiere & Lade Foto hoch...');
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let w = img.width;
-            let h = img.height;
+function _compressAndAttach(file, layerId, onDone) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
             const MAX = 1200;
             if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-            else if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
-
+            else if (h > MAX)     { w = Math.round(w * MAX / h); h = MAX; }
+            const canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-
-            let targetData = null;
-            if (_drawn) {
-                _drawn.eachLayer(l => {
-                    if (l._lid === layerId && l._ldata) targetData = l._ldata;
-                });
-            }
-            if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
-
-            // Migration: altes Einzelbild-Format → Array
-            if (!targetData.images) {
-                targetData.images = targetData.image_url ? [targetData.image_url] : [];
-                delete targetData.image_url;
-            }
-            if (targetData.images.length >= 5) { toast('⚠️ Maximal 5 Fotos pro Marker'); return; }
-            targetData.images.push(dataUrl);
-            Layers.render(targetData, false);
-            Sync.push();
-            toast('✅ Foto ' + targetData.images.length + '/5 angehängt');
-            if (_map) _map.closePopup();
-          };
-          img.src = ev.target.result;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            onDone(canvas.toDataURL('image/jpeg', 0.82));
         };
-        reader.readAsDataURL(file);
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+window.triggerUpload = function(layerId, mode) {
+    const inputId = (mode === 'camera') ? 'global-camera-input' : 'global-library-input';
+    const input   = document.getElementById(inputId);
+
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        // Ziel-Marker suchen
+        let targetData = null;
+        if (_drawn) _drawn.eachLayer(l => {
+            if (l._lid === layerId && l._ldata) targetData = l._ldata;
+        });
+        if (!targetData) { toast('❌ Marker nicht gefunden'); return; }
+
+        // Migration altes Einzelbild-Format → Array
+        if (!targetData.images) {
+            targetData.images = targetData.image_url ? [targetData.image_url] : [];
+            delete targetData.image_url;
+        }
+
+        const freePlaetze = 5 - targetData.images.length;
+        if (freePlaetze <= 0) { toast('⚠️ Maximal 5 Fotos pro Marker'); return; }
+
+        const zuVerarbeiten = files.slice(0, freePlaetze);
+        if (files.length > freePlaetze)
+            toast(`⚠️ Nur ${freePlaetze} von ${files.length} Fotos passen noch rein`);
+
+        toast(`⏳ ${zuVerarbeiten.length} Foto${zuVerarbeiten.length > 1 ? 's' : ''} wird verarbeitet…`);
+
+        // Alle Dateien komprimieren (parallel)
+        const dataUrls = await Promise.all(zuVerarbeiten.map(f =>
+            new Promise(res => _compressAndAttach(f, layerId, res))
+        ));
+
+        dataUrls.forEach(url => targetData.images.push(url));
+        Layers.render(targetData, false);
+        Sync.push();
+        toast(`✅ ${dataUrls.length} Foto${dataUrls.length > 1 ? 's' : ''} angehängt (${targetData.images.length}/5)`);
+        if (_map) _map.closePopup();
+        input.value = '';
     };
     input.value = '';
     input.click();
@@ -2197,19 +2213,18 @@ async function _sharePhotoData(dataUrl) {
     try {
         const blob = await fetch(dataUrl).then(r => r.blob());
         const file = new File([blob], 'lagekarte-foto.jpg', { type: 'image/jpeg' });
+        // Web Share API mit Datei: funktioniert auf iOS + Android (Teamwire, Mail etc.)
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            // iOS/Android: nativer Share-Sheet → Teamwire, WhatsApp, Mail etc.
             await navigator.share({ files: [file], title: 'Lagekarte Foto' });
-        } else if (navigator.share) {
-            await navigator.share({ title: 'Lagekarte Foto', url: dataUrl });
-        } else {
-            // Desktop-Fallback: Bild herunterladen
-            const a = document.createElement('a');
-            a.href = dataUrl; a.download = 'lagekarte-foto.jpg'; a.click();
+            return;
         }
     } catch(e) {
-        if (e.name !== 'AbortError') toast('❌ Teilen fehlgeschlagen');
+        if (e.name === 'AbortError') return; // Nutzer hat abgebrochen
     }
+    // Desktop-Fallback: Foto als Datei herunterladen
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = 'lagekarte-foto.jpg'; a.click();
+    toast('💾 Foto gespeichert – jetzt manuell teilen');
 }
 
 /* ── SYNC (Supabase Realtime) ────────────────────────────────────────── */
