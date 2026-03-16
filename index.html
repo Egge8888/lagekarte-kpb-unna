@@ -113,10 +113,19 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 20px; 
   text-transform: uppercase; letter-spacing: 1px; text-align: center;
 }
-.landing-divider { 
-  width:100%; text-align:center; font-size:12px; font-weight: 600; 
-  color:rgba(255,255,255,.3); margin:4px 0; text-transform: uppercase; letter-spacing: 1px; 
+.landing-divider {
+  width:100%; text-align:center; font-size:12px; font-weight: 600;
+  color:rgba(255,255,255,.3); margin:4px 0; text-transform: uppercase; letter-spacing: 1px;
 }
+/* Lagen-Modus: versteckt bis Freischalt-Code */
+#lage-buttons { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; }
+#lage-buttons.hidden { display:none; }
+#lage-unlock-btn {
+  background:transparent; border:none; color:rgba(255,255,255,0.2);
+  font-size:15px; padding:6px 12px; cursor:pointer; margin-top:6px;
+  -webkit-tap-highlight-color:transparent; transition:opacity .2s;
+}
+#lage-unlock-btn:hover { color:rgba(255,255,255,0.45); }
 .btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:16px; border-radius:14px; border:none; font-family:var(--font); font-size:16px; font-weight:600; cursor:pointer; transition:all .15s; -webkit-tap-highlight-color:transparent; }
 .btn:active { transform:scale(.97); }
 
@@ -484,19 +493,22 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     
     <button class="btn btn-primary" onclick="App.startSolo()">🧭&nbsp; Solo nutzen</button>
     
-    <div class="landing-divider">── oder ──</div>
-    
-    <button class="btn btn-secondary" onclick="App.showPinModal()">
-      <div class="landing-red-dot"></div> Lage starten &nbsp;<span style="font-size:11px;opacity:.6;font-weight:600">(Leitstelle)</span>
-    </button>
-    
-    <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
-    
+    <!-- Lagen-Modus: unsichtbar bis Freischalt-Code korrekt eingegeben -->
+    <div id="lage-buttons" class="hidden">
+      <div class="landing-divider">── Lagen-Modus ──</div>
+      <button class="btn btn-secondary" onclick="App.showPinModal()">
+        <div class="landing-red-dot"></div> Lage starten &nbsp;<span style="font-size:11px;opacity:.6;font-weight:600">(Leitstelle)</span>
+      </button>
+      <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
+    </div>
+
     <div class="landing-divider" style="margin-top:16px;">── Extras ──</div>
-    
+
     <button class="btn btn-secondary" style="border-color: rgba(255,204,0,0.5); color: #FFCC00;" onclick="window.location.href='skizze.html'">
       ✏️&nbsp; Skizze / Whiteboard
     </button>
+
+    <button id="lage-unlock-btn" onclick="App.showUnlockModal()" title="Dienstmodus">🔒</button>
   </div>
 </div>
 
@@ -550,6 +562,21 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <div class="modal-actions" style="margin-top:8px">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
       <button class="btn btn-danger" onclick="App.executeReset()">Ja, alles löschen</button>
+    </div>
+  </div>
+  <div class="modal-sheet hidden" id="modal-unlock">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔒 Dienstmodus</div>
+    <div class="modal-sub">Freischalt-Code der Leitstelle eingeben</div>
+    <input class="modal-input" id="unlock-code-input"
+           type="password" inputmode="text"
+           placeholder="••••" maxlength="20"
+           autocomplete="off" spellcheck="false"
+           style="letter-spacing:8px;font-size:26px;font-weight:800;text-align:center;"/>
+    <div id="unlock-error" style="color:var(--red);font-size:13px;font-weight:600;text-align:center;min-height:18px;margin-bottom:8px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="App.checkUnlockCode()">Freischalten →</button>
     </div>
   </div>
 </div>
@@ -732,6 +759,7 @@ const CFG = {
   SUPABASE_URL: 'https://xfplgmvpxrigyfotlesn.supabase.co',
   SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmcGxnbXZweHJpZ3lmb3RsZXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzY2NDUsImV4cCI6MjA4NjgxMjY0NX0.-FZbqkeJE4O1A9CuNPnOusisRMGP1rRti_1_43dma6M',
   ADMIN_PIN:    '0906',
+  UNLOCK_CODE:  'LZPD',        // Freischalt-Code für Lagen-Modus (hier änderbar)
   MAP_CENTER:   [51.5344, 7.6889],
   MAP_ZOOM:     15,
 };
@@ -2299,11 +2327,37 @@ const App = {
     document.getElementById('viewer-hint').classList.add('hidden');
   },
 
+  showUnlockModal() {
+    ['modal-pin','modal-join','modal-delete','modal-reset'].forEach(id =>
+      document.getElementById(id).classList.add('hidden'));
+    document.getElementById('modal-unlock').classList.remove('hidden');
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    const inp = document.getElementById('unlock-code-input');
+    inp.value = '';
+    document.getElementById('unlock-error').textContent = '';
+    inp.onkeydown = e => { if (e.key === 'Enter') this.checkUnlockCode(); };
+    setTimeout(() => inp.focus(), 150);
+  },
+
+  checkUnlockCode() {
+    const code = document.getElementById('unlock-code-input').value.trim().toUpperCase();
+    if (code === CFG.UNLOCK_CODE.toUpperCase()) {
+      this.closeModal();
+      document.getElementById('lage-buttons').classList.remove('hidden');
+      document.getElementById('lage-unlock-btn').style.display = 'none';
+      toast('🔓 Lagen-Modus freigeschaltet');
+    } else {
+      document.getElementById('unlock-error').textContent = '❌ Falscher Code';
+      document.getElementById('unlock-code-input').value = '';
+    }
+  },
+
   showPinModal() {
     document.getElementById('modal-pin').classList.remove('hidden');
     document.getElementById('modal-join').classList.add('hidden');
     document.getElementById('modal-delete').classList.add('hidden');
     document.getElementById('modal-reset').classList.add('hidden');
+    document.getElementById('modal-unlock').classList.add('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
     ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
     setTimeout(() => document.getElementById('p0').focus(), 100);
@@ -2377,6 +2431,7 @@ const App = {
     document.getElementById('modal-join').classList.remove('hidden');
     document.getElementById('modal-delete').classList.add('hidden');
     document.getElementById('modal-reset').classList.add('hidden');
+    document.getElementById('modal-unlock').classList.add('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
     const inp = document.getElementById('join-code-input');
     inp.value = '';
