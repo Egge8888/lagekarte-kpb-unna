@@ -522,12 +522,12 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div class="modal-sheet hidden" id="modal-join">
     <div class="modal-handle"></div>
     <div class="modal-title">👁 Lage beitreten</div>
-    <div class="modal-sub">4-stelligen Raumcode von der Leitstelle eingeben</div>
+    <div class="modal-sub">6-stelligen Raumcode von der Leitstelle eingeben</div>
     <input class="modal-input" id="join-code-input"
-           inputmode="numeric" pattern="[0-9]*"
-           placeholder="z. B.  7 4 8 3" maxlength="4"
+           inputmode="text" pattern="[A-Za-z0-9\-]*"
+           placeholder="z. B.  ABC-123" maxlength="7"
            autocomplete="off" spellcheck="false"
-           style="letter-spacing:10px;font-size:30px;font-weight:800;"/>
+           style="letter-spacing:6px;font-size:28px;font-weight:800;text-transform:uppercase;"/>
     <div id="join-error" style="color:var(--red);font-size:13px;font-weight:600;text-align:center;min-height:18px;margin-bottom:8px;"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
@@ -1991,17 +1991,26 @@ const TextInput = {
 /* ── E2EE ENCRYPTION (Web Crypto API) ────────────────────────────────── */
 const CryptoHelper = {
   _key: null,
-  _salt: new TextEncoder().encode('LAGEKARTE_KPB_UNNA_SALT_123'),
 
-  async init(pinOrCode) {
-    if (!pinOrCode || !window.crypto || !window.crypto.subtle) return;
+  // saltB64: zufälliger, pro Session generierter Base64-Salt (aus DB)
+  // → verhindert vorberechnete Angriffe; Fallback auf statischen Salt für Altdaten
+  async init(joinCode, saltB64) {
+    if (!joinCode || !window.crypto || !window.crypto.subtle) return;
     try {
       const enc = new TextEncoder();
+      let salt;
+      if (saltB64) {
+        const raw = atob(saltB64);
+        salt = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i++) salt[i] = raw.charCodeAt(i);
+      } else {
+        salt = enc.encode('LAGEKARTE_KPB_UNNA_SALT_123'); // Fallback: Altdaten
+      }
       const keyMaterial = await crypto.subtle.importKey(
-        'raw', enc.encode(pinOrCode), { name: 'PBKDF2' }, false, ['deriveBits', 'deriveKey']
+        'raw', enc.encode(joinCode), { name: 'PBKDF2' }, false, ['deriveBits', 'deriveKey']
       );
       this._key = await crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt: this._salt, iterations: 100000, hash: 'SHA-256' },
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
         keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
       );
     } catch(e) { console.error('E2EE Init Error', e); }
@@ -2104,10 +2113,11 @@ const Sync = {
   async connect(roomCode, asAdmin) {
     try {
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-    const { data, error } = await _sb.from('lagekarte_sessions').select('state').eq('room_code', roomCode).single();
+    const { data, error } = await _sb.from('lagekarte_sessions').select('state, e2ee_salt').eq('room_code', roomCode).single();
     if (error || !data) { toast('❌ Raum nicht gefunden: ' + roomCode, 5000); return false; }
 
-    await CryptoHelper.init(roomCode);
+    // e2ee_salt: pro Session zufällig (neu) oder null (Altdaten → statischer Fallback)
+    await CryptoHelper.init(roomCode, data.e2ee_salt || null);
     const decryptedState = await CryptoHelper.decrypt(data.state);
 
     Layers.deserialize(decryptedState, false);
@@ -2318,24 +2328,29 @@ const App = {
     this.closeModal();
     _mode = 'admin';
     _roomCode = this._genCode();
-    
+
+    // Zufälliger 16-Byte Salt pro Session – verhindert vorberechnete Angriffe
+    const saltArr = crypto.getRandomValues(new Uint8Array(16));
+    const saltB64 = btoa(String.fromCharCode(...saltArr));
+
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-    const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode });
+    const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode, e2ee_salt: saltB64 });
     if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
-    
+
     this._openMap();
     await Sync.connect(_roomCode, true);
-    
+
     Pool.load();
     document.getElementById('toolbar').style.display = '';
     document.getElementById('toolbar').classList.remove('viewer-mode');
     document.getElementById('mode-badge').className = 'admin';
     document.getElementById('mode-badge').textContent = 'ADMIN';
     const rc = document.getElementById('room-code-display');
-    rc.textContent = _roomCode; rc.classList.remove('hidden');
+    const displayCode = _roomCode.slice(0,3) + '-' + _roomCode.slice(3);
+    rc.textContent = displayCode; rc.classList.remove('hidden');
     document.getElementById('end-btn').classList.remove('hidden');
     document.getElementById('viewer-hint').classList.add('hidden');
-    toast(`✅ Lage gestartet – Code: ${_roomCode}`, 6000);
+    toast(`✅ Lage gestartet – Code: ${displayCode}`, 8000);
   },
 
   async masterReset() {
@@ -2380,12 +2395,13 @@ const App = {
   },
 
   async joinRoom() {
-    const raw = document.getElementById('join-code-input').value.trim().replace(/[^0-9]/g, '');
+    // Bindestriche/Leerzeichen entfernen, Großbuchstaben → "ABC-123" oder "ABC123" → "ABC123"
+    const raw = document.getElementById('join-code-input').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     const errEl  = document.getElementById('join-error');
     const joinBtn = document.getElementById('join-btn');
     if (errEl) errEl.textContent = '';
-    if (raw.length !== 4) {
-      if (errEl) errEl.textContent = '❌ Bitte 4-stelligen Code eingeben';
+    if (raw.length !== 6) {
+      if (errEl) errEl.textContent = '❌ Bitte 6-stelligen Code eingeben (z.B. ABC-123)';
       return;
     }
     if (joinBtn) { joinBtn.textContent = '⏳ Verbinde…'; joinBtn.disabled = true; }
@@ -2417,10 +2433,11 @@ const App = {
       document.getElementById('mode-badge').className = 'viewer';
       document.getElementById('mode-badge').textContent = 'ZUSCHAUER';
       const rc = document.getElementById('room-code-display');
-      rc.textContent = _roomCode; rc.classList.remove('hidden');
+      const displayCode = _roomCode.slice(0,3) + '-' + _roomCode.slice(3);
+      rc.textContent = displayCode; rc.classList.remove('hidden');
       document.getElementById('end-btn').classList.add('hidden');
       document.getElementById('viewer-hint').classList.remove('hidden');
-      toast(`👁 Lage ${_roomCode} beigetreten`);
+      toast(`👁 Lage ${displayCode} beigetreten`);
     } catch(err) {
       console.error('joinRoom error:', err);
       if (errEl) errEl.textContent = '❌ Verbindungsfehler – bitte erneut versuchen';
@@ -2490,9 +2507,10 @@ const App = {
 
   copyCode() {
     if (!_roomCode) return;
-    navigator.clipboard?.writeText(_roomCode)
-      .then(() => toast('📋 Raumcode kopiert: ' + _roomCode))
-      .catch(() => toast(_roomCode));
+    const displayCode = _roomCode.slice(0,3) + '-' + _roomCode.slice(3);
+    navigator.clipboard?.writeText(displayCode)
+      .then(() => toast('📋 Raumcode kopiert: ' + displayCode))
+      .catch(() => toast(displayCode));
   },
 
   toggleDark() {
@@ -2513,7 +2531,10 @@ const App = {
   },
 
   _genCode() {
-    return String(Math.floor(1000 + Math.random() * 9000));
+    // Keine verwechselbaren Zeichen (I/O/0/1) → 32^6 ≈ 1 Mrd. Möglichkeiten
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const arr = crypto.getRandomValues(new Uint8Array(6));
+    return Array.from(arr).map(b => chars[b % chars.length]).join('');
   },
 };
 
