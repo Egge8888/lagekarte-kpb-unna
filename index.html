@@ -1234,10 +1234,11 @@ const Layers = {
     const isPoint = d.lat !== undefined && d.lng !== undefined;
     const safeLabel = escHtml(titleStr).replace(/'/g, "\\'");
     const routeBtns = isPoint ? `
-      <div style="display:flex; gap:8px; margin-bottom:${(editBtn||delBtn)?'10px':'0'}; width:100%;">
+      <div style="display:flex; gap:8px; margin-bottom:8px; width:100%;">
         <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${d.lat}, ${d.lng}, '${safeLabel}')">↗️ Ab hier</button>
         <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${d.lat}, ${d.lng}, '${safeLabel}')">↘️ Hierhin</button>
       </div>
+      <button class="popup-btn" style="width:100%;margin-bottom:${(editBtn||delBtn)?'10px':'0'};background:rgba(0,122,255,.12);color:var(--blue);" onclick="shareLocation(${d.lat},${d.lng},'${safeLabel}')">📤 Standort teilen</button>
     ` : '';
     
     // Fotos: neues Array-Format + Rückwärtskompatibilität mit altem image_url
@@ -2783,6 +2784,28 @@ const App = {
     return Array.from(arr).map(b => chars[b % chars.length]).join('');
   },
 };
+
+/* ── STANDORT TEILEN ─────────────────────────────────────────────────── */
+function shareLocation(lat, lng, label) {
+  // MGRS-Koordinate wenn verfügbar
+  let mgrsStr = '';
+  try { if (window.mgrs) mgrsStr = '\nMGRS: ' + window.mgrs.forward([lng, lat]); } catch(e) {}
+
+  const mapsUrl  = `https://maps.google.com/?q=${lat},${lng}`;
+  const shareText = `📍 ${label}${mgrsStr}\n${mapsUrl}`;
+
+  if (navigator.share) {
+    navigator.share({ title: `Lagekarte – ${label}`, text: shareText })
+      .catch(e => { if (e.name !== 'AbortError') _copyLocationFallback(shareText); });
+  } else {
+    _copyLocationFallback(shareText);
+  }
+}
+function _copyLocationFallback(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => toast('📋 Standort in Zwischenablage kopiert'))
+    .catch(() => toast('❌ Teilen nicht möglich'));
+}
 
 /* ── SCHNELLMARKIERUNG ───────────────────────────────────────────────── */
 const QuickMark = {
