@@ -2359,9 +2359,6 @@ const Sync = {
       .subscribe(async status => {
         if (status === 'SUBSCRIBED') {
           document.getElementById('live-dot').classList.remove('off');
-          // GPS-Polling starten (alle 4 Sek., kein WebSocket nötig)
-          this._startGpsPolling(roomCode);
-          
           if (_mode === 'admin') {
              const queued = localStorage.getItem('lagekarte_offline_queue_' + roomCode);
              if (queued) {
@@ -2371,6 +2368,11 @@ const Sync = {
           }
         }
       });
+
+    // GPS-Polling sofort starten – unabhängig vom WebSocket-Status
+    // Läuft rein über HTTPS REST, kein WebSocket nötig
+    this._startGpsPolling(roomCode);
+    document.getElementById('live-dot').classList.remove('off');
     return true;
     } catch(e) {
       console.error('Sync.connect error:', e);
