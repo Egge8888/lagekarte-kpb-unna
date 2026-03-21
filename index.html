@@ -866,6 +866,7 @@ let _mode         = null;
 let _roomCode     = null;
 let _sb           = null;
 let _channel      = null;
+let _gpsInterval  = null;   // Polling-Timer für GPS (REST-Fallback)
 let _map          = null;
 let _drawn        = null;   
 let _liveGpsLayer = null;   
@@ -1400,7 +1401,7 @@ const LiveGPS = {
            _map.panTo([lat, lng], {animate: true});
         }
         
-        if (this._isLive && _channel) {
+        if (this._isLive && _sb && _roomCode) {
           const now = Date.now();
           if (now - this._lastTrack > 3000) {
              this._lastTrack = now;
@@ -1408,7 +1409,10 @@ const LiveGPS = {
                 try {
                     const payload = { mode: _mode, ruf: _myRuf, lat: lat, lng: lng, ts: now };
                     const encPayload = await CryptoHelper.encrypt(payload);
-                    _channel.track(encPayload);
+                    await _sb.from('lagekarte_positions').upsert(
+                      { room_code: _roomCode, ruf: _myRuf, payload: encPayload, ts: now },
+                      { onConflict: 'room_code,ruf' }
+                    );
                     Pool.refreshLiveList();
                 } catch(e) { console.warn("GPS sync error", e); }
              })();
@@ -1438,9 +1442,13 @@ const LiveGPS = {
     btn.classList.remove('tracking-paused');
     
     if (this._isLive) {
+        const rufToDelete = _myRuf;
         _myRuf = null;
-        if (_channel) _channel.track({ mode: _mode, ts: Date.now() });
-        Pool.updateLiveList({}); 
+        if (_sb && rufToDelete && _roomCode) {
+          _sb.from('lagekarte_positions').delete()
+            .match({ room_code: _roomCode, ruf: rufToDelete }).then(() => {});
+        }
+        Pool.updateLiveList({});
     }
     this._isLive = false;
     toast('🛰️ Navigation beendet');
@@ -2348,99 +2356,11 @@ const Sync = {
           Layers.deserialize(decUpdate, true);
         }
       })
-      .on('presence', { event: 'sync' }, async () => {
-        const state = _channel.presenceState();
-        let count = 0;
-        
-        const currentLive = {}; 
-        let needsStaticCleanup = false;
-
-        for (const id in state) {
-          try {
-            const rows = state[id];
-            if (!rows || rows.length === 0) continue;
-            const row = rows[0];
-            
-            let p = row;
-            if (row._e2ee) p = await CryptoHelper.decrypt(row);
-            
-            if (p && p.ruf && p.lat && p.lng) {
-              count++;
-              if (p.ruf !== _myRuf) {
-                currentLive[id] = p;
-                needsStaticCleanup = true;
-              }
-            }
-          } catch(e) {}
-        }
-        
-        if (_liveGpsLayer) {
-          _liveGpsLayer.eachLayer(l => {
-             if (!currentLive[l._connId]) _liveGpsLayer.removeLayer(l);
-          });
-          
-          for (const id in currentLive) {
-             const p = currentLive[id];
-             let existing = null;
-             _liveGpsLayer.eachLayer(l => { if (l._connId === id) existing = l; });
-             
-             if (existing) {
-                existing.setLatLng([p.lat, p.lng]);
-                if (existing._ruf !== p.ruf) {
-                    existing._ruf = p.ruf;
-                    existing.setIcon(Icons.unit(p.ruf, _map.getZoom(), true));
-                }
-             } else {
-                const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true);
-                const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
-                m._ruf = p.ruf;
-                m._connId = id;
-                
-                const safeLabel = escHtml(p.ruf).replace(/'/g, "\\'");
-                m.bindPopup(`
-                  <div class="popup-body">
-                    <div class="popup-title" style="color:var(--green)">🛰️ ${escHtml(p.ruf)} (Live)</div>
-                    <div style="display:flex; gap:8px; width:100%;">
-                      <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${p.lat}, ${p.lng}, '${safeLabel}')">↗️ Ab hier</button>
-                      <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${p.lat}, ${p.lng}, '${safeLabel}')">↘️ Hierhin</button>
-                    </div>
-                  </div>
-                `, { maxWidth: 260 });
-             }
-          }
-        }
-
-        if (needsStaticCleanup && (_mode === 'admin' || _mode === 'solo')) {
-          let pushNeeded = false;
-          for (const id in currentLive) {
-             const p = currentLive[id];
-             let duplicateId = null;
-             if (_drawn) {
-               _drawn.eachLayer(l => {
-                 if (l._ldata && l._ldata.type === 'einheit' && l._ldata.ruf === p.ruf) {
-                   duplicateId = l._lid;
-                 }
-               });
-             }
-             if (duplicateId) {
-               Layers.deleteById(duplicateId); 
-               pushNeeded = true;
-               toast(`♻️ Statischer Marker für ${p.ruf} wurde durch Live-Signal ersetzt.`);
-             }
-          }
-        }
-        
-        Pool.updateLiveList(currentLive);
-
-        this._viewerCount = count;
-        const vc = document.getElementById('viewer-count');
-        if (asAdmin && count > 1) { vc.textContent = `👁 ${count - 1}`; vc.classList.remove('hidden'); }
-        else vc.classList.add('hidden');
-      })
       .subscribe(async status => {
         if (status === 'SUBSCRIBED') {
-          await _channel.track({ mode: _mode, ts: Date.now() });
           document.getElementById('live-dot').classList.remove('off');
+          // GPS-Polling starten (alle 4 Sek., kein WebSocket nötig)
+          this._startGpsPolling(roomCode);
           
           if (_mode === 'admin') {
              const queued = localStorage.getItem('lagekarte_offline_queue_' + roomCode);
@@ -2482,7 +2402,85 @@ const Sync = {
     }, 800);
   },
 
+  _startGpsPolling(roomCode) {
+    if (_gpsInterval) clearInterval(_gpsInterval);
+    const poll = async () => {
+      if (!_sb || !roomCode) return;
+      try {
+        const { data, error } = await _sb.from('lagekarte_positions')
+          .select('ruf, payload, ts')
+          .eq('room_code', roomCode);
+        if (error || !data) return;
+
+        const now = Date.now();
+        const currentLive = {};
+
+        for (const row of data) {
+          // Einträge älter als 30 Sek. ignorieren (Einheit offline)
+          if (now - row.ts > 30000) continue;
+          try {
+            const p = row.payload?._e2ee
+              ? await CryptoHelper.decrypt(row.payload)
+              : row.payload;
+            if (p && p.ruf && p.lat != null && p.lng != null && p.ruf !== _myRuf) {
+              currentLive[p.ruf] = p;
+            }
+          } catch(e) {}
+        }
+
+        // Karten-Marker aktualisieren
+        if (_liveGpsLayer) {
+          // Veraltete Marker entfernen
+          _liveGpsLayer.eachLayer(l => {
+            if (!currentLive[l._ruf]) _liveGpsLayer.removeLayer(l);
+          });
+          // Neue / aktualisierte Marker setzen
+          for (const ruf in currentLive) {
+            const p = currentLive[ruf];
+            let existing = null;
+            _liveGpsLayer.eachLayer(l => { if (l._ruf === ruf) existing = l; });
+            if (existing) {
+              existing.setLatLng([p.lat, p.lng]);
+            } else {
+              const icon = Icons.unit(p.ruf, _map ? _map.getZoom() : 15, true);
+              const m = L.marker([p.lat, p.lng], { icon }).addTo(_liveGpsLayer);
+              m._ruf = p.ruf;
+              m._connId = p.ruf;
+              const safeLabel = escHtml(p.ruf).replace(/'/g, "\\'");
+              m.bindPopup(`
+                <div class="popup-body">
+                  <div class="popup-title" style="color:var(--green)">🛰️ ${escHtml(p.ruf)} (Live)</div>
+                  <div style="display:flex; gap:8px; width:100%;">
+                    <button class="popup-btn" style="background:rgba(52,199,89,.15);color:var(--green);" onclick="RoutePanel.setupRoute('from', ${p.lat}, ${p.lng}, '${safeLabel}')">↗️ Ab hier</button>
+                    <button class="popup-btn" style="background:rgba(0,122,255,.15);color:var(--blue);" onclick="RoutePanel.setupRoute('to', ${p.lat}, ${p.lng}, '${safeLabel}')">↘️ Hierhin</button>
+                  </div>
+                </div>
+              `, { maxWidth: 260 });
+              // Statischen Marker ersetzen falls vorhanden
+              if (_mode === 'admin' || _mode === 'viewer') {
+                let duplicateId = null;
+                if (_drawn) _drawn.eachLayer(l => {
+                  if (l._ldata?.type === 'einheit' && l._ldata?.ruf === p.ruf) duplicateId = l._lid;
+                });
+                if (duplicateId) {
+                  Layers.deleteById(duplicateId);
+                  toast(`♻️ Statischer Marker für ${p.ruf} ersetzt`);
+                }
+              }
+            }
+          }
+        }
+
+        Pool.updateLiveList(currentLive);
+      } catch(e) { console.warn('GPS-Poll Fehler:', e); }
+    };
+
+    poll(); // Sofort einmal abfragen
+    _gpsInterval = setInterval(poll, 4000);
+  },
+
   disconnect() {
+    if (_gpsInterval) { clearInterval(_gpsInterval); _gpsInterval = null; }
     if (_channel) { _sb.removeChannel(_channel); _channel = null; }
     document.getElementById('live-dot').classList.add('off');
     if (_liveGpsLayer) _liveGpsLayer.clearLayers();
