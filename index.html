@@ -584,7 +584,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
         <div class="landing-red-dot"></div> Neue Lage starten
       </button>
       <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
-      <button class="btn btn-ghost" style="color:var(--red);font-size:13px;margin-top:6px;" onclick="App.showPinModal()">⚠️ Alle Lagen löschen</button>
+      <button class="btn btn-ghost" style="color:var(--red);font-size:13px;margin-top:6px;" onclick="App.masterReset()">⚠️ Alle Lagen löschen</button>
     </div>
 
     <div class="landing-divider" style="margin-top:16px;">── Extras ──</div>
@@ -2826,16 +2826,10 @@ const App = {
   },
 
   async masterReset() {
-    const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
-    if (pin !== CFG.ADMIN_PIN) {
-      toast('❌ Falscher PIN für System-Reset');
-      ['p0','p1','p2','p3'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('p0').focus();
-      return;
-    }
     if (!confirm('ACHTUNG: Möchtest du wirklich ALLE aktiven Lagen auf dem Server löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!')) return;
 
-    this.closeModal();
+    localStorage.removeItem('lagekarte_my_room');
+    this._updateLageButtons();
     toast('🔄 Bereinige Datenbank...');
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
     
