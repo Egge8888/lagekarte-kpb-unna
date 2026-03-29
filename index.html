@@ -243,6 +243,23 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 .tool-label { font-size:8.5px; font-weight:700; color:var(--txt2); letter-spacing:.2px; text-transform:uppercase; line-height:1; }
 .tool-divider { width:36px; height:1px; background:var(--sep); margin:2px auto; }
 
+/* 2-Spalten-Werkzeuggruppen (Desktop/Tablet) */
+.tool-group-2 { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+
+/* Desktop: Suche/Route oben, Schnell/GPS unten */
+@media (min-width: 768px) {
+  #tb-nav-group   { order:-1; }
+  #tb-nav-div     { order:0; }
+  #tb-bottom-div  { order:97; display:block; }
+  #tb-schnell-gps { order:98; }
+}
+
+/* Mobile: Gruppen auflösen → Buttons fließen in horizontale Leiste */
+@media (max-width: 767px) {
+  .tool-group-2 { display:contents; }
+  #tb-bottom-div { display:none; }
+}
+
 /* ── COLOR PICKER ────────────────────────────────────── */
 #color-picker {
   position:fixed; left:82px; top:50%; transform:translateY(calc(-50% + 26px));
@@ -663,46 +680,70 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   <div id="map" style="flex:1;"></div>
 
   <div id="toolbar">
-    <!-- Schnellmarkierung + Navigation: mobile zuerst, desktop per CSS ans Ende -->
-    <button class="tool-btn admin-only" id="quickmark-btn" onclick="QuickMark.show()" title="Schnellmarkierung – Marker an GPS-Position">
-      <span style="color:var(--blue)">➕</span><span class="tool-label" style="color:var(--blue)">Schnell</span>
-    </button>
-    <button class="tool-btn" id="gps-toggle-btn"    onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
-    <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
-    <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
+    <!-- Mobile: Schnell+GPS zuerst; Desktop: per CSS nach unten -->
+    <div class="tool-group-2" id="tb-schnell-gps">
+      <button class="tool-btn admin-only" id="quickmark-btn" onclick="QuickMark.show()" title="Schnellmarkierung – Marker an GPS-Position">
+        <span style="color:var(--blue)">➕</span><span class="tool-label" style="color:var(--blue)">Schnell</span>
+      </button>
+      <button class="tool-btn" id="gps-toggle-btn" onclick="LiveGPS.handleBtnClick()" title="GPS Navi"><span>🛰️</span><span class="tool-label">GPS</span></button>
+    </div>
+
+    <!-- Navigation: Desktop oben, Mobile nach Schnell/GPS -->
+    <div class="tool-group-2" id="tb-nav-group">
+      <button class="tool-btn" id="search-toggle-btn" onclick="Search.toggle()" title="Ort suchen"><span>🔍</span><span class="tool-label">Suche</span></button>
+      <button class="tool-btn" id="route-toggle-btn"  onclick="RoutePanel.toggle()" title="Routenplanung"><span>🛣️</span><span class="tool-label">Route</span></button>
+    </div>
 
     <div class="tool-divider admin-only" id="tb-nav-div"></div>
 
-    <!-- Taktische Marker -->
-    <button class="tool-btn admin-only" data-tool="tatort"     onclick="Tools.toggle('tatort')"     title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
-    <button class="tool-btn admin-only" data-tool="ereignis"   onclick="Tools.toggle('ereignis')"   title="Ereignisort"><span>🟣</span><span class="tool-label">Ereignis</span></button>
-    <button class="tool-btn admin-only" data-tool="gefahr"     onclick="Tools.toggle('gefahr')"     title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
-    <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
-    <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"       title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
-    <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"        title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
+    <!-- Gruppe 1: Taktische Marker -->
+    <div class="tool-group-2 admin-only">
+      <button class="tool-btn admin-only" data-tool="unfallort"  onclick="Tools.toggle('unfallort')"  title="Unfallort"><span>💥</span><span class="tool-label">Unfallort</span></button>
+      <button class="tool-btn admin-only" data-tool="tatort"     onclick="Tools.toggle('tatort')"     title="Tatort"><span>🔴</span><span class="tool-label">Tatort</span></button>
+      <button class="tool-btn admin-only" data-tool="ereignis"   onclick="Tools.toggle('ereignis')"   title="Ereignisort"><span>🟣</span><span class="tool-label">Ereignis</span></button>
+      <button class="tool-btn admin-only" data-tool="gefahr"     onclick="Tools.toggle('gefahr')"     title="Gefahrenort"><span>⚠️</span><span class="tool-label">Gefahr</span></button>
+      <button class="tool-btn admin-only" data-tool="circle"     onclick="Tools.toggle('circle')"     title="Radius einzeichnen"><span>⭕</span><span class="tool-label">Radius</span></button>
+      <button class="tool-btn admin-only" data-tool="absperrung" onclick="Tools.toggle('absperrung')" title="Absperrposten"><span>🚧</span><span class="tool-label">Sperrung</span></button>
+    </div>
 
     <div class="tool-divider admin-only"></div>
 
-    <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()" title="Fahrzeuge & Live"><span>🚓</span><span class="tool-label">Kräfte</span></button>
-    <button class="tool-btn admin-only" id="symbol-toggle-btn" onclick="SymbolPanel.toggle()" title="Symbole & Icons"><span>🎭</span><span class="tool-label">Symbole</span></button>
+    <!-- Gruppe 2: Kräfte & Symbole -->
+    <div class="tool-group-2 admin-only">
+      <button class="tool-btn admin-only" id="pool-toggle-btn"   onclick="Pool.toggle()"         title="Fahrzeuge & Live"><span>🚓</span><span class="tool-label">Kräfte</span></button>
+      <button class="tool-btn admin-only" id="symbol-toggle-btn" onclick="SymbolPanel.toggle()"  title="Symbole & Icons"><span>🎭</span><span class="tool-label">Symbole</span></button>
+      <button class="tool-btn admin-only" data-tool="ksst"       onclick="Tools.toggle('ksst')"  title="Kräftesammelstelle"><span>🔶</span><span class="tool-label">KSST</span></button>
+      <button class="tool-btn admin-only" data-tool="pin"        onclick="Tools.toggle('pin')"   title="Stecknadel"><span>📍</span><span class="tool-label">Pin</span></button>
+    </div>
 
     <div class="tool-divider admin-only"></div>
 
-    <!-- Zeichenwerkzeuge -->
-    <button class="tool-btn admin-only" data-tool="text"    onclick="Tools.toggle('text')"    title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
-    <button class="tool-btn admin-only" data-tool="circle"  onclick="Tools.toggle('circle')"  title="Gefahrenkreis"><span>⭕</span><span class="tool-label">Kreis</span></button>
-    <button class="tool-btn admin-only" data-tool="polygon" onclick="Tools.toggle('polygon')" title="Fläche"><span>⬡</span><span class="tool-label">Fläche</span></button>
-    <button class="tool-btn admin-only" data-tool="line"    onclick="Tools.toggle('line')"    title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
-    <button class="tool-btn admin-only" data-tool="arrow"   onclick="Tools.toggle('arrow')"   title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+    <!-- Gruppe 3: Zeichnen & Messen -->
+    <div class="tool-group-2 admin-only">
+      <button class="tool-btn admin-only" data-tool="text"     onclick="Tools.toggle('text')"     title="Textmarker"><span>📝</span><span class="tool-label">Text</span></button>
+      <button class="tool-btn admin-only" data-tool="freehand" onclick="Tools.toggle('freehand')" title="Freihand zeichnen"><span>✏️</span><span class="tool-label">Freihand</span></button>
+      <button class="tool-btn admin-only" data-tool="line"     onclick="Tools.toggle('line')"     title="Linie"><span>📏</span><span class="tool-label">Linie</span></button>
+      <button class="tool-btn admin-only" data-tool="arrow"    onclick="Tools.toggle('arrow')"    title="Pfeil"><span>➡️</span><span class="tool-label">Pfeil</span></button>
+      <button class="tool-btn admin-only" data-tool="polygon"  onclick="Tools.toggle('polygon')"  title="Fläche zeichnen"><span>⬡</span><span class="tool-label">Fläche</span></button>
+      <button class="tool-btn admin-only" data-tool="measure"  onclick="Tools.toggle('measure')"  title="Distanz messen"><span>📐</span><span class="tool-label">Distanz</span></button>
+      <button class="tool-btn admin-only" data-tool="area"     onclick="Tools.toggle('area')"     title="Fläche messen"><span>⬛</span><span class="tool-label">Fläche-M</span></button>
+      <button class="tool-btn admin-only" data-tool="coords"   onclick="Tools.toggle('coords')"   title="Koordinaten abfragen"><span>🎯</span><span class="tool-label">Koord.</span></button>
+    </div>
 
     <div class="tool-divider admin-only"></div>
 
-    <button class="tool-btn admin-only" data-tool="measure" onclick="Tools.toggle('measure')" title="Entfernung messen"><span>📐</span><span class="tool-label">Messen</span></button>
-    <button class="tool-btn admin-only"                     onclick="Tools.undo()"            title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+    <!-- Hilfswerkzeuge -->
+    <div class="tool-group-2 admin-only">
+      <button class="tool-btn admin-only" onclick="Tools.undo()"       title="Rückgängig"><span>↩️</span><span class="tool-label">Undo</span></button>
+      <button class="tool-btn admin-only" onclick="App.screenshot()"   title="Screenshot speichern"><span>📸</span><span class="tool-label">Screenshot</span></button>
+    </div>
 
     <div class="tool-divider admin-only"></div>
 
     <button class="tool-btn admin-only" onclick="App.confirmReset()" title="Alles zurücksetzen" style="color:var(--red)"><span>🗑</span><span class="tool-label" style="color:var(--red)">Reset</span></button>
+
+    <!-- Trennlinie vor Schnell/GPS (nur Desktop, per CSS order:97) -->
+    <div class="tool-divider admin-only" id="tb-bottom-div" style="display:none;"></div>
   </div>
 
   <div id="color-picker" class="hidden">
@@ -842,6 +883,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://unpkg.com/mgrs/dist/mgrs.js"></script>
 <script>
@@ -989,6 +1031,7 @@ function initMap() {
 /* ── ICONS ───────────────────────────────────────────────────────────── */
 const Icons = {
   _tacDefs: {
+    unfallort:  { emoji: '💥', label: 'Unfallort',     color: '#FF9500' },
     tatort:     { emoji: '🔴', label: 'Tatort',        color: '#FF3B30' },
     ereignis:   { emoji: '🟣', label: 'Ereignisort',   color: '#AF52DE' },
     gefahr:     { emoji: '⚠️',  label: 'Gefahr',        color: '#FF9500' },
@@ -1137,7 +1180,7 @@ const Layers = {
     const isAdmin = _mode === 'admin' || _mode === 'solo';
 
     switch (d.type) {
-      case 'tatort': case 'ereignis': case 'gefahr': case 'absperrung': case 'ksst': case 'pin':
+      case 'unfallort': case 'tatort': case 'ereignis': case 'gefahr': case 'absperrung': case 'ksst': case 'pin':
         layer = L.marker([d.lat, d.lng], { icon: Icons.tac(d.type, d.desc), draggable: isAdmin });
         break;
       case 'einheit':
@@ -1168,6 +1211,10 @@ const Layers = {
         layer = L.polyline(d.points, { color: '#007AFF', weight: 3, dashArray: '6 6' });
         layer.bindTooltip(d.label, { permanent: true, className: 'measure-tooltip', direction: 'center' });
         break;
+      case 'measure-area':
+        layer = L.polygon(d.points, { color: '#007AFF', fillColor: '#007AFF', fillOpacity: 0.08, weight: 2, dashArray: '6 4' });
+        layer.bindTooltip(d.label, { permanent: true, className: 'measure-tooltip', direction: 'center' });
+        break;
     }
 
     if (!layer || !_drawn) return;
@@ -1176,7 +1223,7 @@ const Layers = {
 
     const targetPopupLayer = layer._line || layer;
 
-    if (isAdmin && ['tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','symbol','arrow'].includes(d.type)) {
+    if (isAdmin && ['unfallort','tatort','ereignis','gefahr','absperrung','ksst','pin','einheit','text','symbol','arrow'].includes(d.type)) {
       targetPopupLayer.on('dragend', (e) => {
         const ll = e.target.getLatLng();
         if (d.type === 'arrow') {
@@ -1687,23 +1734,31 @@ const Tools = {
   _drawLayer:  null,
   _pendingRuf: null,
   _pendingSymbol: null,
-  
   _arrowStart: null,
   _arrowTempLine: null,
+  _freehandDrawing: false,
+  _freehandPoints: [],
+  _freehandLayer: null,
+  _fhDown: null, _fhMove: null, _fhUp: null,
 
   toggle(name) {
     if (this._active === name) { this.deactivate(); return; }
     this.deactivate();
     this._active = name;
     document.querySelector(`[data-tool="${name}"]`)?.classList.add('active');
-    const needsColor = ['circle', 'polygon', 'line', 'arrow'].includes(name);
+    const needsColor = ['circle', 'polygon', 'line', 'arrow', 'freehand', 'area'].includes(name);
     document.getElementById('color-picker').classList.toggle('hidden', !needsColor);
     if (name === 'circle') {
       toast('Klick = Mittelpunkt setzen, dann Radius eingeben');
     } else if (name === 'arrow') {
       toast('1. Klick = Start, Maus ziehen, 2. Klick = Ziel (Pfeilspitze)');
-    } else if (['polygon', 'line', 'measure'].includes(name)) {
+    } else if (['polygon', 'line', 'measure', 'area'].includes(name)) {
       toast('Klicken zum Zeichnen · „✓ Fertig" zum Abschließen');
+    } else if (name === 'freehand') {
+      toast('Maus/Finger gedrückt halten und zeichnen');
+      this._bindFreehand();
+    } else if (name === 'coords') {
+      toast('Auf die Karte klicken → Koordinaten anzeigen');
     }
     _map.getContainer().classList.add('tool-active');
     _map.getContainer().style.cursor = 'crosshair';
@@ -1714,9 +1769,10 @@ const Tools = {
       document.querySelector(`[data-tool="${this._active}"]`)?.classList.remove('active');
     }
     document.getElementById('symbol-toggle-btn').classList.remove('active');
-    
+
     if (typeof Editor !== 'undefined') Editor.finish(true);
-    
+
+    this._unbindFreehand();
     if (this._arrowTempLine) { _map.removeLayer(this._arrowTempLine); this._arrowTempLine = null; }
     _map.off('mousemove', this._onArrowMove, this);
     this._arrowStart = null;
@@ -1748,13 +1804,13 @@ const Tools = {
 
   finishDraw() {
     const tool = this._active;
-    if (!['polygon', 'line', 'measure'].includes(tool)) return;
+    if (!['polygon', 'line', 'measure', 'area'].includes(tool)) return;
     if (this._drawPoints.length < 2) { toast('Mindestens 2 Punkte nötig'); return; }
-    
+
     if (this._drawLayer) { _map.removeLayer(this._drawLayer); this._drawLayer = null; }
     const pts = [...this._drawPoints];
     let d;
-    
+
     if (tool === 'polygon') {
       d = { id: Layers.uid(), type: 'polygon', points: pts, color: this._color };
     } else if (tool === 'line') {
@@ -1762,10 +1818,14 @@ const Tools = {
     } else if (tool === 'measure') {
       let totalDist = 0;
       for (let i = 1; i < pts.length; i++) {
-         totalDist += _map.distance(pts[i-1], pts[i]);
+        totalDist += _map.distance(pts[i-1], pts[i]);
       }
       const label = totalDist < 1000 ? `${Math.round(totalDist)} m` : `${(totalDist / 1000).toFixed(2)} km`;
-      d = { id: Layers.uid(), type: 'measure', points: pts, label: label };
+      d = { id: Layers.uid(), type: 'measure', points: pts, label };
+    } else if (tool === 'area') {
+      const sqm = this._calcArea(pts);
+      const label = sqm < 10000 ? `${Math.round(sqm).toLocaleString('de')} m²` : `${(sqm / 1000000).toFixed(4)} km²`;
+      d = { id: Layers.uid(), type: 'measure-area', points: pts, color: this._color, label };
     }
     
     Layers.render(d, true);
@@ -1784,7 +1844,7 @@ const Tools = {
     const { lat, lng } = e.latlng;
     const tool = Tools._active;
 
-    if (['tatort', 'ereignis', 'gefahr', 'absperrung', 'ksst', 'pin'].includes(tool)) {
+    if (['unfallort', 'tatort', 'ereignis', 'gefahr', 'absperrung', 'ksst', 'pin'].includes(tool)) {
       const desc = prompt('Zusatzinfo / Beschriftung (optional):', '');
       if (desc === null) return; 
       
@@ -1878,7 +1938,25 @@ const Tools = {
       return;
     }
 
-    if (['polygon', 'line', 'measure'].includes(tool)) {
+    if (tool === 'coords') {
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
+      const str = `${lat}, ${lng}`;
+      L.popup({ closeButton: true })
+        .setLatLng(e.latlng)
+        .setContent(`<div style="text-align:center;min-width:180px;">
+          <div style="font-size:10px;font-weight:800;color:#007AFF;letter-spacing:1px;margin-bottom:6px;">KOORDINATEN</div>
+          <div style="font-family:monospace;font-size:13px;background:rgba(0,0,0,.05);padding:6px 10px;border-radius:8px;cursor:pointer;"
+               onclick="navigator.clipboard.writeText('${str}').then(()=>toast('📋 Kopiert!'))">
+            ${lat}<br>${lng}
+          </div>
+          <div style="font-size:10px;color:#888;margin-top:4px;">Tippen zum Kopieren</div>
+        </div>`)
+        .openOn(_map);
+      return;
+    }
+
+    if (['polygon', 'line', 'measure', 'area'].includes(tool)) {
       if (Tools._drawPoints.length > 0) {
           const lastPt = Tools._drawPoints[Tools._drawPoints.length - 1];
           if (_map.distance(lastPt, [lat, lng]) < 2) return; 
@@ -1912,9 +1990,84 @@ const Tools = {
 
   _onMapDblClick(e) {
     const tool = Tools._active;
-    if (!['polygon', 'line', 'measure'].includes(tool)) return;
+    if (!['polygon', 'line', 'measure', 'area'].includes(tool)) return;
     L.DomEvent.stopPropagation(e);
     Tools.finishDraw();
+  },
+
+  _calcArea(latlngs) {
+    const R = 6371000;
+    const toRad = d => d * Math.PI / 180;
+    let area = 0;
+    const n = latlngs.length;
+    for (let i = 0; i < n; i++) {
+      const [lat1, lng1] = latlngs[i];
+      const [lat2, lng2] = latlngs[(i + 1) % n];
+      area += toRad(lng2 - lng1) * (2 + Math.sin(toRad(lat1)) + Math.sin(toRad(lat2)));
+    }
+    return Math.abs(area * R * R / 2);
+  },
+
+  _evtToLL(e) {
+    const c = _map.getContainer();
+    const rect = c.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    if (!src) return null;
+    return _map.containerPointToLatLng(L.point(src.clientX - rect.left, src.clientY - rect.top));
+  },
+
+  _bindFreehand() {
+    const c = _map.getContainer();
+    this._fhDown = (e) => {
+      if (Tools._active !== 'freehand') return;
+      this._freehandDrawing = true;
+      this._freehandPoints = [];
+      _map.dragging.disable();
+      const ll = this._evtToLL(e);
+      if (ll) this._freehandPoints.push([ll.lat, ll.lng]);
+    };
+    this._fhMove = (e) => {
+      if (!this._freehandDrawing) return;
+      e.preventDefault();
+      const ll = this._evtToLL(e);
+      if (!ll) return;
+      this._freehandPoints.push([ll.lat, ll.lng]);
+      if (this._freehandLayer) _map.removeLayer(this._freehandLayer);
+      if (this._freehandPoints.length > 1)
+        this._freehandLayer = L.polyline(this._freehandPoints, { color: this._color, weight: 3 }).addTo(_map);
+    };
+    this._fhUp = () => {
+      if (!this._freehandDrawing) return;
+      this._freehandDrawing = false;
+      _map.dragging.enable();
+      if (this._freehandPoints.length > 2) {
+        if (this._freehandLayer) { _map.removeLayer(this._freehandLayer); this._freehandLayer = null; }
+        const d = { id: Layers.uid(), type: 'polyline', points: [...this._freehandPoints], color: this._color };
+        Layers.render(d, true);
+        Sync.push();
+        toast('✅ Freihand gespeichert');
+      }
+      this._freehandPoints = [];
+    };
+    c.addEventListener('mousedown',  this._fhDown);
+    c.addEventListener('mousemove',  this._fhMove);
+    c.addEventListener('mouseup',    this._fhUp);
+    c.addEventListener('touchstart', this._fhDown, { passive: false });
+    c.addEventListener('touchmove',  this._fhMove, { passive: false });
+    c.addEventListener('touchend',   this._fhUp);
+  },
+
+  _unbindFreehand() {
+    const c = _map && _map.getContainer ? _map.getContainer() : null;
+    if (!c) return;
+    if (this._fhDown) { c.removeEventListener('mousedown', this._fhDown); c.removeEventListener('touchstart', this._fhDown); }
+    if (this._fhMove) { c.removeEventListener('mousemove', this._fhMove); c.removeEventListener('touchmove',  this._fhMove); }
+    if (this._fhUp)   { c.removeEventListener('mouseup',   this._fhUp);   c.removeEventListener('touchend',   this._fhUp); }
+    this._fhDown = this._fhMove = this._fhUp = null;
+    this._freehandDrawing = false;
+    _map.dragging.enable();
+    if (this._freehandLayer) { _map.removeLayer(this._freehandLayer); this._freehandLayer = null; }
+    this._freehandPoints = [];
   },
 };
 
@@ -2725,6 +2878,20 @@ const App = {
     document.getElementById('landing').classList.remove('hidden');
     QuickMark.close();
     Tools.deactivate();
+  },
+
+  screenshot() {
+    toast('📸 Screenshot wird erstellt…');
+    const el = document.getElementById('map');
+    html2canvas(el, { useCORS: true, scale: window.devicePixelRatio || 1, logging: false, backgroundColor: '#f4f4f4' })
+      .then(canvas => {
+        const a = document.createElement('a');
+        a.download = `Lagekarte_${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.png`;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        toast('✅ Screenshot gespeichert');
+      })
+      .catch(() => toast('❌ Screenshot fehlgeschlagen'));
   },
 
   confirmReset() {
