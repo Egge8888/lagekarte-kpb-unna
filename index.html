@@ -584,7 +584,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
         <div class="landing-red-dot"></div> Neue Lage starten
       </button>
       <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
-      <button class="btn btn-ghost" style="color:var(--red);font-size:13px;margin-top:6px;" onclick="App.masterReset()">⚠️ Alle Lagen löschen</button>
+      <button onclick="App.masterReset()" style="background:none;border:none;color:rgba(255,59,48,.45);font-size:11px;cursor:pointer;margin-top:8px;padding:4px;font-family:var(--font);">Systemverwaltung</button>
     </div>
 
     <div class="landing-divider" style="margin-top:16px;">── Extras ──</div>
@@ -602,8 +602,8 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
 <div id="modal-overlay" class="hidden">
   <div class="modal-sheet" id="modal-pin">
     <div class="modal-handle"></div>
-    <div class="modal-title">🔐 Admin-PIN</div>
-    <div class="modal-sub">Nur für Leitstellen-Personal</div>
+    <div class="modal-title">🗑 Alle Lagen löschen</div>
+    <div class="modal-sub">PIN eingeben zum Bestätigen</div>
     <div class="pin-row">
       <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p0"/>
       <input class="pin-digit" type="password" inputmode="numeric" maxlength="1" id="p1"/>
@@ -612,10 +612,7 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" style="color:var(--txt)" onclick="App.closeModal()">Abbrechen</button>
-      <button class="btn btn-primary" onclick="App.checkPin()">✓&nbsp; Bestätigen</button>
-    </div>
-    <div style="margin-top:24px; text-align:center;">
-      <button class="btn btn-ghost" style="color:var(--red); width:100%;" onclick="App.masterReset()">⚠️ Alle Lagen im System löschen</button>
+      <button class="btn btn-danger" onclick="App.checkPin()">🗑&nbsp; Löschen</button>
     </div>
   </div>
   <div class="modal-sheet hidden" id="modal-join">
@@ -2789,7 +2786,7 @@ const App = {
     });
   },
 
-  async checkPin() {
+  checkPin() {
     const pin = ['p0','p1','p2','p3'].map(id => document.getElementById(id).value).join('');
     if (pin !== CFG.ADMIN_PIN) {
       toast('❌ Falscher PIN');
@@ -2797,45 +2794,22 @@ const App = {
       document.getElementById('p0').focus();
       return;
     }
-    this.closeModal();
-    _mode = 'admin';
-    _roomCode = this._genCode();
-
-    // Zufälliger 16-Byte Salt pro Session – verhindert vorberechnete Angriffe
-    const saltArr = crypto.getRandomValues(new Uint8Array(16));
-    const saltB64 = btoa(String.fromCharCode(...saltArr));
-
-    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-    const { error } = await _sb.from('lagekarte_sessions').insert({ room_code: _roomCode, e2ee_salt: saltB64 });
-    if (error) { toast('❌ Fehler beim Erstellen der Lage'); console.error(error); return; }
-
-    this._openMap();
-    await Sync.connect(_roomCode, true);
-
-    Pool.load();
-    document.getElementById('toolbar').style.display = '';
-    document.getElementById('toolbar').classList.remove('viewer-mode');
-    document.getElementById('mode-badge').className = 'admin';
-    document.getElementById('mode-badge').textContent = 'ADMIN';
-    const rc = document.getElementById('room-code-display');
-    const displayCode = _roomCode.slice(0,3) + '-' + _roomCode.slice(3);
-    rc.textContent = displayCode; rc.classList.remove('hidden');
-    document.getElementById('end-btn').classList.remove('hidden');
-    document.getElementById('viewer-hint').classList.add('hidden');
-    toast(`✅ Lage gestartet – Code: ${displayCode}`, 8000);
+    this._executeMasterReset();
   },
 
-  async masterReset() {
-    if (!confirm('ACHTUNG: Möchtest du wirklich ALLE aktiven Lagen auf dem Server löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!')) return;
+  masterReset() {
+    this.showPinModal();
+  },
 
+  async _executeMasterReset() {
+    this.closeModal();
     localStorage.removeItem('lagekarte_my_room');
     this._updateLageButtons();
     toast('🔄 Bereinige Datenbank...');
     if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-    
     const { error } = await _sb.from('lagekarte_sessions').delete().neq('room_code', '00000000');
     if (error) { toast('❌ Fehler beim Bereinigen'); console.error(error); }
-    else { toast('✅ System wurde komplett bereinigt'); }
+    else { toast('✅ System bereinigt – alle Lagen gelöscht'); }
   },
 
   showJoinModal() {
@@ -2917,9 +2891,8 @@ const App = {
   },
 
   confirmDelete() {
-    document.getElementById('modal-pin').classList.add('hidden');
-    document.getElementById('modal-join').classList.add('hidden');
-    document.getElementById('modal-reset').classList.add('hidden');
+    ['modal-pin','modal-join','modal-reset','modal-unlock'].forEach(id =>
+      document.getElementById(id).classList.add('hidden'));
     document.getElementById('modal-delete').classList.remove('hidden');
     document.getElementById('modal-overlay').classList.remove('hidden');
   },
