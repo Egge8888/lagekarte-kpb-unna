@@ -577,13 +577,14 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
     <!-- Lagen-Modus: unsichtbar bis Freischalt-Code korrekt eingegeben -->
     <div id="lage-buttons" class="hidden">
       <div class="landing-divider">── Lagen-Modus ──</div>
-      <button id="rejoin-btn" class="btn btn-secondary hidden" onclick="App.rejoinMyRoom()" style="border-color:var(--green);color:var(--green);">
-        ↩️ Meine Lage wieder betreten
+      <button id="rejoin-btn" class="btn btn-primary hidden" onclick="App.rejoinMyRoom()">
+        ↩️ Zurück zur Lage
       </button>
-      <button class="btn btn-secondary" onclick="App.startAdmin()">
-        <div class="landing-red-dot"></div> Neue Lage starten &nbsp;<span style="font-size:11px;opacity:.6;font-weight:600">(Leitstelle)</span>
+      <button id="start-admin-btn" class="btn btn-secondary" onclick="App.startAdmin()">
+        <div class="landing-red-dot"></div> Neue Lage starten
       </button>
       <button class="btn btn-secondary" onclick="App.showJoinModal()">👁&nbsp; Lage beitreten</button>
+      <button class="btn btn-ghost" style="color:var(--red);font-size:13px;margin-top:6px;" onclick="App.showPinModal()">⚠️ Alle Lagen löschen</button>
     </div>
 
     <div class="landing-divider" style="margin-top:16px;">── Extras ──</div>
@@ -2704,8 +2705,8 @@ const App = {
     const { data } = await _sb.from('lagekarte_sessions').select('room_code').eq('room_code', code).maybeSingle();
     if (!data) {
       localStorage.removeItem('lagekarte_my_room');
-      document.getElementById('rejoin-btn').classList.add('hidden');
-      toast('⚠️ Lage nicht mehr aktiv');
+      this._updateLageButtons();
+      toast('⚠️ Lage wurde zwischenzeitlich beendet');
       return;
     }
 
@@ -2746,26 +2747,26 @@ const App = {
       document.getElementById('lage-buttons').classList.remove('hidden');
       document.getElementById('lage-unlock-btn').style.display = 'none';
       toast('🔓 Lagen-Modus freigeschaltet');
-      this._checkRejoin();
+      this._updateLageButtons();
     } else {
       document.getElementById('unlock-error').textContent = '❌ Falscher Code';
       document.getElementById('unlock-code-input').value = '';
     }
   },
 
-  async _checkRejoin() {
+  _updateLageButtons() {
     const saved = localStorage.getItem('lagekarte_my_room');
-    if (!saved) return;
-    const { code } = JSON.parse(saved);
-    if (!_sb) _sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
-    const { data } = await _sb.from('lagekarte_sessions').select('room_code').eq('room_code', code).maybeSingle();
-    if (data) {
-      const displayCode = code.slice(0,3) + '-' + code.slice(3);
-      const btn = document.getElementById('rejoin-btn');
-      btn.innerHTML = `↩️ Meine Lage <strong>${displayCode}</strong> wieder betreten`;
-      btn.classList.remove('hidden');
+    const rejoinBtn = document.getElementById('rejoin-btn');
+    const startBtn  = document.getElementById('start-admin-btn');
+    if (saved) {
+      const { code } = JSON.parse(saved);
+      const display = code.slice(0,3) + '-' + code.slice(3);
+      rejoinBtn.innerHTML = `↩️ Zurück zur Lage <strong>${display}</strong>`;
+      rejoinBtn.classList.remove('hidden');
+      startBtn.classList.add('hidden');
     } else {
-      localStorage.removeItem('lagekarte_my_room');
+      rejoinBtn.classList.add('hidden');
+      startBtn.classList.remove('hidden');
     }
   },
 
@@ -2941,6 +2942,7 @@ const App = {
   },
 
   goHome() {
+    const wasAdmin = _mode === 'admin';
     Sync.disconnect();
     if (typeof Editor !== 'undefined') Editor.finish(true);
     TextInput.hide();
@@ -2948,9 +2950,9 @@ const App = {
     SymbolPanel.close();
     Search.hide();
     RoutePanel.close();
-    
+
     if (LiveGPS._watchId) LiveGPS.stop();
-    
+
     if (_mode === 'solo' && _drawn) Sync.push();
     _mode = null; _roomCode = null;
     if (_drawn) _drawn.clearLayers();
@@ -2960,6 +2962,13 @@ const App = {
     document.getElementById('landing').classList.remove('hidden');
     QuickMark.close();
     Tools.deactivate();
+
+    // War Admin → Lagen-Modus-Buttons sofort zeigen mit Zurück-Button
+    if (wasAdmin) {
+      document.getElementById('lage-buttons').classList.remove('hidden');
+      document.getElementById('lage-unlock-btn').style.display = 'none';
+      this._updateLageButtons();
+    }
   },
 
   screenshot() {
